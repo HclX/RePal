@@ -234,9 +234,15 @@ pub(super) fn draw_system_submenu(
     hd: bool,
     interactive: bool,
 ) {
-    let bx = if ui.replay_mode { 62 } else { 40 };
+    let bx = if ui.replay_mode {
+        62
+    } else if ui.lang.is_en() {
+        34
+    } else {
+        40
+    };
     let by = 60;
-    let n_cols = if ui.lang.is_en() { 5 } else { 3 };
+    let n_cols = if ui.lang.is_en() { 4 } else { 3 };
     let mut items = Vec::with_capacity(5);
     if !ui.replay_mode {
         items.push(tr(ui, "儲存進度", "储存进度", "Save Game").to_string());

@@ -263,8 +263,11 @@ fn draw_borderless_dialog_pane(
     let shown_lines = page_lines.len().clamp(1, MAX_LINES_PER_PAGE) as i32;
     let speaker_h = if has_speaker { 13 } else { 0 };
     let line_h = 13;
+    let cursor_h = if cursor_hint.is_some() { 8 } else { 0 };
     let min_h = if has_portrait { 60 } else { 46 };
-    let bh = (12 + speaker_h + shown_lines * line_h).max(min_h).min(78);
+    let bh = (10 + speaker_h + shown_lines * line_h + cursor_h)
+        .max(min_h)
+        .min(82);
     let by = if at_top { 0 } else { 200 - bh };
 
     if let Some(rgm_id) = portrait_rgm {
@@ -325,10 +328,11 @@ fn draw_borderless_dialog_pane(
     if let Some(hint) = cursor_hint {
         let hint_px = (8 * s) as u16;
         let hint_w = fonts.measure_text(hint, hint_px) / s.max(1);
+        let hint_y = cur_y.min(by + bh - 10);
         fonts.draw_text_outlined(
             fb,
             (text_right - hint_w - 2).max(text_x) * s,
-            (by + bh - 12) * s,
+            hint_y * s,
             hint,
             hint_px,
             Color::GOLD_HI,
