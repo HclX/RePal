@@ -224,6 +224,7 @@ pub(super) fn draw_item_submenu(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn draw_system_submenu(
     fb: &mut Framebuffer,
     cache: &mut AssetCache,
@@ -231,6 +232,7 @@ pub(super) fn draw_system_submenu(
     ui: &mut UiState,
     s: i32,
     hd: bool,
+    interactive: bool,
 ) {
     let bx = if ui.replay_mode { 62 } else { 40 };
     let by = 60;
@@ -258,22 +260,29 @@ pub(super) fn draw_system_submenu(
     for (i, label) in items.iter().enumerate() {
         let ry = by + 13 + (i as i32) * 18;
         let sel = ui.sys_sub_cursor == i;
+        let color = if sel {
+            if interactive { Color::GOLD_HI } else { CONFIRMED_GREEN }
+        } else {
+            Color::PAPER_TEXT
+        };
         fonts.draw_text_outlined(
             fb,
             (bx + 14) * s,
             ry * s,
             label,
             (10 * s) as u16,
-            if sel { Color::GOLD_HI } else { Color::PAPER_TEXT },
+            color,
             Color::BLACK,
         );
-        ui.hit_rects.push(HitRect {
-            x: bx + 8,
-            y: ry - 2,
-            w: bw - 18,
-            h: 17,
-            tag: HitTag::SystemSubmenuItem(i),
-        });
+        if interactive {
+            ui.hit_rects.push(HitRect {
+                x: bx + 8,
+                y: ry - 2,
+                w: bw - 18,
+                h: 17,
+                tag: HitTag::SystemSubmenuItem(i),
+            });
+        }
     }
 }
 

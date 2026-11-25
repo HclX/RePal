@@ -61,14 +61,46 @@ pub(super) fn draw_magic_grid(
         });
     }
 
-    // Bottom single-line scroll box showing caster & MP / Cost
+    let total_magic_pages = role.magics.len().max(1).div_ceil(per_page);
+    if total_magic_pages > 1 {
+        let cur_page = (ui.grid_cursor / per_page) + 1;
+        let pg_txt = format!("{cur_page}/{total_magic_pages}");
+        fonts.draw_text_outlined(
+            fb,
+            286 * s,
+            130 * s,
+            &pg_txt,
+            (8 * s) as u16,
+            Color::GOLD_HI,
+            Color::BLACK,
+        );
+    }
+
+    // Selected spell borderless description + bottom single-line scroll box showing caster & MP / Cost
     let selected_magic = role.magics.get(ui.grid_cursor).copied().unwrap_or(0);
+    if selected_magic > 0 {
+        if let Some(desc) = ui.catalog.magic_descs.get(&selected_magic) {
+            let clean = desc.replace('\r', "").replace('\n', if ui.lang.is_en() { " " } else { "" });
+            let wrapped = fonts.wrap_text(&clean, (9 * s) as u16, 296 * s);
+            if let Some(line) = wrapped.first() {
+                fonts.draw_text_outlined(
+                    fb,
+                    12 * s,
+                    143 * s,
+                    line,
+                    (9 * s) as u16,
+                    Color::PAPER_TEXT,
+                    Color::BLACK,
+                );
+            }
+        }
+    }
     let mp_cost = if selected_magic > 0 { ui.catalog.magic_cost(selected_magic) } else { 0 };
-    draw_pal_single_line_box(fb, cache, 10, 156, 17, s, hd);
+    draw_pal_single_line_box(fb, cache, 10, 160, 17, s, hd);
     fonts.draw_text_outlined(
         fb,
         22 * s,
-        167 * s,
+        171 * s,
         &format!(
             "{} {}   {} {}/{}   {} {}",
             role_name,
@@ -152,12 +184,24 @@ pub(super) fn draw_item_grid(
                 tag: HitTag::GridCell(idx),
             });
         }
+        let total_item_pages = items.len().max(1).div_ceil(per_page);
+        if total_item_pages > 1 {
+            let cur_page = (ui.grid_cursor / per_page) + 1;
+            let pg_txt = format!("{cur_page}/{total_item_pages}");
+            fonts.draw_text_outlined(
+                fb,
+                286 * s,
+                130 * s,
+                &pg_txt,
+                (8 * s) as u16,
+                Color::GOLD_HI,
+                Color::BLACK,
+            );
+        }
     }
 
-    // Soft dark band at bottom so description text is always crisp over bright HD maps
-    fb.fill_rect(0, 146 * s, 320 * s, 54 * s, Color::rgba(10, 8, 6, 165));
-
-    // Bottom-left `SPRITENUM_ITEMBOX` (frame 70, 64x64) + item icon
+    // Authentic 1995 SDLPAL borderless bottom-left `SPRITENUM_ITEMBOX` (frame 70, 64x64) +
+    // heavy-outlined 2-line description floating directly over the live scene (no dark band).
     if blit_atlas_frame(fb, cache, "ui", "spriteui", SPR_ITEMBOX, 5 * s, 134 * s, s, hd).is_none() {
         fb.draw_bevel_box(5 * s, 134 * s, 64 * s, 64 * s, s.max(1));
     }
@@ -204,56 +248,65 @@ pub(super) fn draw_save_load_slots(
     s: i32,
     hd: bool,
 ) {
-    // Mode badge at top-left
-    let header = match mode {
-        SaveSlotMode::SaveInGame => tr(ui, "儲存進度", "保存进度", "Save Game"),
-        SaveSlotMode::LoadFromTitle | SaveSlotMode::LoadInGame => tr(ui, "讀取進度", "读取进度", "Load Game"),
-    };
-    draw_pal_single_line_box(fb, cache, 8, 7, 5, s, hd);
-    fonts.draw_text_centered(
-        fb,
-        56 * s,
-        18 * s,
-        header,
-        (11 * s) as u16,
-        Color::GOLD_HI,
-        Some(Color::BLACK),
-    );
-
     let page_size = 5usize;
     let total_slots = ui.save_slots.len().max(1);
     let total_pages = (total_slots + page_size - 1) / page_size;
     let page = (ui.save_slot_cursor / page_size).min(total_pages - 1);
     let page_start = page * page_size;
 
-    // Page indicator box below the top-left header box (when > 1 page)
-    if total_pages > 1 {
-        draw_pal_single_line_box(fb, cache, 8, 45, 5, s, hd);
-        let page_txt = match ui.lang {
-            pal_core::Language::En => format!("Page {}/{}", page + 1, total_pages),
-            pal_core::Language::ZhHans => format!("第 {}/{} 页", page + 1, total_pages),
-            pal_core::Language::ZhHant => format!("第 {}/{} 頁", page + 1, total_pages),
-        };
+    let page_txt = match ui.lang {
+        pal_core::Language::En => format!("Page {}/{}", page + 1, total_pages),
+        pal_core::Language::ZhHans => format!("第 {}/{} 页", page + 1, total_pages),
+        pal_core::Language::ZhHant => format!("第 {}/{} 頁", page + 1, total_pages),
+    };
+
+    if mode == SaveSlotMode::LoadFromTitle {
+        // Standalone Title-screen load: show top-left mode badge + page indicator.
+        let header = tr(ui, "讀取進度", "读取进度", "Load Game");
+        draw_pal_single_line_box(fb, cache, 8, 7, 5, s, hd);
         fonts.draw_text_centered(
             fb,
             56 * s,
-            56 * s,
-            &page_txt,
-            (9 * s) as u16,
-            Color::PAPER_TEXT,
-            Some(Color::BLACK),
-        );
-        let hint_txt = tr(ui, "←/→ 翻頁", "←/→ 翻页", "←/→ Page");
-        fb.fill_rect(16 * s, 82 * s, 80 * s, 13 * s, Color::rgba(14, 12, 10, 180));
-        fb.stroke_rect(16 * s, 82 * s, 80 * s, 13 * s, s.max(1), Color::rgba(196, 172, 126, 160));
-        fonts.draw_text_centered(
-            fb,
-            56 * s,
-            84 * s,
-            hint_txt,
-            (8 * s) as u16,
+            18 * s,
+            header,
+            (11 * s) as u16,
             Color::GOLD_HI,
             Some(Color::BLACK),
+        );
+        if total_pages > 1 {
+            draw_pal_single_line_box(fb, cache, 8, 45, 5, s, hd);
+            fonts.draw_text_centered(
+                fb,
+                56 * s,
+                56 * s,
+                &page_txt,
+                (9 * s) as u16,
+                Color::PAPER_TEXT,
+                Some(Color::BLACK),
+            );
+            let hint_txt = tr(ui, "←/→ 翻頁", "←/→ 翻页", "←/→ Page");
+            fonts.draw_text_centered(
+                fb,
+                56 * s,
+                84 * s,
+                hint_txt,
+                (8 * s) as u16,
+                Color::GOLD_HI,
+                Some(Color::BLACK),
+            );
+        }
+    } else if total_pages > 1 {
+        // In-game Save/Load: Cash + RootMenu + SystemSubmenu stay visible on the left;
+        // anchor the compact page readout cleanly at bottom-left clear of all menus.
+        let compact = format!("{}  {}", page_txt, tr(ui, "←/→", "←/→", "←/→"));
+        fonts.draw_text_outlined(
+            fb,
+            8 * s,
+            184 * s,
+            &compact,
+            (8 * s) as u16,
+            Color::GOLD_HI,
+            Color::BLACK,
         );
     }
 

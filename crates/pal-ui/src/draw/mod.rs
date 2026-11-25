@@ -13,6 +13,7 @@ mod menus;
 mod overlays;
 
 pub use dialog::layout_dialog_pages;
+pub(crate) use dialog::is_system_notice_text;
 pub use overlays::{draw_ai_thought_overlay, draw_debug_watermark, should_draw_ai_thought_overlay};
 use battle::{draw_battle_hud, draw_battle_party_strip, draw_battle_victory};
 use dialog::draw_dialog;
@@ -420,7 +421,7 @@ pub fn draw_ui(
         }
         UiView::SystemSubmenu => {
             draw_root_menu(fb, cache, fonts, ui, state, s, hd, false);
-            draw_system_submenu(fb, cache, fonts, ui, s, hd);
+            draw_system_submenu(fb, cache, fonts, ui, s, hd, true);
         }
         UiView::RemakeSubmenu => {
             draw_root_menu(fb, cache, fonts, ui, state, s, hd, false);
@@ -430,7 +431,16 @@ pub fn draw_ui(
         UiView::EquipFbp001 => draw_equip_fbp001(fb, cache, fonts, ui, state, s, hd),
         UiView::MagicGrid => draw_magic_grid(fb, cache, fonts, ui, state, s, hd),
         UiView::ItemGrid => draw_item_grid(fb, cache, fonts, ui, state, s, hd),
-        UiView::SaveLoadSlots(mode) => draw_save_load_slots(fb, cache, fonts, ui, mode, s, hd),
+        UiView::SaveLoadSlots(mode) => {
+            if matches!(
+                mode,
+                crate::state::SaveSlotMode::SaveInGame | crate::state::SaveSlotMode::LoadInGame
+            ) {
+                draw_root_menu(fb, cache, fonts, ui, state, s, hd, false);
+                draw_system_submenu(fb, cache, fonts, ui, s, hd, false);
+            }
+            draw_save_load_slots(fb, cache, fonts, ui, mode, s, hd);
+        }
         UiView::ReplayChapters => draw_replay_chapters(fb, cache, fonts, ui, s, hd),
         UiView::ReplayFinished => draw_replay_finished(fb, cache, fonts, ui, s, hd),
         UiView::Shop => draw_shop(fb, cache, fonts, ui, state, false, s, hd),

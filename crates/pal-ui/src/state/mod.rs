@@ -92,6 +92,16 @@ pub struct DialogModel {
     pub pages: Vec<String>,
 }
 
+/// Snapshot of the opposite speaker's last dialogue line, kept visible on-screen in authentic
+/// 1995 SDLPAL dual-speaker conversations (upper-left + lower-right) until overwritten or closed.
+#[derive(Clone, Debug)]
+pub struct PrevDialogSnapshot {
+    pub speaker: String,
+    pub lines: Vec<String>,
+    pub portrait_rgm: Option<u16>,
+    pub at_top: bool,
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct ShopEntry {
     pub item_id: u16,
@@ -263,6 +273,7 @@ pub struct UiState {
     pub traditional_chinese: bool,
     pub lang: pal_core::Language,
     pub dialog: DialogModel,
+    pub prev_dialog: Option<PrevDialogSnapshot>,
     pub shop_items: Vec<ShopEntry>,
     pub save_slots: Vec<SaveSlotSummary>,
     /// Exclusive replay mode: replaces gameplay RootMenu with ReplayMenu (Chapters/TakeOver/System/Remake).
@@ -345,6 +356,7 @@ impl UiState {
             traditional_chinese: true,
             lang: pal_core::Language::ZhHant,
             dialog: DialogModel::default(),
+            prev_dialog: None,
             shop_items: Vec::new(),
             save_slots,
             replay_mode: false,
@@ -364,6 +376,9 @@ impl UiState {
     pub fn set_view(&mut self, view: UiView) {
         if self.view != view {
             self.pawnshop_confirm_idx = None;
+        }
+        if view != UiView::Dialog {
+            self.prev_dialog = None;
         }
         self.view = view;
         self.dirty = true;
@@ -404,10 +419,45 @@ impl UiState {
     }
 
     pub fn open_dialog(&mut self, speaker: impl Into<String>, text: impl Into<String>, portrait_rgm: Option<u16>, at_top: bool) {
+        let speaker_str = speaker.into();
         let clean = Self::sanitize_dialog_text(&text.into());
+        let new_is_unnamed = speaker_str.is_empty() && portrait_rgm.is_none();
+        let new_is_notice = new_is_unnamed
+            && !clean.trim().contains('\n')
+            && clean.trim().chars().count() <= 26
+            && crate::draw::is_system_notice_text(clean.trim(), true);
+
+        if new_is_notice {
+            self.prev_dialog = None;
+        } else if self.view == UiView::Dialog && self.dialog.at_top != at_top {
+            let prev_trimmed = self.dialog.text.trim();
+            let prev_unnamed = self.dialog.speaker.is_empty() && self.dialog.portrait_rgm.is_none();
+            let prev_is_notice = prev_unnamed
+                && !prev_trimmed.contains('\n')
+                && prev_trimmed.chars().count() <= 26
+                && crate::draw::is_system_notice_text(prev_trimmed, true);
+            if !prev_trimmed.is_empty() && !prev_is_notice {
+                let page_text = self
+                    .dialog
+                    .pages
+                    .get(self.dialog.page)
+                    .map(|s| s.as_str())
+                    .unwrap_or(prev_trimmed);
+                let lines: Vec<String> = page_text.lines().map(String::from).collect();
+                self.prev_dialog = Some(PrevDialogSnapshot {
+                    speaker: self.dialog.speaker.clone(),
+                    lines,
+                    portrait_rgm: self.dialog.portrait_rgm,
+                    at_top: self.dialog.at_top,
+                });
+            }
+        } else if self.prev_dialog.as_ref().is_some_and(|p| p.at_top == at_top) {
+            self.prev_dialog = None;
+        }
+
         self.toast_text = None;
         self.dialog = DialogModel {
-            speaker: speaker.into(),
+            speaker: speaker_str,
             text: clean.clone(),
             portrait_rgm,
             at_top,

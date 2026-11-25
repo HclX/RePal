@@ -67,7 +67,8 @@ pub(super) fn draw_battle_party_strip(
     }
 }
 
-/// Authentic centered ornate scroll modal for Battle Victory (EXP, Cash, and Level-Up summary).
+/// Authentic 1995 SDLPAL dual stacked single-line scroll banners for Battle Victory
+/// (EXP banner + Cash banner, plus optional compact Level-Up box below).
 pub(super) fn draw_battle_victory(
     fb: &mut Framebuffer,
     cache: &mut AssetCache,
@@ -77,59 +78,62 @@ pub(super) fn draw_battle_victory(
     hd: bool,
 ) {
     let info = &ui.battle_victory;
-    let extra_rows = info.level_ups.len().min(4) as i32;
-    let n_rows = (1 + extra_rows).max(1);
-    let n_cols = 10;
-    let bx = 64;
-    let total_h = 36 + n_rows * 18;
-    let by = (160 - total_h) / 2;
-    let (bw, _) = draw_pal_box(fb, cache, bx, by, n_rows, n_cols, 0, s, hd);
-    let cx = bx + bw / 2 - 2;
+    let has_lv = !info.level_ups.is_empty();
+    let top_y = if has_lv { 36 } else { 62 };
 
-    let title = tr(ui, "── 戰鬥勝利 ──", "── 战斗胜利 ──", "-- Victory --");
-    fonts.draw_text_centered(
-        fb,
-        cx * s,
-        (by + 11) * s,
-        title,
-        (11 * s) as u16,
-        Color::GOLD_HI,
-        Some(Color::BLACK),
-    );
-
-    let reward_line = if ui.lang.is_en() {
-        format!("EXP +{}    Wen +{}", info.exp, info.cash)
-    } else {
-        format!(
-            "{} +{}    {} +{}",
-            tr(ui, "經驗", "经验", "EXP"),
-            info.exp,
-            tr(ui, "金錢", "金钱", "Wen"),
-            info.cash
-        )
+    let exp_line = match ui.lang {
+        pal_core::Language::En => format!("Gained {} EXP", info.exp),
+        pal_core::Language::ZhHans => format!("获得经验值 {}", info.exp),
+        pal_core::Language::ZhHant => format!("獲得經驗值 {}", info.exp),
     };
-    fonts.draw_text_centered(
-        fb,
-        cx * s,
-        (by + 30) * s,
-        &reward_line,
-        (10 * s) as u16,
-        Color::PAPER_TEXT,
-        Some(Color::BLACK),
-    );
+    let cash_line = match ui.lang {
+        pal_core::Language::En => format!("Gained {} Wen", info.cash),
+        pal_core::Language::ZhHans => format!("获得金钱 {} 文", info.cash),
+        pal_core::Language::ZhHant => format!("獲得金錢 {} 文", info.cash),
+    };
 
-    for (i, lv) in info.level_ups.iter().take(4).enumerate() {
-        let ry = by + 48 + (i as i32) * 16;
-        let line = format!("★ {}", lv);
+    for (idx, text) in [&exp_line, &cash_line].iter().enumerate() {
+        let est_px = if ui.lang.is_en() {
+            (text.chars().count() as i32) * 7 + 22
+        } else {
+            (text.chars().count() as i32) * 11 + 24
+        };
+        let n_len = ((est_px + 15) / 16).clamp(7, 15);
+        let box_w = 16 + n_len * 16;
+        let bx = (320 - box_w) / 2;
+        let by = top_y + (idx as i32) * 36;
+        draw_pal_single_line_box(fb, cache, bx, by, n_len, s, hd);
         fonts.draw_text_centered(
             fb,
-            cx * s,
-            ry * s,
-            &line,
+            (bx + box_w / 2) * s,
+            (by + 11) * s,
+            text,
             (10 * s) as u16,
-            CONFIRMED_GREEN,
+            Color::GOLD_HI,
             Some(Color::BLACK),
         );
+    }
+
+    if has_lv {
+        let extra_rows = info.level_ups.len().min(4) as i32;
+        let n_cols = 10;
+        let bx = 64;
+        let by = top_y + 74;
+        let (bw, _) = draw_pal_box(fb, cache, bx, by, (extra_rows - 1).max(0), n_cols, 0, s, hd);
+        let cx = bx + bw / 2 - 2;
+        for (i, lv) in info.level_ups.iter().take(4).enumerate() {
+            let ry = by + 11 + (i as i32) * 17;
+            let line = format!("★ {lv}");
+            fonts.draw_text_centered(
+                fb,
+                cx * s,
+                ry * s,
+                &line,
+                (10 * s) as u16,
+                CONFIRMED_GREEN,
+                Some(Color::BLACK),
+            );
+        }
     }
 
     ui.hit_rects.push(HitRect {
@@ -421,14 +425,12 @@ pub(super) fn draw_battle_hud(
                     } else {
                         format!("[{} · MP:{}] {}", scope, cost, desc)
                     };
-                    fb.fill_rect(4 * s, 131 * s, 312 * s, 19 * s, Color::rgba(10, 12, 18, 215));
-                    fb.stroke_rect(4 * s, 131 * s, 312 * s, 19 * s, s.max(1), Color::rgba(196, 172, 126, 180));
-                    let wrapped = fonts.wrap_text(&summary, (9 * s) as u16, 302 * s);
+                    let wrapped = fonts.wrap_text(&summary, (9 * s) as u16, 304 * s);
                     if let Some(line) = wrapped.first() {
                         fonts.draw_text_outlined(
                             fb,
-                            9 * s,
-                            135 * s,
+                            8 * s,
+                            136 * s,
                             line,
                             (9 * s) as u16,
                             Color::PAPER_TEXT,
@@ -504,14 +506,12 @@ pub(super) fn draw_battle_hud(
                     } else {
                         format!("[{}] {}", kind_tag, desc)
                     };
-                    fb.fill_rect(4 * s, 131 * s, 312 * s, 19 * s, Color::rgba(10, 12, 18, 215));
-                    fb.stroke_rect(4 * s, 131 * s, 312 * s, 19 * s, s.max(1), Color::rgba(196, 172, 126, 180));
-                    let wrapped = fonts.wrap_text(&summary, (9 * s) as u16, 302 * s);
+                    let wrapped = fonts.wrap_text(&summary, (9 * s) as u16, 304 * s);
                     if let Some(line) = wrapped.first() {
                         fonts.draw_text_outlined(
                             fb,
-                            9 * s,
-                            135 * s,
+                            8 * s,
+                            136 * s,
                             line,
                             (9 * s) as u16,
                             Color::PAPER_TEXT,

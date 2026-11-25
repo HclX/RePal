@@ -834,4 +834,29 @@ mod tests {
         ui.on_key(UiKey::Cancel, &state, Some(&mut battle));
         assert_eq!(ui.view, UiView::BattleHud(BattleSubPhase::CommandWheel));
     }
+
+    #[test]
+    fn test_dual_speaker_dialog_persistence() {
+        let mut ui = UiState::new();
+        ui.open_dialog("李大娘", "逍遙，快起床！", Some(26), true);
+        assert!(ui.prev_dialog.is_none());
+
+        // Switching to the opposite side (bottom) preserves the top speaker on screen.
+        ui.open_dialog("李逍遙", "嬸嬸，我這就起來。", Some(2), false);
+        let prev = ui.prev_dialog.as_ref().expect("top speaker should be preserved");
+        assert_eq!(prev.speaker, "李大娘");
+        assert!(prev.at_top);
+        assert_eq!(prev.portrait_rgm, Some(26));
+
+        // A centered system notice clears dual-speaker history.
+        ui.open_dialog("", "獲得 止血草", None, false);
+        assert!(ui.prev_dialog.is_none());
+
+        // Closing the dialog clears prev_dialog as well.
+        ui.open_dialog("李大娘", "去招呼客人吧。", Some(26), true);
+        ui.open_dialog("李逍遙", "好的！", Some(2), false);
+        assert!(ui.prev_dialog.is_some());
+        ui.set_view(UiView::None);
+        assert!(ui.prev_dialog.is_none());
+    }
 }

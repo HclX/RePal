@@ -32,7 +32,7 @@ pub(super) fn reflow_dialog_text(raw: &str) -> String {
     out
 }
 
-pub(super) fn is_system_notice_text(trimmed: &str, is_unnamed: bool) -> bool {
+pub(crate) fn is_system_notice_text(trimmed: &str, is_unnamed: bool) -> bool {
     (trimmed.starts_with('『') && trimmed.ends_with('』'))
         || (trimmed.starts_with('[') && trimmed.ends_with(']'))
         || (is_unnamed
@@ -91,7 +91,6 @@ pub(super) fn draw_dialog(
     s: i32,
     hd: bool,
 ) {
-    const MAX_LINES_PER_PAGE: usize = 3;
     let has_speaker = !ui.dialog.speaker.is_empty();
     let has_portrait = ui.dialog.portrait_rgm.is_some();
     let is_unnamed = !has_speaker && !has_portrait;
@@ -115,7 +114,7 @@ pub(super) fn draw_dialog(
         let n_len = ((est_px + 15) / 16).clamp(4, 17);
         let box_w = 16 + n_len * 16;
         let bx = (320 - box_w) / 2;
-        let by = 32;
+        let by = 84;
         let (_, bh) = draw_pal_single_line_box(fb, cache, bx, by, n_len, s, hd);
         fonts.draw_text_centered(
             fb,
@@ -137,15 +136,28 @@ pub(super) fn draw_dialog(
         return;
     }
 
-    // Authentic SDLPAL portrait placement:
-    //   Upper dialog (`at_top`): portrait on LEFT, text on RIGHT.
-    //   Lower dialog (`!at_top`): portrait on RIGHT (270, 144), text on LEFT!
-    let portrait_on_left = has_portrait && ui.dialog.at_top;
-    let portrait_on_right = has_portrait && !ui.dialog.at_top;
+    // Authentic 1995 SDLPAL dual-speaker persistence: render the previous opposite-side
+    // speaker's dialogue (borderless) before drawing the active speaker.
+    if ui.dialog.choices.is_empty() {
+        if let Some(prev) = ui.prev_dialog.clone() {
+            if prev.at_top != ui.dialog.at_top {
+                draw_borderless_dialog_pane(
+                    fb,
+                    cache,
+                    fonts,
+                    ui.lang,
+                    &prev.speaker,
+                    &prev.lines,
+                    prev.portrait_rgm,
+                    prev.at_top,
+                    None,
+                    s,
+                    hd,
+                );
+            }
+        }
+    }
 
-    let text_x = if portrait_on_left { 66 } else { 14 };
-    let text_right = if portrait_on_right { 250 } else { 306 };
-    let font_px = (10 * s) as u16;
     let pages = layout_dialog_pages(&ui.dialog, fonts, hd);
     let total_pages = pages.len().max(1);
     ui.dialog.total_pages = total_pages;
@@ -155,102 +167,27 @@ pub(super) fn draw_dialog(
     let page_lines: &[String] = pages.get(page).map(|v| v.as_slice()).unwrap_or(&[]);
     let has_more_pages = page + 1 < total_pages;
 
-    let shown_lines = page_lines.len().clamp(1, MAX_LINES_PER_PAGE) as i32;
-    let speaker_h = if has_speaker { 13 } else { 0 };
-    let line_h = 13;
-    let min_h = if has_portrait { 60 } else { 46 };
-    let bh = (12 + speaker_h + shown_lines * line_h).max(min_h).min(78);
-    let by = if ui.dialog.at_top { 0 } else { 200 - bh };
-
-    // Soft borderless translucent dark gradient band (open 1995 feel + crisp HD readability)
-    if ui.dialog.at_top {
-        fb.fill_rect_vgrad(
-            0,
-            0,
-            320 * s,
-            (bh + 6) * s,
-            Color::rgba(8, 7, 6, 178),
-            Color::rgba(8, 7, 6, 24),
-        );
+    let cursor_hint = if has_more_pages {
+        Some(format!("{}/{} ▼", page + 1, total_pages))
+    } else if ui.dialog.choices.is_empty() {
+        Some("▼".to_string())
     } else {
-        fb.fill_rect_vgrad(
-            0,
-            (by - 8).max(0) * s,
-            320 * s,
-            (bh + 8) * s,
-            Color::rgba(8, 7, 6, 24),
-            Color::rgba(8, 7, 6, 184),
-        );
-    }
+        None
+    };
 
-    if let Some(rgm_id) = ui.dialog.portrait_rgm {
-        let px = if portrait_on_left { 8 } else { 256 };
-        let py = if ui.dialog.at_top { 5 } else { (196 - 56).max(by + 2) };
-        blit_atlas_frame_fit(
-            fb,
-            cache,
-            "ui",
-            "rgm",
-            rgm_id as usize,
-            px * s,
-            py * s,
-            56 * s,
-            56 * s,
-            hd,
-        );
-    }
-
-    // Speaker name is ALWAYS displayed on every page of a paginated dialogue.
-    let mut cur_y = by + 6;
-    if has_speaker {
-        let header = if ui.lang.is_en() {
-            format!("{}:", ui.dialog.speaker)
-        } else {
-            format!("{}：", ui.dialog.speaker)
-        };
-        fonts.draw_text_outlined(
-            fb,
-            (text_x - 4).max(6) * s,
-            cur_y * s,
-            &header,
-            font_px,
-            Color::CYAN_SPEAKER,
-            Color::BLACK,
-        );
-        cur_y += speaker_h;
-    }
-
-    for line in page_lines {
-        let trimmed = line.trim();
-        let line_color = if is_system_notice_text(trimmed, is_unnamed) {
-            Color::GOLD_HI
-        } else {
-            Color::PAPER_TEXT
-        };
-        fonts.draw_text_outlined(
-            fb,
-            text_x * s,
-            cur_y * s,
-            line,
-            font_px,
-            line_color,
-            Color::BLACK,
-        );
-        cur_y += line_h;
-    }
-
-    if has_more_pages {
-        let hint = format!("{}/{} ▼", page + 1, total_pages);
-        fonts.draw_text_outlined(
-            fb,
-            (text_right - 28) * s,
-            (by + bh - 12) * s,
-            &hint,
-            (8 * s) as u16,
-            Color::GOLD_HI,
-            Color::BLACK,
-        );
-    }
+    let (by, bh) = draw_borderless_dialog_pane(
+        fb,
+        cache,
+        fonts,
+        ui.lang,
+        &ui.dialog.speaker,
+        page_lines,
+        ui.dialog.portrait_rgm,
+        ui.dialog.at_top,
+        cursor_hint.as_deref(),
+        s,
+        hd,
+    );
 
     ui.hit_rects.push(HitRect {
         x: 0,
@@ -294,4 +231,110 @@ pub(super) fn draw_dialog(
             });
         }
     }
+}
+
+/// Render a single authentic 1995 SDLPAL borderless dialogue pane (upper-left or lower-right
+/// portrait + heavy pixel-outlined text floating directly over the live scene).
+#[allow(clippy::too_many_arguments)]
+fn draw_borderless_dialog_pane(
+    fb: &mut Framebuffer,
+    cache: &mut AssetCache,
+    fonts: &mut FontEngine,
+    lang: pal_core::Language,
+    speaker: &str,
+    page_lines: &[String],
+    portrait_rgm: Option<u16>,
+    at_top: bool,
+    cursor_hint: Option<&str>,
+    s: i32,
+    hd: bool,
+) -> (i32, i32) {
+    const MAX_LINES_PER_PAGE: usize = 3;
+    let has_speaker = !speaker.is_empty();
+    let has_portrait = portrait_rgm.is_some();
+    let is_unnamed = !has_speaker && !has_portrait;
+    let portrait_on_left = has_portrait && at_top;
+    let portrait_on_right = has_portrait && !at_top;
+
+    let text_x = if portrait_on_left { 66 } else { 14 };
+    let text_right = if portrait_on_right { 250 } else { 306 };
+    let font_px = (10 * s) as u16;
+
+    let shown_lines = page_lines.len().clamp(1, MAX_LINES_PER_PAGE) as i32;
+    let speaker_h = if has_speaker { 13 } else { 0 };
+    let line_h = 13;
+    let min_h = if has_portrait { 60 } else { 46 };
+    let bh = (12 + speaker_h + shown_lines * line_h).max(min_h).min(78);
+    let by = if at_top { 0 } else { 200 - bh };
+
+    if let Some(rgm_id) = portrait_rgm {
+        let px = if portrait_on_left { 8 } else { 256 };
+        let py = if at_top { 5 } else { (196 - 56).max(by + 2) };
+        blit_atlas_frame_fit(
+            fb,
+            cache,
+            "ui",
+            "rgm",
+            rgm_id as usize,
+            px * s,
+            py * s,
+            56 * s,
+            56 * s,
+            hd,
+        );
+    }
+
+    let mut cur_y = by + 6;
+    if has_speaker {
+        let header = if lang.is_en() {
+            format!("{speaker}:")
+        } else {
+            format!("{speaker}：")
+        };
+        fonts.draw_text_outlined(
+            fb,
+            (text_x - 4).max(6) * s,
+            cur_y * s,
+            &header,
+            font_px,
+            Color::CYAN_SPEAKER,
+            Color::BLACK,
+        );
+        cur_y += speaker_h;
+    }
+
+    for line in page_lines.iter().take(MAX_LINES_PER_PAGE) {
+        let trimmed = line.trim();
+        let line_color = if is_system_notice_text(trimmed, is_unnamed) {
+            Color::GOLD_HI
+        } else {
+            Color::PAPER_TEXT
+        };
+        fonts.draw_text_outlined(
+            fb,
+            text_x * s,
+            cur_y * s,
+            line,
+            font_px,
+            line_color,
+            Color::BLACK,
+        );
+        cur_y += line_h;
+    }
+
+    if let Some(hint) = cursor_hint {
+        let hint_px = (8 * s) as u16;
+        let hint_w = fonts.measure_text(hint, hint_px) / s.max(1);
+        fonts.draw_text_outlined(
+            fb,
+            (text_right - hint_w - 2).max(text_x) * s,
+            (by + bh - 12) * s,
+            hint,
+            hint_px,
+            Color::GOLD_HI,
+            Color::BLACK,
+        );
+    }
+
+    (by, bh)
 }

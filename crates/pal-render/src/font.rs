@@ -271,11 +271,16 @@ impl FontEngine {
         outline: Color,
     ) {
         let d = if px_size >= 24 { 2 } else { 1 };
-        self.draw_text(fb, x + d, y + d, text, px_size, outline);
+        // Full 8-direction pixel stroke so borderless 1995 SDLPAL dialogue & descriptions
+        // stay razor-sharp over bright HD scenes without needing a dark background box.
+        self.draw_text(fb, x - d, y - d, text, px_size, outline);
+        self.draw_text(fb, x, y - d, text, px_size, outline);
+        self.draw_text(fb, x + d, y - d, text, px_size, outline);
         self.draw_text(fb, x - d, y, text, px_size, outline);
         self.draw_text(fb, x + d, y, text, px_size, outline);
-        self.draw_text(fb, x, y - d, text, px_size, outline);
+        self.draw_text(fb, x - d, y + d, text, px_size, outline);
         self.draw_text(fb, x, y + d, text, px_size, outline);
+        self.draw_text(fb, x + d, y + d, text, px_size, outline);
         self.draw_text(fb, x, y, text, px_size, color);
     }
 
