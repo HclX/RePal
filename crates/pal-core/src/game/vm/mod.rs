@@ -573,7 +573,14 @@ impl Game {
                 if *cd > 0 && (!consume || { *cd -= 1; *cd > 0 }) {
                     false
                 } else {
+                    let is_ride = *ride > 0;
                     let finished = self.walk_party_iteration(*gx, *gy, *ride, guard);
+                    // Authentic SDLPAL `PAL_PartyRideEventObject` calls `PAL_GameUpdate(FALSE)`
+                    // every ride step so companion auto-scripts (e.g. Zhang Sige ev#118 rowing
+                    // `s_020d` alongside boat ev#117) move & animate in lockstep with the party.
+                    if is_ride {
+                        self.tick_auto_scripts();
+                    }
                     if !finished {
                         *cd = *interval;
                     }

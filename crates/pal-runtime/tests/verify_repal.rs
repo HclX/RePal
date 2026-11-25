@@ -175,3 +175,115 @@ fn verify_real_repal_archives_playback() {
         );
     }
 }
+
+#[test]
+fn boat_ride_lockstep_and_frames() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let assets_root = workspace_root.join("site/assets");
+    if !assets_root.join("data/scenes.yaml").is_file() {
+        return;
+    }
+
+    let mut rt = boot_runtime_from_dir(&assets_root, true).expect("boot runtime");
+    rt.set_in_title(false);
+    rt.ui.set_view(pal_ui::UiView::None);
+    rt.world.fbp_override = None;
+    service_host(&mut rt, &assets_root);
+
+    // Enter Scene #5 (盛渔村·菜市场与码头), enable Zhang Sige rowing ev#118, and trigger boat ev#117 (`s_1725`).
+    if let Some(g) = rt.game.as_mut() {
+        g.enter_scene(5, false);
+        g.world.party[0].x = 1136;
+        g.world.party[0].y = 1368;
+        if let Some(e118) = g.world.event_mut(118) {
+            e118.state = 2;
+        }
+        let lbl = g.prog.intern("s_1725");
+        if let Some(e117) = g.world.event_mut(117) {
+            e117.trigger = pal_core::script::ScriptPos::new(lbl, 0);
+        }
+    }
+    service_host(&mut rt, &assets_root);
+    if let Some(g) = rt.game.as_mut() {
+        g.trigger_event(117);
+    }
+    service_host(&mut rt, &assets_root);
+
+    let dump_dir = std::env::var("BOAT_DUMP_DIR").ok().map(PathBuf::from);
+    if let Some(d) = &dump_dir {
+        let _ = std::fs::create_dir_all(d);
+    }
+
+    let mut initial_delta: Option<(i32, i32)> = None;
+    let mut observed_ride_steps = 0usize;
+    let mut frames_seen = std::collections::HashSet::new();
+    let mut dumped = 0usize;
+
+    for tick in 0..400 {
+        rt.tick(pal_core::game::TickInput::default());
+        service_host(&mut rt, &assets_root);
+        let (sc, lead_x, lead_y, e117, e118) = {
+            let g = rt.game.as_ref().unwrap();
+            let l = g.world.leader();
+            let a = g.world.event(117).map(|e| (e.x, e.y, e.current_frame));
+            let b = g.world.event(118).map(|e| (e.x, e.y, e.current_frame, !e.auto.is_none()));
+            (g.world.scene_id, l.x, l.y, a, b)
+        };
+        if sc != 5 {
+            break;
+        }
+        if let (Some((x117, y117, _)), Some((x118, y118, f118, has_auto))) = (e117, e118) {
+            if has_auto {
+                let delta = (x117 - x118, y117 - y118);
+                if let Some(d0) = initial_delta {
+                    assert_eq!(
+                        delta, d0,
+                        "tick {tick}: Zhang Sige ev#118 drifted from boat ev#117! delta={delta:?} vs initial {d0:?} (party=({lead_x},{lead_y}), 117=({x117},{y117}), 118=({x118},{y118}))"
+                    );
+                } else {
+                    initial_delta = Some(delta);
+                }
+                observed_ride_steps += 1;
+                frames_seen.insert(f118);
+                if let Some(d) = &dump_dir {
+                    if dumped < 5 && observed_ride_steps % 8 == 1 {
+                        // Pump render assets and draw one frame to PNG
+                        rt.render_frame();
+                        let _ = pal_runtime::disk::pump_render_assets_from_dir(&assets_root, &mut rt.compositor.cache);
+                        rt.render_frame();
+                        let _ = pal_runtime::disk::pump_render_assets_from_dir(&assets_root, &mut rt.compositor.cache);
+                        rt.render_frame();
+                        let fb = &rt.compositor.fb;
+                        let out = d.join(format!("boat_f{dumped}.png"));
+                        let img = image::RgbaImage::from_raw(fb.width, fb.height, fb.pixels.clone())
+                            .expect("rgba image");
+                        img.save(&out).expect("save png");
+                        println!(
+                            "  dumped {} (tick={} party=({},{}) boat117=({},{}) zhang118=({},{}) f={})",
+                            out.display(),
+                            tick,
+                            lead_x,
+                            lead_y,
+                            x117,
+                            y117,
+                            x118,
+                            y118,
+                            f118
+                        );
+                        dumped += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    assert!(
+        observed_ride_steps >= 20,
+        "expected >=20 boat ride steps, got {observed_ride_steps}"
+    );
+    assert!(
+        frames_seen.len() >= 2,
+        "expected Zhang Sige rowing animation frames to advance, saw {:?}",
+        frames_seen
+    );
+}

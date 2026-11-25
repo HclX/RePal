@@ -13,7 +13,8 @@ impl Game {
         let lead = self.world.leader().clone();
         let dx = gx - lead.x;
         let dy = gy - lead.y;
-        if dx.abs() <= 12 && dy.abs() <= 6 {
+        let (snap_dx, snap_dy) = if ride > 0 { (4, 2) } else { (12, 6) };
+        if dx.abs() <= snap_dx && dy.abs() <= snap_dy {
             if ride > 0 {
                 let step_dx = gx - lead.x;
                 let step_dy = gy - lead.y;

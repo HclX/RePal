@@ -549,6 +549,10 @@ impl Game {
                     }
                     self.clear_walk_state(id);
                 }
+                if auto && name == "event_move_pos" {
+                    self.update_caller(caller, ScriptPos::new(cur.label, cur.idx + 1));
+                    return Flow::End(true);
+                }
                 Flow::Next
             }
             "event_set_layer" => {
@@ -585,6 +589,10 @@ impl Game {
                     e.x += ins.s16(1);
                     e.y += ins.s16(2);
                     e.advance_frame(3);
+                }
+                if auto {
+                    self.update_caller(caller, ScriptPos::new(cur.label, cur.idx + 1));
+                    return Flow::End(true);
                 }
                 Flow::Next
             }
