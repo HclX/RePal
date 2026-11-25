@@ -284,6 +284,55 @@ body.touch-pad-shown #mobile-touch-controls {
   display: flex;
 }
 
+/* Force-landscape overlay on mobile portrait */
+#rotate-landscape-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(8, 10, 14, 0.96);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+#rotate-landscape-overlay .rotate-card {
+  max-width: 320px;
+  padding: 24px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(224, 185, 107, 0.45);
+  background: rgba(20, 18, 15, 0.92);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+#rotate-landscape-overlay .rotate-icon {
+  font-size: 42px;
+  line-height: 1;
+}
+
+#rotate-landscape-overlay .rotate-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dos-gold-hi);
+}
+
+#rotate-landscape-overlay .rotate-sub {
+  font-size: 13px;
+  color: rgba(239, 232, 216, 0.8);
+  line-height: 1.5;
+}
+
+@media (hover: none) and (pointer: coarse) and (orientation: portrait) {
+  #rotate-landscape-overlay {
+    display: flex;
+  }
+}
+
 @media (max-width: 900px) and (orientation: portrait) {
   #game-stage {
     align-items: flex-start;

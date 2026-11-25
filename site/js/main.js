@@ -566,21 +566,37 @@ class PalRemakeApp {
       this.core.openBugReportDialog("Toolbar");
     });
 
-    // Wire fullscreen / cinema-fill button (#17)
+    // Wire fullscreen / cinema-fill button (#17) + landscape orientation lock on mobile
+    const enterFullscreenLandscape = () => {
+      const stage = document.getElementById("game-stage") || document.documentElement;
+      const tryLock = () => {
+        try {
+          screen.orientation?.lock?.("landscape")?.catch?.(() => {});
+        } catch {}
+      };
+      if (stage?.requestFullscreen) {
+        stage
+          .requestFullscreen()
+          .then(tryLock)
+          .catch(() => {
+            document.body?.classList?.toggle("pal-cinema-fill");
+            tryLock();
+          });
+      } else {
+        document.body?.classList?.toggle("pal-cinema-fill");
+        tryLock();
+      }
+    };
     const fsBtn = document.getElementById("btn-stage-fullscreen");
     fsBtn?.addEventListener("click", () => {
-      const stage = document.getElementById("game-stage") || document.documentElement;
       if (document.fullscreenElement) {
         document.exitFullscreen?.().catch?.(() => {});
         document.body?.classList?.remove("pal-cinema-fill");
-      } else if (stage?.requestFullscreen) {
-        stage.requestFullscreen().catch?.(() => {
-          document.body?.classList?.toggle("pal-cinema-fill");
-        });
       } else {
-        document.body?.classList?.toggle("pal-cinema-fill");
+        enterFullscreenLandscape();
       }
     });
+    document.getElementById("btn-force-landscape")?.addEventListener("click", enterFullscreenLandscape);
 
     // Classic desktop right-click: step back in menus, otherwise open the root menu.
     // On touch devices, long-pressing the virtual D-Pad or canvas fires `contextmenu` —

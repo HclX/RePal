@@ -59,6 +59,15 @@
     <div id="boot-status">正在初始化静态引擎...</div>
   </div>
 
+  <div id="rotate-landscape-overlay" role="dialog" aria-label="请横屏游玩">
+    <div class="rotate-card">
+      <div class="rotate-icon" aria-hidden="true">📱↻</div>
+      <div class="rotate-title">请将手机横屏游玩</div>
+      <div class="rotate-sub">为获得最佳画质与手柄操作体验，请旋转设备至横屏模式</div>
+      <button id="btn-force-landscape" type="button" class="pal-bug-btn primary">全屏并切换横屏</button>
+    </div>
+  </div>
+
   <main id="game-stage">
     <div class="pal-stage-toolbar">
       <button id="btn-stage-replay" class="pal-stage-fs-btn" title="录像库 / 加载 .repal 录像 (F8)">🎬 录像</button>
@@ -68,6 +77,16 @@
     </div>
     <canvas id="game-canvas" width="1280" height="800"></canvas>
     <div id="mobile-touch-controls" aria-label="触控虚拟手柄">
+      <div class="touch-actions" role="group" aria-label="动作键">
+        <button id="touch-btn-a" type="button" class="touch-action-btn touch-btn-a" aria-label="确认或调查">
+          <span class="touch-btn-key">A</span>
+          <span class="touch-btn-sub">确认</span>
+        </button>
+        <button id="touch-btn-b" type="button" class="touch-action-btn touch-btn-b" aria-label="菜单或取消">
+          <span class="touch-btn-key">B</span>
+          <span class="touch-btn-sub">菜单</span>
+        </button>
+      </div>
       <div id="touch-dpad" class="touch-dpad" role="group" aria-label="方向键">
         <div class="touch-dpad-ring"></div>
         <span class="touch-dpad-arrow touch-dpad-up" data-dir="2">▲</span>
@@ -75,16 +94,6 @@
         <span class="touch-dpad-arrow touch-dpad-left" data-dir="1">◀</span>
         <span class="touch-dpad-arrow touch-dpad-right" data-dir="3">▶</span>
         <div id="touch-dpad-nub" class="touch-dpad-nub"></div>
-      </div>
-      <div class="touch-actions" role="group" aria-label="动作键">
-        <button id="touch-btn-b" type="button" class="touch-action-btn touch-btn-b" aria-label="菜单或取消">
-          <span class="touch-btn-key">B</span>
-          <span class="touch-btn-sub">菜单</span>
-        </button>
-        <button id="touch-btn-a" type="button" class="touch-action-btn touch-btn-a" aria-label="确认或调查">
-          <span class="touch-btn-key">A</span>
-          <span class="touch-btn-sub">确认</span>
-        </button>
       </div>
     </div>
   </main>
