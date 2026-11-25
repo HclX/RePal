@@ -192,6 +192,11 @@ impl DualSynth {
         self.clear_reverb();
     }
 
+    /// Total parsed musical duration in seconds of the currently loaded MIDI track.
+    pub fn duration_sec(&self) -> f64 {
+        self.duration_sec
+    }
+
     /// Load a Standard MIDI File (`MThd`) and begin playback.
     pub fn load_midi(&mut self, midi: &[u8], loop_play: bool) -> bool {
         let Some((events, duration)) = parse_smf(midi) else {

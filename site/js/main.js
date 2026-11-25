@@ -436,13 +436,15 @@ class PalRemakeApp {
     }
     if (e.key === "F2") {
       e.preventDefault();
-      this.hud.toggleHdMode();
+      if (!e.repeat) this.hud.toggleHdMode();
       return;
     }
     if (e.key === "F8") {
       e.preventDefault();
-      if (this.replayTheater?.active) this.replayTheater.takeOver();
-      else this.replayTheater?.openLibrary();
+      if (!e.repeat) {
+        if (this.replayTheater?.active) this.replayTheater.takeOver();
+        else this.replayTheater?.openLibrary();
+      }
       return;
     }
     if (this.replayTheater?.active) {
@@ -452,30 +454,30 @@ class PalRemakeApp {
         return;
       }
       e.preventDefault();
-      if (e.key === "Escape") this.replayTheater.openReplayMenu();
-      else if (e.key === "Tab") this.replayTheater.openChapters();
-      else if (e.key === " ") this.replayTheater.togglePlayPause();
+      if (e.key === "Escape") { if (!e.repeat) this.replayTheater.openReplayMenu(); }
+      else if (e.key === "Tab") { if (!e.repeat) this.replayTheater.openChapters(); }
+      else if (e.key === " ") { if (!e.repeat) this.replayTheater.togglePlayPause(); }
       else if (e.key === "+" || e.key === "=") this.replayTheater.speedUp();
       else if (e.key === "-") this.replayTheater.speedDown();
       else if (e.key === "[") this.replayTheater.prevSegment();
       else if (e.key === "]") this.replayTheater.nextSegment();
-      else if (e.key === "F7") this.replayTheater.toggleThoughts();
-      else if (e.key === "F10") this.hud.takeScreenshot();
+      else if (e.key === "F7") { if (!e.repeat) this.replayTheater.toggleThoughts(); }
+      else if (e.key === "F10") { if (!e.repeat) this.hud.takeScreenshot(); }
       return;
     }
     if (e.key === "F7") {
       e.preventDefault();
-      this.replayTheater?.toggleThoughts();
+      if (!e.repeat) this.replayTheater?.toggleThoughts();
       return;
     }
     if (e.key === "F10") {
       e.preventDefault();
-      this.hud.takeScreenshot();
+      if (!e.repeat) this.hud.takeScreenshot();
       return;
     }
     if (e.key === "F9") {
       e.preventDefault();
-      this.core.openBugReportDialog("F9");
+      if (!e.repeat) this.core.openBugReportDialog("F9");
       return;
     }
     if (this.renderer.activeRngFrameImg && (e.key === "Escape" || e.key === " " || e.key === "Enter" || e.code === "NumpadEnter" || isStandaloneLeftCtrl)) {
@@ -491,7 +493,7 @@ class PalRemakeApp {
     }
     if (e.key === "Escape" || e.code === "Insert" || e.code === "Numpad0" || isStandaloneAlt) {
       e.preventDefault();
-      if (!this.coreBusy()) {
+      if (!e.repeat && !this.coreBusy()) {
         this.keysDown.clear();
         this.core.toggleRootMenu(true);
       }
@@ -499,10 +501,25 @@ class PalRemakeApp {
     }
     if (e.key === " " || e.key === "Enter" || e.code === "NumpadEnter" || e.code === "KeyZ" || isStandaloneLeftCtrl) {
       e.preventDefault();
-      this.core.queueInteract();
+      if (!e.repeat) this.core.queueInteract();
       return;
     }
-    this.keysDown.add((e.code || e.key || "").toLowerCase());
+    const keyLower = (e.code || e.key || "").toLowerCase();
+    if (
+      keyLower === "arrowup" ||
+      keyLower === "arrowdown" ||
+      keyLower === "arrowleft" ||
+      keyLower === "arrowright" ||
+      keyLower === "numpad2" ||
+      keyLower === "numpad4" ||
+      keyLower === "numpad6" ||
+      keyLower === "numpad8"
+    ) {
+      e.preventDefault();
+    }
+    if (!e.repeat) {
+      this.keysDown.add(keyLower);
+    }
   }
 
   wireInputs() {
