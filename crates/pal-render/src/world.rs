@@ -721,6 +721,27 @@ pub fn render_world(
                 hd_fully_covered = true;
             }
 
+            // Render GOP ground tiles underneath HD rooms whenever any part of the viewport
+            // extends past `maps_hd` room bounds (or rooms have transparent edge cutouts, e.g.
+            // Map 2 boat ride to Fairy Island past x=1432) so no black bars ever appear.
+            let any_room_ready = visible_rooms
+                .iter()
+                .any(|(rkey, _, _, _, _)| cache.get_texture(rkey).is_some());
+            if any_room_ready || visible_rooms.is_empty() {
+                render_gop_tiles(
+                    fb,
+                    cache,
+                    map_id,
+                    &gop_base,
+                    view_x,
+                    view_y,
+                    scale,
+                    hd,
+                    &mut depth_queue,
+                    false,
+                );
+            }
+
             // Blit all ready HD ground chunks at exact 1:1 4x integer pixels (0px seam tearing!)
             for (rkey, rx, ry, rw, rh) in &visible_rooms {
                 if let Some(tex) = cache.get_texture(rkey) {
