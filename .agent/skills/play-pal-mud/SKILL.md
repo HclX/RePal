@@ -37,7 +37,24 @@ In a release archive, `./repal` (or `repal.exe`) is prebuilt — no build step r
   - Export AI thought subtitles from a `.repal` replay: `./repal --replay-export-srt in.repal out.srt`
   - Render a `.repal` replay directly to MP4/GIF/PNG sequence: `./repal --replay-export-video in.repal out.mp4 [--hd|--retro] [--stride N] [--with-thought] [--start-tick N] [--end-tick M]`
 - **Language flags**: `--lang hans` (default), `--lang hant`, `--lang en`.
-- **Human Takeover in GUI+Text Mode**: Pressing `Esc` in the desktop window immediately cancels any in-flight AI task (`interrupted_by: "human"`) and returns control to the human player. Pressing `F7` toggles the 4× HD AI thought subtitle bar.
+- **Human Takeover in GUI+Text / Web Mode**: Pressing `Esc` immediately cancels any in-flight AI task (`interrupted_by: "human"`) and returns control to the human player. Pressing `F7` toggles the 4× HD AI thought subtitle bar.
+
+### Playing the Web Version (Browser / GitHub Pages)
+The static Web build (`site/` / GitHub Pages) embeds the **exact same Rust `TextEngine`** inside `pal.wasm` and supports two zero-backend ways to connect:
+1. **In-Page JS API (`window.repalAgent`)** — for browser-capable AI agents (Playwright, Puppeteer, Chrome DevTools MCP):
+   ```js
+   window.repalAgent.setObs("fair");          // "fair" (default) | "debug"
+   window.repalAgent.setMinimap("auto");      // "auto" | "always" | "off"
+   const init = window.repalAgent.greeting(); // initial look JSON
+   const r1 = await window.repalAgent.send("new");
+   const r2 = await window.repalAgent.send("continue");
+   const r3 = await window.repalAgent.send("look");
+   ```
+   Every `send(cmd)` resolves to the exact same JSON schema as `repal --text --json` (disk-only commands like `capture`, `golden`, `save`, `load`, `bugreport` return an error in WASM).
+2. **Outbound WebSocket Bridge (`?agent_ws=...` or `☰ → 🤖 连接 Agent`)** — for external CLI/remote AI agents:
+   - Host a WebSocket server (e.g., `ws://127.0.0.1:9999` locally, or `wss://...` via `cloudflared` / `tailscale funnel` / TLS proxy when connecting from HTTPS GitHub Pages to a remote/LAN/mobile browser).
+   - Open `https://<pages-url>/?agent_ws=ws://127.0.0.1:9999` (or click **`☰ → 🤖 连接 Agent`** in the top-right toolbar and paste the URL).
+   - On connect, the browser immediately sends the initial `look` greeting JSON line (`\n`-delimited); send one Text Mode command per line and read the matching JSON reply line (`resp["cmd"] == sent_cmd`).
 
 ### Stateful Multi-Turn Play Pattern (One-Shot Shell Calls)
 In one-shot stdio/batch invocations, each shell call starts a fresh process — end each batch with `save .tmp/agent_play.json` and `quit`, then resume with `--save .tmp/agent_play.json`. (When connected to a running `--listen` TCP server, state stays live in memory across client connections.)
