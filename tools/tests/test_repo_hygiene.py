@@ -95,6 +95,8 @@ def test_no_obsolete_single_scene_bake_script():
 
 
 def test_shared_headless_harness_suite():
+    if not (ROOT / "site" / "assets" / "data" / "scenes.yaml").is_file():
+        return
     bundled_node = ROOT / ".tools" / "node" / "bin" / "node"
     node_bin = (
         str(bundled_node)

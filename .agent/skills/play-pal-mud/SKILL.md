@@ -86,7 +86,7 @@ In explore mode, open the full RPG menu with `menu` (or `m`). Both headless and 
 | `menu` | `m` | Open the main menu (`Status`, `Magic`, `Items -> Use / Equip`, `System -> Save / Load`, `Remake`). |
 | `ui up` / `ui down` | `key up/down`, `up`, `down` | Move menu cursor up/down (or select Bagua Up=Attack / Down=Misc in battle). |
 | `ui left` / `ui right` | `key left/right`, `left`, `right` | Move cursor left/right (vertical menus: prev/next; Status: cycle party members; Save/Load: flip pages; Battle: Bagua Left=Magic / Right=Coop). |
-| `ui pgup` / `ui pgdn` / `ui home` / `ui end` | `key pgup/pgdn/home/end` | Page up/down (7 rows) or jump to start/end in Item & Magic lists. |
+| `ui pgup` / `ui pgdn` / `ui home` / `ui end` | `key pgup` / `pgdn` / `home` / `end` | Page up/down (7 rows) or jump to start/end in Item & Magic lists. |
 | `ui ok` | `key confirm`, `confirm`, `enter`, `ctrl` | Confirm highlighted menu / shop / battle option. |
 | `ui back` | `key cancel`, `back`, `cancel`, `esc`, `ins`, `close` | Go back one menu level (or close menu from Root). |
 

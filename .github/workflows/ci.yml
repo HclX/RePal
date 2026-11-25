@@ -81,7 +81,6 @@ jobs:
 
       - name: Run offline JS & Python hygiene suites
         run: |
-          node tools/tests/test_host.mjs
           node tools/tests/test_pack_manager.mjs
           python3 -m pytest tools/tests/test_repo_hygiene.py -v
 
@@ -91,6 +90,7 @@ jobs:
             echo "Assets not present; skipping asset-dependent JS/Python suites."
             exit 0
           fi
+          node tools/tests/test_host.mjs
           node tools/tests/test_headless_harness.mjs
           node tools/test_rust_core_host.mjs
           python3 tools/audit_script_parity.py
