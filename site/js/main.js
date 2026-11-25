@@ -582,10 +582,30 @@ class PalRemakeApp {
       }
     });
 
-    // Classic right-click: step back in menus, otherwise open the root menu.
+    // Classic desktop right-click: step back in menus, otherwise open the root menu.
+    // On touch devices, long-pressing the virtual D-Pad or canvas fires `contextmenu` —
+    // suppress the browser menu but NEVER open the in-game menu from a touch long-press
+    // (touch devices use the B button or two-finger tap instead).
+    let lastTouchTime = 0;
+    window.addEventListener(
+      "touchstart",
+      () => {
+        lastTouchTime = Date.now();
+      },
+      { passive: true, capture: true }
+    );
     document.getElementById("game-stage")?.addEventListener("contextmenu", (e) => {
       if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
       e.preventDefault();
+      if (
+        e.pointerType === "touch" ||
+        e.pointerType === "pen" ||
+        this.touchDpadPointerId != null ||
+        e.target?.closest?.("#mobile-touch-controls") ||
+        Date.now() - lastTouchTime < 1500
+      ) {
+        return;
+      }
       if (this.uiActive()) this.core.uiKey("Escape");
       else if (!this.coreBusy()) this.core.toggleRootMenu(true);
     });
@@ -682,6 +702,12 @@ class PalRemakeApp {
         this._releaseTouchDpad();
         try { localStorage.setItem(TOUCH_PREF_KEY, "0"); } catch {}
       }
+    });
+
+    const touchRoot = document.getElementById("mobile-touch-controls");
+    touchRoot?.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
     });
 
     const dpad = document.getElementById("touch-dpad");

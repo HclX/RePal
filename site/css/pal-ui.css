@@ -251,6 +251,10 @@ body.pal-cinema-fill #game-canvas {
   padding: 12px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   align-items: flex-end;
   justify-content: space-between;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
 }
 
 @media (hover: none) and (pointer: coarse), (max-width: 900px) {
