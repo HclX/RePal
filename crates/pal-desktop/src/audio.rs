@@ -208,6 +208,7 @@ impl NativeAudio {
         false
     }
 
+    #[allow(dead_code)]
     pub fn play_music(&mut self, track_id: i32, looped: bool) {
         self.play_music_vfs(track_id, looped, None);
     }
@@ -224,6 +225,7 @@ impl NativeAudio {
             return Some(entry.clone());
         }
         let mut vfs_opt = vfs;
+        let has_vfs = vfs_opt.is_some();
         for ext in ["mp3", "ogg"] {
             let key = format!("audio/bgm_hd/mus_{:03}.{ext}", track_id);
             let raw = if let Some(v) = vfs_opt.as_deref_mut() {
@@ -247,7 +249,11 @@ impl NativeAudio {
                 return Some((sr, al, ar));
             }
         }
-        self.hd_bgm_missing.insert(track_id);
+        // Only permanently mark missing for loose-file mode; in VFS pack mode a chapter pack
+        // containing this track may be mounted moments later by `ensure_scene_packs`.
+        if !has_vfs {
+            self.hd_bgm_missing.insert(track_id);
+        }
         None
     }
 

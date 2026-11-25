@@ -620,15 +620,17 @@ export class PackManager {
     if (!desc) throw new Error(`Unknown pack '${packId}'`);
 
     let source = await this.storage.getPackBlob(desc.file);
-    if (source && desc.sha256) {
-      const actual = await sha256SourceHex(source, this.wasmExports, this.wasmMemory);
-      if (actual.toLowerCase() !== desc.sha256.toLowerCase()) {
+    let fromCache = Boolean(source);
+    if (source && desc.size) {
+      const sz = source instanceof Uint8Array ? source.byteLength : source.size;
+      if (sz !== desc.size) {
         await this.storage.deletePack(desc.file);
         source = null;
+        fromCache = false;
       }
     }
 
-    if (!source) {
+    const downloadFresh = async () => {
       const rawUrls = Array.isArray(desc.urls) && desc.urls.length ? desc.urls : [desc.file];
       const urls = rawUrls.map((u) => resolvePackUrl(this.manifestUrl, u)).filter(Boolean);
       let saw404 = false;
@@ -654,22 +656,23 @@ export class PackManager {
             }
           }
           try {
-            source = await this.storage.putPackBytes(desc.file, bytes);
-          } catch (quotaErr) {
+            return await this.storage.putPackBytes(desc.file, bytes);
+          } catch {
             // QuotaExceededError fallback: keep in memory for this session
-            source = bytes;
+            return bytes;
           }
-          break;
         } catch (e) {
           errs.push(`${url}: ${e?.message || e}`);
         }
       }
-      if (!source) {
-        if (saw404 && typeof this.onManifestStale === "function") {
-          this.onManifestStale(packId);
-        }
-        throw new Error(`Failed to fetch pack '${packId}': ${errs.join("; ")}`);
+      if (saw404 && typeof this.onManifestStale === "function") {
+        this.onManifestStale(packId);
       }
+      throw new Error(`Failed to fetch pack '${packId}': ${errs.join("; ")}`);
+    };
+
+    if (!source) {
+      source = await downloadFresh();
     }
 
     let contentKey = null;
@@ -680,7 +683,18 @@ export class PackManager {
       contentKey = await unwrapPackKey(this.masterKeyBytes, packId, desc.wrapped_key);
     }
 
-    const reader = await RpkPackReader.open(packId, source, contentKey);
+    let reader;
+    try {
+      reader = await RpkPackReader.open(packId, source, contentKey);
+    } catch (openErr) {
+      if (fromCache) {
+        await this.storage.deletePack(desc.file);
+        source = await downloadFresh();
+        reader = await RpkPackReader.open(packId, source, contentKey);
+      } else {
+        throw openErr;
+      }
+    }
     this.mounted.set(packId, reader);
     for (const k of reader.keys()) {
       this.mountedKeys.set(k, packId);
@@ -700,6 +714,49 @@ export class PackManager {
       if (mp) ids.add(mp);
     }
     await Promise.all(Array.from(ids).map((pid) => this.ensurePack(pid)));
+    this.prefetchAdjacent(sceneId);
+  }
+
+  /** Low-priority background prefetch of adjacent scenes (`manifest.prefetch[sceneId]`). */
+  prefetchAdjacent(sceneId) {
+    const adj = this.manifest?.prefetch?.[String(sceneId)];
+    if (!Array.isArray(adj) || !adj.length) return;
+    this._enqueueBackgroundPrefetch(adj);
+  }
+
+  /** Quietly warm `shared` and starting scene packs while the player is on the Title Screen. */
+  prefetchBootWarmup() {
+    if (!this.manifest) return;
+    const ids = [
+      ...(this.manifest.shared || []),
+      ...(this.manifest.scenes?.["1"] || []),
+    ];
+    this._enqueueBackgroundPrefetch(ids);
+  }
+
+  _enqueueBackgroundPrefetch(packIds) {
+    if (!this._prefetchQueue) this._prefetchQueue = [];
+    for (const pid of packIds) {
+      if (!pid || this.mounted.has(pid) || this._inFlight.has(pid)) continue;
+      if (!this._prefetchQueue.includes(pid)) this._prefetchQueue.push(pid);
+    }
+    if (this._prefetchRunning) return;
+    this._prefetchRunning = true;
+    (async () => {
+      try {
+        while (this._prefetchQueue.length > 0) {
+          const pid = this._prefetchQueue.shift();
+          if (!pid || this.mounted.has(pid)) continue;
+          try {
+            await this.ensurePack(pid);
+          } catch {
+            // Non-fatal background prefetch
+          }
+        }
+      } finally {
+        this._prefetchRunning = false;
+      }
+    })();
   }
 
   async ensureRngPack(rngId) {

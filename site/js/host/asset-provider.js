@@ -81,7 +81,7 @@ export function withCodeVersion(url) {
 }
 
 export class WasmAssetProvider {
-  constructor(wasmExports, wasmMemory, baseUrl = resolveAssetBaseUrl(), maxConcurrent = 6) {
+  constructor(wasmExports, wasmMemory, baseUrl = resolveAssetBaseUrl(), maxConcurrent = 12) {
     this.w = wasmExports;
     this.mem = wasmMemory;
     this.baseUrl = baseUrl;
@@ -132,6 +132,56 @@ export class WasmAssetProvider {
     const p = this._fetchAndUpload(1, key, tag);
     this.inFlight.set(tag, p);
     return p;
+  }
+
+  /**
+   * Preload a scene's essential visual textures (HD map meta + chunks, GOP tiles, active MGO
+   * sprites) BEFORE `HostReply::SceneLoaded` unblocks core simulation so Frame 0 never renders
+   * a black void while the player is already moving/talking.
+   */
+  async preloadSceneVisuals(mapId, spriteIds = [], hdMode = true) {
+    if (!this.w || typeof createImageBitmap !== "function") return;
+    const tasks = [];
+    const suffix = hdMode ? "4x" : "1x";
+    if (mapId > 0) {
+      const pad = String(mapId).padStart(3, "0");
+      tasks.push(this._fetchAndUpload(2, `graphics/gop/gop_${pad}.json`, `2:graphics/gop/gop_${pad}.json`));
+      tasks.push(this.prefetchTexture(`graphics/gop/gop_${pad}_1x.webp`));
+      if (hdMode) {
+        const metaKey = `graphics/maps_hd/map_${pad}/meta.json`;
+        tasks.push(
+          (async () => {
+            try {
+              let bytes = this.packManager ? await this.packManager.readBytes(metaKey) : null;
+              if (!bytes && !this.packManager) {
+                const resp = await fetch(withAssetVersion(`${this.baseUrl}/${metaKey}`));
+                if (resp.ok) bytes = new Uint8Array(await resp.arrayBuffer());
+              }
+              if (!bytes) return;
+              const keyLen = this._writeKey(metaKey);
+              const jsonLen = this._writeScratch(bytes);
+              this.w.wasm_upload_hd_map_json?.(keyLen, jsonLen);
+              const meta = JSON.parse(textDecoder.decode(bytes));
+              const chunks = Array.isArray(meta?.chunks) ? meta.chunks : [];
+              await Promise.all(
+                chunks.map((c) => {
+                  const file = c?.file || c?.path;
+                  return file ? this.prefetchTexture(`graphics/maps_hd/map_${pad}/${file}`) : null;
+                })
+              );
+            } catch {
+              // Fall back cleanly to GOP tiles if map has no HD pack
+            }
+          })()
+        );
+      }
+    }
+    const uniq = Array.from(new Set(spriteIds)).filter((id) => id > 0);
+    for (const id of uniq) {
+      const pad = String(id).padStart(3, "0");
+      tasks.push(this.prefetchTexture(`graphics/mgo/mgo_${pad}_${suffix}.webp`));
+    }
+    await Promise.allSettled(tasks);
   }
 
   _writeKey(key) {

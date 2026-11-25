@@ -105,6 +105,7 @@ class PalRemakeApp {
 
       this.renderer = new WasmRendererAdapter(this.canvas, this.wasm);
       this.audio = new AudioManager(this.wasm);
+      this.audio.installGestureUnlock();
       this.hud = new WasmHudAdapter({ wasm: this.wasm, renderer: this.renderer, audio: this.audio });
 
       // Option A (#237): prefer local loose `./assets/` in dev; otherwise mount encrypted `.rpk` packs.
@@ -121,6 +122,7 @@ class PalRemakeApp {
       this.hud.refreshSaveSlotSummaries();
       this.hud.showTitleScreen();
       this.audio.playMusic(4, true); // 《云谷鹤峰》原版标题曲 (MAINMENU_MUSIC = 4)
+      this.packManager?.prefetchBootWarmup?.();
 
       this.wireHud();
       this.gamepad = new GamepadController(this);

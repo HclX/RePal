@@ -46,11 +46,13 @@ export class AudioManager {
         window.removeEventListener("pointerdown", onGesture, true);
         window.removeEventListener("keydown", onGesture, true);
         window.removeEventListener("touchstart", onGesture, true);
+        window.removeEventListener("click", onGesture, true);
       }
     };
     window.addEventListener("pointerdown", onGesture, true);
     window.addEventListener("keydown", onGesture, true);
     window.addEventListener("touchstart", onGesture, true);
+    window.addEventListener("click", onGesture, true);
   }
 
   ensureContext() {
@@ -116,7 +118,7 @@ export class AudioManager {
     if (this.pendingTrack && this.ctx) {
       const { trackId, loop } = this.pendingTrack;
       this.pendingTrack = null;
-      this.playMusic(trackId, loop);
+      this.playMusic(trackId, loop, true);
     }
   }
 
@@ -192,7 +194,11 @@ export class AudioManager {
     }
     if (this.ctx.state === "running") {
       this.unlocked = true;
-      this._flushPendingTrack();
+      if (this.pendingTrack) {
+        this._flushPendingTrack();
+      } else if (this.currentTrackId > 0 && !this.hdBgmActive && this.hdMode) {
+        this.playMusic(this.currentTrackId, this.currentLoop, true);
+      }
       return true;
     }
     return false;
@@ -249,7 +255,11 @@ export class AudioManager {
         // Try next format or fall back to DualSynth MIDI
       }
     }
-    this.hdBgmMissing.add(id);
+    // Only cache permanent missing for loose-file mode; in pack mode the track's chapter `.rpk`
+    // may be mounted moments later by `ensureScenePacks`.
+    if (!this.packManager) {
+      this.hdBgmMissing.add(id);
+    }
     return null;
   }
 
@@ -313,8 +323,16 @@ export class AudioManager {
     if (!force && id === this.currentTrackId && loop === this.currentLoop && this.ctx) {
       return;
     }
-    if (!this.ctx) {
+    if (!this.ctx || this.ctx.state === "suspended") {
       this.pendingTrack = { trackId: id, loop };
+      if (this.ctx) {
+        this.ctx.resume().then(() => {
+          if (this.ctx?.state === "running") {
+            this.unlocked = true;
+            this._flushPendingTrack();
+          }
+        }).catch(() => {});
+      }
       return;
     }
     this.currentTrackId = id;

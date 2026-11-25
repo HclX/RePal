@@ -248,12 +248,15 @@ impl PackFetcher {
             return Err(format!("no download URLs resolved for pack '{pack_id}'"));
         }
 
+        static NEXT_TMP_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
         let mut errors = Vec::new();
         for (idx, url) in urls.iter().enumerate() {
+            let seq = NEXT_TMP_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             let tmp_path = self.cache_dir.join(format!(
-                "{}.downloading.{}.{}",
+                "{}.downloading.{}.{}.{}",
                 desc.file,
                 std::process::id(),
+                seq,
                 idx
             ));
             let _ = fs::remove_file(&tmp_path);
@@ -301,6 +304,38 @@ impl PackFetcher {
             self.ensure_pack(&pid)?;
         }
         Ok(())
+    }
+
+    /// Fire-and-forget background prefetch of adjacent scenes (`manifest.prefetch[scene_id]`)
+    /// so walking into the next room/map hits warm local cache with zero network wait.
+    pub fn prefetch_adjacent_async(&self, scene_id: u16) {
+        let key = scene_id.to_string();
+        let Some(adj) = self.manifest.prefetch.get(&key) else {
+            return;
+        };
+        let mut to_fetch = Vec::new();
+        for pid in adj {
+            if let Some(desc) = self.manifest.packs.get(pid) {
+                let p = self.cache_dir.join(&desc.file);
+                let cached = p.is_file()
+                    && (desc.size == 0
+                        || fs::metadata(&p).map(|m| m.len() == desc.size).unwrap_or(false));
+                if !cached {
+                    to_fetch.push(pid.clone());
+                }
+            }
+        }
+        if to_fetch.is_empty() {
+            return;
+        }
+        let fetcher = self.clone();
+        let _ = std::thread::Builder::new()
+            .name(format!("repal-prefetch-{scene_id}"))
+            .spawn(move || {
+                for pid in to_fetch {
+                    let _ = fetcher.ensure_pack(&pid);
+                }
+            });
     }
 
     /// Ensure the pack for `rng_id` is cached locally.

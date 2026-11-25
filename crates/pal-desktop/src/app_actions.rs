@@ -332,6 +332,7 @@ impl DesktopApp {
                         {
                             eprintln!("[repal] on-demand pack fetch warning (scene {scene_id}): {e}");
                         }
+                        fetcher.prefetch_adjacent_async(scene_id);
                     }
                     if let Some(g) = rt.game.as_mut() {
                         load_scene_assets_from_vfs(&mut self.vfs, g, map_id);

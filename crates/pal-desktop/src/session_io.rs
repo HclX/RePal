@@ -369,7 +369,7 @@ impl DesktopApp {
         self.core_replay = None;
         self.rng_play = None;
         if let Some(audio) = self.audio.as_mut() {
-            audio.play_music(4, true);
+            audio.play_music_vfs(4, true, Some(&mut self.vfs));
         }
         if let Some(rt) = self.rt.as_mut() {
             rt.ui.replay_mode = false;

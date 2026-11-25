@@ -353,8 +353,22 @@ export class RustCoreHost {
       case "sfx":
         app.audio.playSfx(cmd.id);
         break;
-      case "load_scene":
+      case "load_scene": {
         app.renderer?.presenter?.assets?.cancelScenePending?.();
+        let loadingEl = null;
+        const showTimer = setTimeout(() => {
+          if (typeof document === "undefined") return;
+          loadingEl = document.getElementById("repal-scene-loading");
+          if (!loadingEl) {
+            loadingEl = document.createElement("div");
+            loadingEl.id = "repal-scene-loading";
+            loadingEl.style.cssText =
+              "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:45;padding:7px 16px;border-radius:999px;background:rgba(10,18,26,0.88);border:1px solid rgba(200,164,88,0.65);color:#f2e8d0;font-size:13px;letter-spacing:0.5px;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,0.5);font-family:'Noto Serif SC',system-ui,sans-serif;";
+            loadingEl.textContent = "正在载入场景…";
+            document.body?.appendChild(loadingEl);
+          }
+          loadingEl.style.display = "block";
+        }, 220);
         try {
           if (app.packManager) {
             await app.packManager.ensureScenePacks(cmd.scene ?? 0, cmd.map > 0 ? cmd.map : null);
@@ -363,11 +377,15 @@ export class RustCoreHost {
         } catch (err) {
           console.warn("[RustCoreHost] loadSceneAssets failed:", cmd.map, err);
         } finally {
+          clearTimeout(showTimer);
+          const el = loadingEl || (typeof document !== "undefined" ? document.getElementById("repal-scene-loading") : null);
+          if (el) el.style.display = "none";
           if (gen === (this._sessionGen || 0)) {
             this.w.core_reply(REPLY.sceneLoaded, 0);
           }
         }
         break;
+      }
       case "load_chapter":
         if (gen === (this._sessionGen || 0)) {
           this.w.core_reply(REPLY.done, 0); // all chapters are preloaded at boot
@@ -417,14 +435,15 @@ export class RustCoreHost {
     }
     const n = this.w.core_scene_sprite_ids();
     const ids = Array.from(new Uint16Array(this._buf(n * 2).slice().buffer));
-    await Promise.all(
-      ids.map(async (id) => {
+    await Promise.all([
+      ...ids.map(async (id) => {
         const atlas = await r.ensureAtlas("mgo", `mgo_${String(id).padStart(3, "0")}`);
         if (gen !== (this._sessionGen || 0)) return;
         const frames = atlas?.meta?.frames?.length || 0;
         if (frames > 0) this.w.core_set_sprite_frames(id, frames);
-      })
-    );
+      }),
+      r.presenter?.assets?.preloadSceneVisuals?.(mapId, ids, r.hdMode !== false),
+    ]);
   }
 
   // ---- save files & diagnostics -----------------------------------------------------------
