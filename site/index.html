@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta
     http-equiv="Content-Security-Policy"
     content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; worker-src 'self' blob:; media-src 'self' blob: data:; object-src 'none'; base-uri 'self';"
@@ -11,7 +13,7 @@
   <meta name="theme-color" content="#142026" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
-  <link rel="stylesheet" href="./css/pal-ui.css?v=rust_core_v11" />
+  <link rel="stylesheet" href="./css/pal-ui.css?v=rust_core_v12" />
   <style>
     #boot-loading {
       position: fixed;
@@ -59,10 +61,32 @@
 
   <main id="game-stage">
     <div class="pal-stage-toolbar">
+      <button id="btn-stage-replay" class="pal-stage-fs-btn" title="录像库 / 加载 .repal 录像 (F8)">🎬 录像</button>
+      <button id="btn-stage-touchpad" class="pal-stage-fs-btn pal-touch-only" title="显示/隐藏虚拟手柄">🎮 手柄</button>
       <button id="btn-stage-bug" class="pal-stage-fs-btn" title="反馈 Bug (F9)">🐞 反馈</button>
       <button id="btn-stage-fullscreen" class="pal-stage-fs-btn" title="切换全屏">⛶ 全屏</button>
     </div>
     <canvas id="game-canvas" width="1280" height="800"></canvas>
+    <div id="mobile-touch-controls" aria-label="触控虚拟手柄">
+      <div id="touch-dpad" class="touch-dpad" role="group" aria-label="方向键">
+        <div class="touch-dpad-ring"></div>
+        <span class="touch-dpad-arrow touch-dpad-up" data-dir="2">▲</span>
+        <span class="touch-dpad-arrow touch-dpad-down" data-dir="0">▼</span>
+        <span class="touch-dpad-arrow touch-dpad-left" data-dir="1">◀</span>
+        <span class="touch-dpad-arrow touch-dpad-right" data-dir="3">▶</span>
+        <div id="touch-dpad-nub" class="touch-dpad-nub"></div>
+      </div>
+      <div class="touch-actions" role="group" aria-label="动作键">
+        <button id="touch-btn-b" type="button" class="touch-action-btn touch-btn-b" aria-label="菜单或取消">
+          <span class="touch-btn-key">B</span>
+          <span class="touch-btn-sub">菜单</span>
+        </button>
+        <button id="touch-btn-a" type="button" class="touch-action-btn touch-btn-a" aria-label="确认或调查">
+          <span class="touch-btn-key">A</span>
+          <span class="touch-btn-sub">确认</span>
+        </button>
+      </div>
+    </div>
   </main>
 
   <dialog id="bug-report-dialog" class="pal-bug-dialog">
@@ -94,6 +118,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="./js/main.js?v=rust_core_v11"></script>
+  <script type="module" src="./js/main.js?v=rust_core_v12"></script>
 </body>
 </html>

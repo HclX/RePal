@@ -79,6 +79,9 @@ class PalRemakeApp {
     this.loadingBar = document.getElementById("boot-bar-fill");
     this.loadingText = document.getElementById("boot-status");
     this.keysDown = new Set();
+    this.touchDir = -1;
+    this.touchDpadPointerId = null;
+    this.touchUiRepeatTimer = null;
     this.pointerDragActive = false;
     this.pointerClientPos = { x: 0, y: 0 };
     this.inTitle = true;
@@ -384,6 +387,7 @@ class PalRemakeApp {
 
   /** Classic DOS PAL diagonal mapping: Down/Num2=SW(0), Left/Num4=NW(1), Up/Num8=NE(2), Right/Num6=SE(3) (#274). */
   getHeldDirection() {
+    if (this.touchDir >= 0) return this.touchDir;
     const gpDir = this.gamepad?.getHeldDirection?.() ?? -1;
     if (gpDir >= 0) return gpDir;
     const k = this.keysDown;
@@ -510,6 +514,7 @@ class PalRemakeApp {
     // Never leave movement keys or a pointer drag stuck when focus is lost (#41, #12).
     const release = () => {
       this.keysDown.clear();
+      this._releaseTouchDpad();
       this.pointerDragActive = false;
       this.activePointerId = null;
     };
@@ -527,6 +532,16 @@ class PalRemakeApp {
       }
     });
     document.addEventListener?.("visibilitychange", () => document.hidden && release());
+
+    // Wire visible Web Replay Library / `.repal` loader button (#2)
+    const replayBtn = document.getElementById("btn-stage-replay");
+    replayBtn?.addEventListener("click", () => {
+      if (this.replayTheater?.active) this.replayTheater.openReplayMenu();
+      else this.replayTheater?.openLibrary();
+    });
+
+    // Wire mobile virtual touch controls & toggle (#1)
+    this._wireMobileTouchControls();
 
     // Wire in-game bug report toolbar button (F9 shortcut)
     const bugBtn = document.getElementById("btn-stage-bug");
@@ -613,6 +628,144 @@ class PalRemakeApp {
         this.core.queueClick(worldX, worldY);
       }
     });
+  }
+
+  _releaseTouchDpad() {
+    this.touchDir = -1;
+    this.touchDpadPointerId = null;
+    if (this.touchUiRepeatTimer) {
+      clearInterval(this.touchUiRepeatTimer);
+      this.touchUiRepeatTimer = null;
+    }
+    const nub = document.getElementById("touch-dpad-nub");
+    if (nub) nub.style.transform = "";
+    document.querySelectorAll?.(".touch-dpad-arrow.active")?.forEach?.((el) => el.classList.remove("active"));
+  }
+
+  _wireMobileTouchControls() {
+    const TOUCH_PREF_KEY = "repal_touch_pad_v1";
+    const toggleBtn = document.getElementById("btn-stage-touchpad");
+    const isCoarse = typeof window !== "undefined" && window.matchMedia?.("(hover: none) and (pointer: coarse)")?.matches;
+    try {
+      const saved = localStorage.getItem(TOUCH_PREF_KEY);
+      if (saved === "0") document.body?.classList?.add("touch-pad-hidden");
+      else if (saved === "1") document.body?.classList?.add("touch-pad-shown");
+    } catch {}
+    toggleBtn?.addEventListener("click", () => {
+      const currentlyHidden =
+        document.body.classList.contains("touch-pad-hidden") ||
+        (!isCoarse && !document.body.classList.contains("touch-pad-shown"));
+      if (currentlyHidden) {
+        document.body.classList.remove("touch-pad-hidden");
+        document.body.classList.add("touch-pad-shown");
+        try { localStorage.setItem(TOUCH_PREF_KEY, "1"); } catch {}
+      } else {
+        document.body.classList.remove("touch-pad-shown");
+        document.body.classList.add("touch-pad-hidden");
+        this._releaseTouchDpad();
+        try { localStorage.setItem(TOUCH_PREF_KEY, "0"); } catch {}
+      }
+    });
+
+    const dpad = document.getElementById("touch-dpad");
+    const nub = document.getElementById("touch-dpad-nub");
+    const dirToKey = ["ArrowDown", "ArrowLeft", "ArrowUp", "ArrowRight"];
+
+    const updateDpadFromClient = (clientX, clientY, isFreshPress) => {
+      if (!dpad) return;
+      const rect = dpad.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = clientX - cx;
+      const dy = clientY - cy;
+      const dist = Math.hypot(dx, dy);
+      const maxR = rect.width * 0.34;
+      if (nub) {
+        const clamped = Math.min(dist, maxR);
+        const angle = Math.atan2(dy, dx);
+        nub.style.transform = `translate(${(Math.cos(angle) * clamped).toFixed(1)}px, ${(Math.sin(angle) * clamped).toFixed(1)}px)`;
+      }
+      if (dist < 10) {
+        this.touchDir = -1;
+        document.querySelectorAll?.(".touch-dpad-arrow.active")?.forEach?.((el) => el.classList.remove("active"));
+        return;
+      }
+      const nextDir = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 3 : 1) : (dy > 0 ? 0 : 2);
+      const changed = nextDir !== this.touchDir;
+      this.touchDir = nextDir;
+      document.querySelectorAll?.(".touch-dpad-arrow")?.forEach?.((el) => {
+        el.classList.toggle("active", Number(el.dataset.dir) === nextDir);
+      });
+      if ((isFreshPress || changed) && this.uiActive()) {
+        this.core.uiKey(dirToKey[nextDir]);
+        if (this.touchUiRepeatTimer) clearInterval(this.touchUiRepeatTimer);
+        this.touchUiRepeatTimer = setInterval(() => {
+          if (this.touchDir >= 0 && this.uiActive()) {
+            this.core.uiKey(dirToKey[this.touchDir]);
+          }
+        }, 190);
+      }
+    };
+
+    dpad?.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.touchDpadPointerId = e.pointerId;
+      dpad.setPointerCapture?.(e.pointerId);
+      updateDpadFromClient(e.clientX, e.clientY, true);
+    });
+    dpad?.addEventListener("pointermove", (e) => {
+      if (this.touchDpadPointerId == null || e.pointerId !== this.touchDpadPointerId) return;
+      e.preventDefault();
+      updateDpadFromClient(e.clientX, e.clientY, false);
+    });
+    const endDpad = (e) => {
+      if (this.touchDpadPointerId != null && e.pointerId === this.touchDpadPointerId) {
+        this._releaseTouchDpad();
+      }
+    };
+    dpad?.addEventListener("pointerup", endDpad);
+    dpad?.addEventListener("pointercancel", endDpad);
+
+    const btnA = document.getElementById("touch-btn-a");
+    btnA?.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      btnA.classList.add("pressed");
+      if (this.replayTheater?.isLibraryOpen()) {
+        this.replayTheater.confirmLibrarySelection();
+      } else if (this.renderer.activeRngFrameImg) {
+        this.cutsceneSkip = true;
+      } else if (this.uiActive()) {
+        this.core.uiKey("Enter");
+      } else if (!this.coreBusy()) {
+        this.core.queueInteract();
+      }
+    });
+    const releaseA = () => btnA?.classList.remove("pressed");
+    btnA?.addEventListener("pointerup", releaseA);
+    btnA?.addEventListener("pointercancel", releaseA);
+
+    const btnB = document.getElementById("touch-btn-b");
+    btnB?.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      btnB.classList.add("pressed");
+      if (this.replayTheater?.isLibraryOpen()) {
+        this.replayTheater.closeLibrary();
+      } else if (this.replayTheater?.active && !this.replayTheater.isReplayMenuOpen()) {
+        this.replayTheater.openReplayMenu();
+      } else if (this.renderer.activeRngFrameImg) {
+        this.cutsceneSkip = true;
+      } else if (this.uiActive()) {
+        this.core.uiKey("Escape");
+      } else if (!this.coreBusy()) {
+        this.core.toggleRootMenu(true);
+      }
+    });
+    const releaseB = () => btnB?.classList.remove("pressed");
+    btnB?.addEventListener("pointerup", releaseB);
+    btnB?.addEventListener("pointercancel", releaseB);
   }
 
   frameLoop(now) {
