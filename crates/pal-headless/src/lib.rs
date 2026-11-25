@@ -3,6 +3,7 @@
 //! Runs the exact same shared `pal-runtime` (`pal-core` + `pal-render` + `pal-ui`) pipeline
 //! natively on x86_64 using synchronous local disk asset loading (`site/assets/`).
 
+pub mod capture;
 pub mod replay;
 pub mod text_mode;
 

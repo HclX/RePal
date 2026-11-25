@@ -508,6 +508,137 @@ impl TextEngine {
                 ExecOutcome::Done(self.ok_reply(host, trimmed, false, artifacts, log))
             }
 
+            Command::CaptureStart {
+                path,
+                stride,
+                with_thought,
+            } => {
+                if origin.is_socket() && !self.allow_unsafe_remote {
+                    return ExecOutcome::Done(self.err_reply_code(
+                        host,
+                        trimmed,
+                        "forbidden",
+                        "capture is disabled over TCP sockets",
+                    ));
+                }
+                if self.capture.is_some() {
+                    return ExecOutcome::Done(self.err_reply(
+                        host,
+                        trimmed,
+                        "capture already active (run `capture stop` first)",
+                    ));
+                }
+                let out_path = if Path::new(&path).is_absolute() || host.out_dir() == Path::new(".") {
+                    PathBuf::from(&path)
+                } else {
+                    host.out_dir().join(&path)
+                };
+                host.render_settled_frame();
+                let (w, h) = (
+                    host.runtime().compositor.fb.width,
+                    host.runtime().compositor.fb.height,
+                );
+                match crate::capture::FrameRecorder::open(&out_path, w, h, stride, with_thought) {
+                    Ok(mut rec) => {
+                        let _ = rec.push_tick(&host.runtime().compositor.fb);
+                        let fmt = rec.format();
+                        let fps = rec.fps();
+                        self.capture = Some(rec);
+                        let artifacts = serde_json::json!({
+                            "capture": {
+                                "active": true,
+                                "path": out_path.display().to_string(),
+                                "format": fmt,
+                                "width": w,
+                                "height": h,
+                                "fps": fps,
+                                "stride": stride,
+                                "with_thought": with_thought,
+                            }
+                        });
+                        let log = vec![format!(
+                            "[capture] started {} ({w}x{h}, {fps}fps, stride={stride}, format={fmt})",
+                            out_path.display()
+                        )];
+                        ExecOutcome::Done(self.ok_reply(host, trimmed, false, artifacts, log))
+                    }
+                    Err(e) => ExecOutcome::Done(self.err_reply(host, trimmed, &e)),
+                }
+            }
+
+            Command::CaptureStop => {
+                let Some(rec) = self.capture.take() else {
+                    return ExecOutcome::Done(self.err_reply(
+                        host,
+                        trimmed,
+                        "no active capture session",
+                    ));
+                };
+                match rec.finish() {
+                    Ok(sum) => {
+                        let artifacts = serde_json::json!({
+                            "capture": {
+                                "active": false,
+                                "path": sum.path.display().to_string(),
+                                "format": sum.format,
+                                "frames": sum.frames,
+                                "ticks": sum.ticks,
+                                "width": sum.width,
+                                "height": sum.height,
+                                "fps": sum.fps,
+                                "stride": sum.stride,
+                            }
+                        });
+                        let log = vec![format!(
+                            "[capture] saved {} ({} frames from {} ticks, {}x{} @ {}fps)",
+                            sum.path.display(),
+                            sum.frames,
+                            sum.ticks,
+                            sum.width,
+                            sum.height,
+                            sum.fps
+                        )];
+                        ExecOutcome::Done(self.ok_reply(host, trimmed, false, artifacts, log))
+                    }
+                    Err(e) => ExecOutcome::Done(self.err_reply(host, trimmed, &e)),
+                }
+            }
+
+            Command::CaptureStatus => {
+                let (art, msg) = if let Some(rec) = &self.capture {
+                    (
+                        serde_json::json!({
+                            "active": true,
+                            "path": rec.out_path().display().to_string(),
+                            "format": rec.format(),
+                            "frames": rec.frames_written(),
+                            "ticks": rec.ticks_seen(),
+                            "fps": rec.fps(),
+                            "stride": rec.stride(),
+                        }),
+                        format!(
+                            "[capture] active: {} ({} frames / {} ticks, {}fps)",
+                            rec.out_path().display(),
+                            rec.frames_written(),
+                            rec.ticks_seen(),
+                            rec.fps()
+                        ),
+                    )
+                } else {
+                    (
+                        serde_json::json!({ "active": false }),
+                        "[capture] inactive".to_string(),
+                    )
+                };
+                ExecOutcome::Done(self.ok_reply(
+                    host,
+                    trimmed,
+                    false,
+                    serde_json::json!({ "capture": art }),
+                    vec![msg],
+                ))
+            }
+
             Command::Golden {
                 ref_path,
                 max_diff,

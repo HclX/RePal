@@ -35,6 +35,7 @@ In a release archive, `./repal` (or `repal.exe`) is prebuilt — no build step r
   - Headless TCP server: `./repal --text --listen 127.0.0.1:9999 [--json]` (non-loopback LAN binds require per-session `auth <token>`, shown on startup and in TitleOptions/Remake menus; default socket `--out-dir` is `<user_dir>/agent_out`)
   - Resume from a saved checkpoint: `./repal --text --save .tmp/agent_play.json`
   - Export AI thought subtitles from a `.repal` replay: `./repal --replay-export-srt in.repal out.srt`
+  - Render a `.repal` replay directly to MP4/GIF/PNG sequence: `./repal --replay-export-video in.repal out.mp4 [--hd|--retro] [--stride N] [--with-thought] [--start-tick N] [--end-tick M]`
 - **Language flags**: `--lang hans` (default), `--lang hant`, `--lang en`.
 - **Human Takeover in GUI+Text Mode**: Pressing `Esc` in the desktop window immediately cancels any in-flight AI task (`interrupted_by: "human"`) and returns control to the human player. Pressing `F7` toggles the 4× HD AI thought subtitle bar.
 
@@ -49,6 +50,7 @@ In one-shot stdio/batch invocations, each shell call starts a fresh process — 
 | `look` | `l` | Print current scene name/ID, coordinates, facing, party HP/MP, 4 walkable directions + `walkable_dist` (free steps per direction), viewport minimap, and active nearby NPCs/exits sorted by distance. |
 | `map` | `minimap`, `地图` | Print the `20×25` staggered isometric viewport ASCII minimap (`@` player, `E` visible event/NPC, `>` visible exit, `.` walkable, `#` wall/blocked, `?` occluded, ` ` exterior void) using actual visual tile graphics with zero hidden-event spoilers. |
 | `screenshot [--with-thought] [path]` | `shot`, `ss`, `take_screenshot` | Render a settled `1280×800` 4× HD PNG (including `pal-ui`) to `[path]` (default `.tmp/repal_shots/shot_NNN_scXXX.png`). Default `shot` (plus `golden`, `bugreport`, thumbnails) is structurally thought-free; pass `--with-thought` to include the HD AI thought subtitle bar. |
+| `capture <start <out.mp4\|out.gif\|dir> [--stride N] [--with-thought] \| stop \| status>` | `rec-video` | Record consecutive rendered frames across arbitrary commands into an MP4/GIF (piped directly to `ffmpeg`) or a PNG frame directory (local stdio/batch only; disabled over TCP sockets). |
 | `bugreport [description]` | `report`, `bug` | Export a 4× HD screenshot + state diagnostics (`.repal` + background GitHub Issue via `gh` in GUI mode; `.png` + `.json` in headless mode; disabled over TCP sockets). |
 | `help [cmd \| topic]` | `?` | Show localized command overview (debug commands hidden in `--obs fair`) or detailed usage, aliases, examples & tips for a specific command/topic (e.g. `help battle`, `help magic`, `help items`, `help save`; structured JSON in `artifacts.help`). |
 | `status` | `st` | Print full party stats, level, EXP, equipment, and known spells with `#id`, MP cost, field/battle tags & effect descriptions in both plain text and JSON (`artifacts.status`). |

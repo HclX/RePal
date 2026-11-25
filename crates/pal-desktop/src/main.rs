@@ -740,6 +740,55 @@ fn main() {
             );
             std::process::exit(0);
         }
+        LaunchMode::ExportVideo {
+            input,
+            output,
+            opts,
+            assets_dir,
+            packs_dir,
+        } => {
+            let mut app = if let Some(pdir) = packs_dir {
+                let key = std::env::var("REPAL_PACK_KEY")
+                    .ok()
+                    .and_then(|s| pal_runtime::crypto::parse_key_hex(&s).ok());
+                match pal_headless::HeadlessApp::from_packs_dir(
+                    &pdir,
+                    key,
+                    assets_dir,
+                    opts.hd_mode,
+                ) {
+                    Ok(a) => a,
+                    Err(e) => {
+                        eprintln!("[repal] failed to open packs dir {}: {e}", pdir.display());
+                        std::process::exit(1);
+                    }
+                }
+            } else {
+                let dir = pal_runtime::disk::resolve_assets_dir(
+                    assets_dir.as_deref().and_then(|p| p.to_str()),
+                );
+                pal_headless::HeadlessApp::new(dir, opts.hd_mode)
+            };
+            match pal_headless::capture::export_repal_video(&mut app, &input, &output, &opts) {
+                Ok(sum) => {
+                    println!(
+                        "[repal] Exported {} ({} frames / {} ticks, {}x{} @ {}fps, format={})",
+                        sum.path.display(),
+                        sum.frames,
+                        sum.ticks,
+                        sum.width,
+                        sum.height,
+                        sum.fps,
+                        sum.format
+                    );
+                    std::process::exit(0);
+                }
+                Err(e) => {
+                    eprintln!("[repal] video export failed: {e}");
+                    std::process::exit(1);
+                }
+            }
+        }
         LaunchMode::Text(tcfg) => {
             let code = pal_headless::text_mode::run_text_mode(tcfg);
             std::process::exit(code);

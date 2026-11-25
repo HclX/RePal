@@ -79,6 +79,13 @@ pub enum Command {
         path: Option<String>,
         with_thought: bool,
     },
+    CaptureStart {
+        path: String,
+        stride: u32,
+        with_thought: bool,
+    },
+    CaptureStop,
+    CaptureStatus,
     Golden {
         ref_path: String,
         max_diff: f64,
@@ -595,6 +602,57 @@ pub fn parse_command(raw: &str) -> Result<Command, String> {
                 }
             }
             Ok(Command::Shot { path, with_thought })
+        }
+        "capture" | "rec-video" => {
+            let sub = args.first().map(|s| s.to_ascii_lowercase()).unwrap_or_default();
+            match sub.as_str() {
+                "start" => {
+                    let mut path: Option<String> = None;
+                    let mut stride: u32 = 1;
+                    let mut with_thought = false;
+                    let mut i = 1usize;
+                    while i < args.len() {
+                        match args[i] {
+                            "--with-thought" | "--thought" => {
+                                with_thought = true;
+                                i += 1;
+                            }
+                            "--stride" => {
+                                let Some(v) = args.get(i + 1) else {
+                                    return Err("usage: capture start <out.mp4|out.gif|dir> [--stride N] [--with-thought]".to_string());
+                                };
+                                stride = v
+                                    .parse::<u32>()
+                                    .ok()
+                                    .filter(|&n| n >= 1)
+                                    .ok_or_else(|| format!("invalid stride '{v}' (expected >= 1)"))?;
+                                i += 2;
+                            }
+                            other => {
+                                if path.is_none() {
+                                    path = Some(other.to_string());
+                                    i += 1;
+                                } else {
+                                    return Err(format!("unexpected capture argument '{other}'"));
+                                }
+                            }
+                        }
+                    }
+                    let Some(path) = path else {
+                        return Err("usage: capture start <out.mp4|out.gif|dir> [--stride N] [--with-thought]".to_string());
+                    };
+                    Ok(Command::CaptureStart {
+                        path,
+                        stride,
+                        with_thought,
+                    })
+                }
+                "stop" => Ok(Command::CaptureStop),
+                "status" | "" => Ok(Command::CaptureStatus),
+                other => Err(format!(
+                    "unknown capture subcommand '{other}' (expected: start, stop, status)"
+                )),
+            }
         }
         "golden" => {
             let Some(ref_path) = args.first() else {

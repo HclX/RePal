@@ -263,6 +263,7 @@ pub struct TextEngine {
     last_battle_feed_total: u64,
     last_cmd_was_think: bool,
     active_task: Option<ActiveTask>,
+    capture: Option<crate::capture::FrameRecorder>,
 }
 
 impl TextEngine {
@@ -288,6 +289,28 @@ impl TextEngine {
             last_battle_feed_total: 0,
             last_cmd_was_think: false,
             active_task: None,
+            capture: None,
+        }
+    }
+
+    /// Capture one rendered frame into the active [`FrameRecorder`] (if `capture start` is running).
+    pub fn capture_tick_if_active<H: TextHost>(&mut self, host: &mut H) {
+        if self.capture.is_none() {
+            return;
+        }
+        host.render_settled_frame();
+        let with_thought = self.capture.as_ref().is_some_and(|c| c.with_thought());
+        let res = if with_thought && host.runtime().has_visible_ai_thought_overlay() {
+            let mut fb_copy = host.runtime().compositor.fb.clone();
+            host.runtime_mut().draw_ai_thought_overlay_onto(&mut fb_copy);
+            self.capture.as_mut().unwrap().push_tick(&fb_copy)
+        } else {
+            let fb = &host.runtime().compositor.fb;
+            self.capture.as_mut().unwrap().push_tick(fb)
+        };
+        if let Err(e) = res {
+            eprintln!("[repal] capture error (stopping capture): {e}");
+            let _ = self.capture.take().map(|c| c.finish());
         }
     }
 
@@ -434,9 +457,14 @@ impl TextEngine {
         origin: ClientOrigin,
     ) -> TextReply {
         match self.submit_from(host, raw, interactive_blank, origin) {
-            ExecOutcome::Done(r) | ExecOutcome::Quit(r) => r,
+            ExecOutcome::Done(r) | ExecOutcome::Quit(r) => {
+                self.capture_tick_if_active(host);
+                r
+            }
             ExecOutcome::Pending => {
-                // Tight simulation pump — zero compositor calls
+                // Capture the post-submit frame (e.g. menu closing on `ui ok` before `video_redraw` finishes).
+                self.capture_tick_if_active(host);
+                // Tight simulation pump — zero compositor calls unless `capture` is active
                 let mut guard = 0usize;
                 loop {
                     let (input, done) = self.step_tick(host);
@@ -445,6 +473,7 @@ impl TextEngine {
                     }
                     host.runtime_mut().tick(input);
                     host.service_host_cmds();
+                    self.capture_tick_if_active(host);
                     guard += 1;
                     if guard > 4000 {
                         self.active_task = None;

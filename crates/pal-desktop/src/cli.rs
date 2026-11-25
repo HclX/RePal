@@ -44,7 +44,17 @@ pub(crate) struct CliConfig {
 pub(crate) enum LaunchMode {
     Gui(CliConfig),
     Text(TextModeConfig),
-    ExportSrt { input: PathBuf, output: PathBuf },
+    ExportSrt {
+        input: PathBuf,
+        output: PathBuf,
+    },
+    ExportVideo {
+        input: PathBuf,
+        output: PathBuf,
+        opts: pal_headless::capture::VideoExportOpts,
+        assets_dir: Option<PathBuf>,
+        packs_dir: Option<PathBuf>,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -162,6 +172,8 @@ fn help_text() -> String {
            --save <FILE>          Boot directly into a .json or DOS .rpg save file\n\
            --replay <FILE>        Auto-play a recorded .cmd/.repal replay file\n\
            --replay-export-srt <IN.repal> <OUT.srt>  Export AI thought subtitles to SubRip (.srt)\n\
+           --replay-export-video <IN.repal> <OUT.mp4|OUT.gif|DIR>  Render .repal to video/PNG sequence\n\
+             [--hd|--retro] [--stride N] [--with-thought] [--start-tick N] [--end-tick M]\n\
            --scene <ID>           Jump to a scene ID after loading\n\
            --hd / --retro         Start in 4x HD (1280x800) or 1x Retro (320x200)\n\
            --lang <hans|hant|en>  Initial UI & script language\n\
@@ -339,6 +351,77 @@ pub(crate) fn parse_cli_from(args: &[String]) -> Result<LaunchMode, CliExit> {
                 let output = PathBuf::from(&args[i + 2]);
                 return Ok(LaunchMode::ExportSrt { input, output });
             }
+            "--replay-export-video" => {
+                if i + 2 >= args.len() {
+                    return Err(CliExit::Error(
+                        "[repal] usage: --replay-export-video <in.repal> <out.mp4|out.gif|dir> [--hd|--retro] [--stride N] [--with-thought] [--start-tick N] [--end-tick M]".to_string(),
+                    ));
+                }
+                let input = PathBuf::from(&args[i + 1]);
+                let output = PathBuf::from(&args[i + 2]);
+                let mut opts = pal_headless::capture::VideoExportOpts {
+                    hd_mode: hd_mode_override.unwrap_or(true),
+                    ..Default::default()
+                };
+                let mut export_assets: Option<PathBuf> = assets_arg.as_ref().map(PathBuf::from);
+                let mut export_packs: Option<PathBuf> = None;
+                let mut j = i + 3;
+                while j < args.len() {
+                    match args[j].as_str() {
+                        "--hd" => {
+                            opts.hd_mode = true;
+                            j += 1;
+                        }
+                        "--retro" => {
+                            opts.hd_mode = false;
+                            j += 1;
+                        }
+                        "--with-thought" | "--thought" => {
+                            opts.with_thought = true;
+                            j += 1;
+                        }
+                        "--stride" => {
+                            let v = next_arg(args, &mut j, "--stride")?;
+                            opts.stride = v
+                                .parse::<u32>()
+                                .ok()
+                                .filter(|&n| n >= 1)
+                                .ok_or_else(|| CliExit::Error(format!("[repal] invalid --stride '{v}'")))?;
+                        }
+                        "--start-tick" => {
+                            let v = next_arg(args, &mut j, "--start-tick")?;
+                            opts.start_tick = v
+                                .parse::<u64>()
+                                .map_err(|_| CliExit::Error(format!("[repal] invalid --start-tick '{v}'")))?;
+                        }
+                        "--end-tick" => {
+                            let v = next_arg(args, &mut j, "--end-tick")?;
+                            opts.end_tick = Some(
+                                v.parse::<u64>()
+                                    .map_err(|_| CliExit::Error(format!("[repal] invalid --end-tick '{v}'")))?,
+                            );
+                        }
+                        "--assets" => {
+                            export_assets = Some(PathBuf::from(next_arg(args, &mut j, "--assets")?));
+                        }
+                        "--packs-dir" => {
+                            export_packs = Some(PathBuf::from(next_arg(args, &mut j, "--packs-dir")?));
+                        }
+                        other => {
+                            return Err(CliExit::Error(format!(
+                                "[repal] unknown --replay-export-video option: {other}"
+                            )));
+                        }
+                    }
+                }
+                return Ok(LaunchMode::ExportVideo {
+                    input,
+                    output,
+                    opts,
+                    assets_dir: export_assets,
+                    packs_dir: export_packs,
+                });
+            }
             "--scene" => {
                 let raw = next_arg(args, &mut i, "--scene")?;
                 let Ok(sc) = raw.parse::<u16>() else {
@@ -514,7 +597,7 @@ pub(crate) fn parse_cli() -> LaunchMode {
     if args.iter().skip(1).any(|a| {
         matches!(
             a.as_str(),
-            "--text" | "-c" | "--script" | "--listen" | "--replay-export-srt" | "-h" | "--help"
+            "--text" | "-c" | "--script" | "--listen" | "--replay-export-srt" | "--replay-export-video" | "-h" | "--help"
         )
     }) {
         attach_parent_console();
