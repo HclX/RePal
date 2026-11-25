@@ -2430,3 +2430,75 @@ fn text_mode_issue_278_closed_double_door_blockers_and_visual_sprite_labels() {
         entered.response["scene"]
     );
 }
+
+#[test]
+fn text_mode_issue_4_cross_floor_goto_disconnected_no_false_blocker() {
+    use pal_headless::text_mode::ObsMode;
+
+    let assets = assets_root();
+    if !assets.join("data/scenes.yaml").is_file() {
+        eprintln!("skip: assets not found");
+        return;
+    }
+    let cfg = TextModeConfig {
+        assets_root: assets,
+        json_mode: true,
+        lang: pal_core::Language::ZhHans,
+        new_game: true,
+        ..Default::default()
+    };
+    let mut host = HeadlessTextHost::from_config(&cfg).expect("boot new game");
+
+    let mut dbg_engine = TextEngine::with_obs(ObsMode::Debug, 0);
+    let mut fair_engine = TextEngine::with_obs(ObsMode::Fair, 0);
+    dbg_engine.settle_sync(&mut host, 120);
+
+    // Scene 3 (Yuhang Inn Lobby): place party on 2F (1376, 1424) with Miao guards #71/#72
+    // standing on 1F directly below Aunt Li's bedroom portal #50 (1328, 1448).
+    let _ = dbg_engine.execute_sync(&mut host, "/tp 3 1376 1424", false);
+    let _ = dbg_engine.execute_sync(&mut host, "/event 49 state 1", false);
+    let _ = dbg_engine.execute_sync(&mut host, "/event 71 state 2", false);
+    let _ = dbg_engine.execute_sync(&mut host, "/event 72 state 2", false);
+    let _ = dbg_engine.execute_sync(&mut host, "/event 57 state 0", false);
+
+    // Debug `goto 50`: must report disconnected=true, blockers=[], NO mention of #71/#72,
+    // and list reachable 2F exits/stairs including #48 (stairs down to 1F).
+    let res = dbg_engine.execute_sync(&mut host, "goto 50", false);
+    assert_unified_envelope(&res.response);
+    assert_eq!(res.response["ok"], false);
+    assert_eq!(res.response["error_code"], "unreachable");
+    let goto_art = &res.response["artifacts"]["goto"];
+    assert_eq!(
+        goto_art["disconnected"], true,
+        "cross-floor target #50 must set disconnected=true: {goto_art}"
+    );
+    let blockers = goto_art["blockers"].as_array().unwrap();
+    assert!(
+        blockers.is_empty(),
+        "must NOT blame 1F guards #71/#72 for a 2F->1F disconnected target: {blockers:?}"
+    );
+    let err_msg = res.response["error"].as_str().unwrap_or("");
+    assert!(
+        !err_msg.contains("#71") && !err_msg.contains("#72") && !err_msg.contains("blocked by"),
+        "error message must not blame #71/#72: {err_msg}"
+    );
+    assert!(
+        err_msg.contains("not connected"),
+        "error message should explain disconnected floor/region: {err_msg}"
+    );
+    let exits = goto_art["reachable_exits"].as_array().unwrap();
+    assert!(
+        exits.iter().any(|e| e["id"] == 48),
+        "debug reachable_exits from 2F must include stairs #48: {exits:?}"
+    );
+
+    // Fair mode at 2F near stairs (1280, 1400): stairs #48 is on-screen and surfaced as kind="exit".
+    let _ = dbg_engine.execute_sync(&mut host, "/tp 3 1280 1400", false);
+    let look = fair_engine.execute_sync(&mut host, "look", false);
+    assert_unified_envelope(&look.response);
+    let evs = look.response["events"].as_array().unwrap();
+    assert!(
+        evs.iter().any(|e| e["id"] == 48 && e["kind"] == "exit"),
+        "stairs ev#48 must be visible as kind=exit in fair look near 2F landing: {evs:?}"
+    );
+}

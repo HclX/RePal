@@ -77,7 +77,10 @@ pub(super) fn pick_non_talking_click_target(rt: &pal_runtime::PalRuntime, tx: i3
     best.map(|(_, _, wx, wy)| (wx, wy)).unwrap_or((tx, ty))
 }
 
-/// Find visible solid/deflecting events blocking `goto` between `stop_pos` and `target_xy` (#278).
+/// Find visible solid/deflecting events genuinely blocking `goto` between `stop_pos` and `target_xy`
+/// (#278, #4). Verifies via scratch-grid A* that clearing the candidate blocker events actually makes
+/// `target_xy` reachable, preventing false-positive blocker hints when the target is on another floor
+/// or disconnected region.
 ///
 /// Strictly fair-safe: in `fair` mode, only reports events whose sprites are visibly rendered inside
 /// the current `320x200` viewport, using visual-only labels (never script/trigger internals).
@@ -88,6 +91,7 @@ pub(super) fn find_goto_blockers(
     target_ev_id: Option<u16>,
     fair: bool,
     deflected_and_failed: bool,
+    is_touch_exit: bool,
 ) -> Vec<(u16, String, String)> {
     let Some(g) = rt.game.as_ref() else {
         return Vec::new();
@@ -140,9 +144,111 @@ pub(super) fn find_goto_blockers(
     }
     hits.sort_by_key(|(dt, ds, id, _, _)| (*dt, *ds, *id));
     hits.truncate(6);
+    if hits.is_empty() {
+        return Vec::new();
+    }
+
+    // Re-run A* on a scratch grid with candidate blockers cleared: only blame them if removing
+    // them actually connects `stop_pos` to `target_xy` (fixes #4 cross-floor false positives).
+    let mut scratch = g.grid.clone();
+    for (_, _, id, _, _) in &hits {
+        if let Some(ev) = g.world.event(*id) {
+            let (hx, hy, h) = pal_core::isometric::world_to_half_tile(ev.x, ev.y);
+            scratch.set_blocked(hx, hy, h, g.base_grid().is_blocked(hx, hy, h));
+        }
+    }
+    let path = pal_core::isometric::find_path_world(&scratch, sx, sy, tx, ty, 200);
+    let end = path.last().copied().unwrap_or((sx, sy));
+    let end_dist = iso_dist(end.0, end.1, tx, ty);
+    let cur_dist = iso_dist(sx, sy, tx, ty);
+    let reach_thresh = if is_touch_exit { 16 } else { 48 };
+    if end_dist > reach_thresh || end_dist >= cur_dist {
+        return Vec::new();
+    }
+
     hits.into_iter()
         .map(|(_, _, id, label, hint)| (id, label, hint))
         .collect()
+}
+
+/// Returns `true` when `target_xy` cannot be reached from `from_pos` even on the static `base_grid`
+/// (i.e. different floor or walled-off region connected only via stairs/portals, #4).
+pub(super) fn is_target_region_disconnected(
+    rt: &pal_runtime::PalRuntime,
+    from_pos: (i32, i32),
+    target_xy: (i32, i32),
+    is_touch_exit: bool,
+) -> bool {
+    let Some(g) = rt.game.as_ref() else {
+        return false;
+    };
+    let path = pal_core::isometric::find_path_world(
+        g.base_grid(),
+        from_pos.0,
+        from_pos.1,
+        target_xy.0,
+        target_xy.1,
+        250,
+    );
+    let end = path.last().copied().unwrap_or(from_pos);
+    let end_dist = (end.0 - target_xy.0).abs() + (end.1 - target_xy.1).abs() * 2;
+    let thresh = if is_touch_exit { 16 } else { 48 };
+    end_dist > thresh
+}
+
+/// List visible exits/stairs reachable from `from_pos` on the current floor/region (#4).
+/// Strictly fair-safe: in `fair` mode, only surfaces exits/stairs already visible in the viewport.
+pub(super) fn find_reachable_exits_and_stairs(
+    rt: &pal_runtime::PalRuntime,
+    from_pos: (i32, i32),
+    fair: bool,
+) -> Vec<(u16, String)> {
+    let Some(g) = rt.game.as_ref() else {
+        return Vec::new();
+    };
+    let (cam_x, cam_y) = runtime_camera(rt);
+    let mut found: Vec<(i32, u16, String)> = Vec::new();
+    for id in g.world.current_event_ids() {
+        let Some(ev) = g.world.event(id) else {
+            continue;
+        };
+        if ev.state <= 0 || ev.vanish_time > 0 || ev.sprite_id != 0 {
+            continue;
+        }
+        let is_exit = if fair {
+            crate::text_mode::response::is_fair_visible_exit(rt, ev, cam_x, cam_y)
+        } else {
+            crate::text_mode::response::is_exit_or_stair_event(rt, ev, false)
+        };
+        if !is_exit {
+            continue;
+        }
+        let path = pal_core::isometric::find_path_world(
+            &g.grid,
+            from_pos.0,
+            from_pos.1,
+            ev.x,
+            ev.y,
+            160,
+        );
+        let end = path.last().copied().unwrap_or(from_pos);
+        let end_dist = (end.0 - ev.x).abs() + (end.1 - ev.y).abs() * 2;
+        if end_dist <= 32 {
+            let d = (ev.x - from_pos.0).abs() + (ev.y - from_pos.1).abs() * 2;
+            let dx = ev.x - from_pos.0;
+            let dy = ev.y - from_pos.1;
+            let dir = match (dx >= 0, dy >= 0) {
+                (true, true) => "se",
+                (true, false) => "ne",
+                (false, true) => "sw",
+                (false, false) => "nw",
+            };
+            found.push((d, ev.id, dir.to_string()));
+        }
+    }
+    found.sort_by_key(|(d, id, _)| (*d, *id));
+    found.truncate(4);
+    found.into_iter().map(|(_, id, dir)| (id, dir)).collect()
 }
 
 pub(super) fn format_goto_blockers_hint(blockers: &[(u16, String, String)]) -> String {

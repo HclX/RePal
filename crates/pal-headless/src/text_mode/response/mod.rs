@@ -236,24 +236,18 @@ pub fn event_visible_in_viewport(rt: &PalRuntime, ev: &Event, cam_x: i32, cam_y:
     dx < 320 && dx + fw > 0 && dy < 200 && dy + fh > 0
 }
 
-/// Returns `true` if `ev` is an on-screen unconditional exit (`0x0059` `scene_change`) or
-/// initially-active pure stair-walk trigger (`0x006E` `party_walk_step`) safe to surface in
-/// `--obs fair` without leaking secret passages, conditional/story-gated portals, traps, or
-/// destination scene names (#234, #277).
-pub fn is_fair_visible_exit(rt: &PalRuntime, ev: &Event, cam_x: i32, cam_y: i32) -> bool {
+/// Returns `true` if `ev` is an unconditional exit (`0x0059` `scene_change`) or initially-active
+/// pure stair-walk trigger (`0x006E` `party_walk_step`). When `check_occlusion` is true, also
+/// enforces visibility against `base_grid.is_occluded` (used for `--obs fair`, #234, #277, #4).
+pub fn is_exit_or_stair_event(rt: &PalRuntime, ev: &Event, check_occlusion: bool) -> bool {
     let Some(g) = rt.game.as_ref() else {
         return false;
     };
     if ev.state <= 0 || ev.vanish_time > 0 || ev.trigger_mode < 4 || ev.trigger.is_none() {
         return false;
     }
-    let sx = ev.x - cam_x;
-    let sy = ev.y - cam_y;
-    if !(0..320).contains(&sx) || !(0..200).contains(&sy) {
-        return false;
-    }
     let (hx, hy, hh) = world_to_half_tile(ev.x, ev.y);
-    let tile_occluded = g.base_grid().is_occluded(hx, hy, hh);
+    let tile_occluded = check_occlusion && g.base_grid().is_occluded(hx, hy, hh);
 
     // 1. Unconditional `0x0059` (`scene_change`) doorway/exit: abort if any branch/label-jump,
     // dialogue, battle, or state mutation occurs before `0x0059`. Runtime `ev.state > 0` already
@@ -301,6 +295,19 @@ pub fn is_fair_visible_exit(rt: &PalRuntime, ev: &Event, cam_x: i32, cam_y: i32)
         }
     }
     is_pure_stair_walk_script(&g.prog, ev.trigger.label)
+}
+
+/// Returns `true` if `ev` is an on-screen unconditional exit (`0x0059` `scene_change`) or
+/// initially-active pure stair-walk trigger (`0x006E` `party_walk_step`) safe to surface in
+/// `--obs fair` without leaking secret passages, conditional/story-gated portals, traps, or
+/// destination scene names (#234, #277).
+pub fn is_fair_visible_exit(rt: &PalRuntime, ev: &Event, cam_x: i32, cam_y: i32) -> bool {
+    let sx = ev.x - cam_x;
+    let sy = ev.y - cam_y;
+    if !(0..320).contains(&sx) || !(0..200).contains(&sy) {
+        return false;
+    }
+    is_exit_or_stair_event(rt, ev, true)
 }
 
 /// Returns `true` iff `start_label` executes ONLY pure stair-walk opcodes (`party_set_dir_frame`,

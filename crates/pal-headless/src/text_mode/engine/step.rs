@@ -254,12 +254,27 @@ impl TextEngine {
                             target_ev,
                             fair,
                             offset_target && !reached,
+                            is_touch_exit,
                         )
                     } else {
                         Vec::new()
                     };
                     let blocker_ids: Vec<u16> = blockers.iter().map(|(id, _, _)| *id).collect();
                     let blocker_hint = format_goto_blockers_hint(&blockers);
+                    let disconnected = !reached
+                        && mode == "explore"
+                        && blockers.is_empty()
+                        && is_target_region_disconnected(
+                            host.runtime(),
+                            cur_pos,
+                            (tx, ty),
+                            is_touch_exit,
+                        );
+                    let reachable_exits = if disconnected {
+                        find_reachable_exits_and_stairs(host.runtime(), cur_pos, fair)
+                    } else {
+                        Vec::new()
+                    };
                     if reached && offset_target && !blocker_hint.is_empty() {
                         log.push(format!("[goto] {blocker_hint}"));
                     }
@@ -270,18 +285,38 @@ impl TextEngine {
                             "final_xy": [cur_pos.0, cur_pos.1],
                             "dist": dist,
                             "blockers": blocker_ids,
+                            "disconnected": disconnected,
+                            "reachable_exits": reachable_exits
+                                .iter()
+                                .map(|(id, dir)| serde_json::json!({"id": id, "dir": dir}))
+                                .collect::<Vec<_>>(),
                         }
                     });
                     self.active_task = None;
                     let reply = if !reached && mode == "explore" {
-                        let msg = if blocker_hint.is_empty() {
-                            format!(
-                                "could not reach ({tx},{ty}); stopped at ({},{}) (dist={dist})",
-                                cur_pos.0, cur_pos.1
-                            )
-                        } else {
+                        let msg = if !blocker_hint.is_empty() {
                             format!(
                                 "could not reach ({tx},{ty}); stopped at ({},{}) (dist={dist}); {blocker_hint}",
+                                cur_pos.0, cur_pos.1
+                            )
+                        } else if disconnected {
+                            let base = format!(
+                                "could not reach ({tx},{ty}); stopped at ({},{}) (dist={dist}); target not connected to your area (different floor/region)",
+                                cur_pos.0, cur_pos.1
+                            );
+                            if reachable_exits.is_empty() {
+                                base
+                            } else {
+                                let exits_s = reachable_exits
+                                    .iter()
+                                    .map(|(id, dir)| format!("#{id} ({dir})"))
+                                    .collect::<Vec<_>>()
+                                    .join(", ");
+                                format!("{base}; reachable exits/stairs: {exits_s}")
+                            }
+                        } else {
+                            format!(
+                                "could not reach ({tx},{ty}); stopped at ({},{}) (dist={dist})",
                                 cur_pos.0, cur_pos.1
                             )
                         };
