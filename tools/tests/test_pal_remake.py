@@ -41,8 +41,8 @@ def test_source_archive_and_wasm_artifact():
     assert wasm_file.is_file()
     raw = wasm_file.read_bytes()
     assert raw[:4] == b"\x00asm", "Invalid WebAssembly binary header"
-    # Full Rust engine (pal-core + pal-render + pal-ui + fontdue): keep compact under 1.5 MB
-    assert 100_000 < len(raw) < 1_500_000, f"Unexpected WASM size: {len(raw)}"
+    # Full Rust engine (pal-core + pal-render + pal-ui + fontdue + TextEngine): keep compact under 2.0 MB
+    assert 100_000 < len(raw) < 2_000_000, f"Unexpected WASM size: {len(raw)}"
 
 
 def test_yaml_tables_and_terminology():
