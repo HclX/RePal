@@ -250,17 +250,23 @@ pub fn is_exit_or_stair_event(rt: &PalRuntime, ev: &Event, check_occlusion: bool
     let tile_occluded = check_occlusion && g.base_grid().is_occluded(hx, hy, hh);
 
     // 1. Unconditional `0x0059` (`scene_change`) doorway/exit: abort if any branch/label-jump,
-    // dialogue, battle, or state mutation occurs before `0x0059`. Runtime `ev.state > 0` already
-    // keeps locked/unrevealed doors hidden until unlocked (fixing e.g. Yuhang Inn bedroom door
-    // ev#4 whose static state is 0 before Aunt Li's intro cutscene unlocks it, #277).
+    // dialogue, battle, or state mutation occurs before `0x0059`. Allow `0x0002` (`call_script`)
+    // when the callee is a pure stair-walk animation (`s_0315` / `s_421a`, e.g. General's Tomb
+    // 1F <-> 2F stairs `#1127..#1137` / `#1288..#1298`). Runtime `ev.state > 0` already keeps
+    // locked/unrevealed doors hidden until unlocked (#277).
     let Some(block) = g.prog.block(ev.trigger.label) else {
         return false;
     };
     let mut is_uncond_scene_change = false;
+    let mut via_stair_walk = false;
     for op in block.iter().take(16) {
         if op.op == 0x0059 {
             is_uncond_scene_change = true;
             break;
+        }
+        if op.op == 0x0004 && op.lbl[0] != 0 && is_pure_stair_walk_script(&g.prog, op.lbl[0]) {
+            via_stair_walk = true;
+            continue;
         }
         if op.op == 0x0007
             || op.op == 0x0049
@@ -271,7 +277,19 @@ pub fn is_exit_or_stair_event(rt: &PalRuntime, ev: &Event, check_occlusion: bool
         }
     }
     if is_uncond_scene_change {
-        return !tile_occluded;
+        if !tile_occluded {
+            return true;
+        }
+        if via_stair_walk {
+            return (0..4u8).any(|dir| {
+                let (nx, ny, nh) = step_half_tile(hx, hy, hh, dir);
+                (0..64).contains(&nx)
+                    && (0..128).contains(&ny)
+                    && !g.base_grid().is_occluded(nx, ny, nh)
+                    && !g.base_grid().is_void(nx, ny, nh)
+            });
+        }
+        return false;
     }
 
     // 2. Initially-active (`def.state > 0`) pure stair-walk triggers (`0x006E` `party_walk_step`,

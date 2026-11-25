@@ -2502,3 +2502,47 @@ fn text_mode_issue_4_cross_floor_goto_disconnected_no_false_blocker() {
         "stairs ev#48 must be visible as kind=exit in fair look near 2F landing: {evs:?}"
     );
 }
+
+#[test]
+fn text_mode_tomb_stairs_visible_in_fair_mode() {
+    use pal_headless::text_mode::ObsMode;
+
+    let assets = assets_root();
+    if !assets.join("data/scenes.yaml").is_file() {
+        eprintln!("skip: assets not found");
+        return;
+    }
+    let cfg = TextModeConfig {
+        assets_root: assets,
+        json_mode: true,
+        lang: pal_core::Language::ZhHans,
+        new_game: true,
+        ..Default::default()
+    };
+    let mut host = HeadlessTextHost::from_config(&cfg).expect("boot new game");
+    let mut dbg_engine = TextEngine::with_obs(ObsMode::Debug, 0);
+    let mut fair_engine = TextEngine::with_obs(ObsMode::Fair, 0);
+    dbg_engine.settle_sync(&mut host, 120);
+
+    // Scene 60 (General's Tomb 1F) near stairs #1136 (784, 1240) which calls pure stair-walk
+    // `s_0315` before `scene_change(65)`: must be visible as kind="exit" in `--obs fair`.
+    let _ = dbg_engine.execute_sync(&mut host, "/tp 60 800 1248", false);
+    let look1 = fair_engine.execute_sync(&mut host, "look", false);
+    assert_unified_envelope(&look1.response);
+    let evs1 = look1.response["events"].as_array().unwrap();
+    assert!(
+        evs1.iter().any(|e| e["id"] == 1136 && e["kind"] == "exit"),
+        "General's Tomb 1F stairs ev#1136 must be visible as kind=exit in fair mode: {evs1:?}"
+    );
+
+    // Scene 65 (General's Tomb 2F) near stairs #1288 (1264, 1144) which calls pure stair-walk
+    // `s_421a` before `scene_change(60)`: must be visible as kind="exit" in `--obs fair`.
+    let _ = dbg_engine.execute_sync(&mut host, "/tp 65 1216 1152", false);
+    let look2 = fair_engine.execute_sync(&mut host, "look", false);
+    assert_unified_envelope(&look2.response);
+    let evs2 = look2.response["events"].as_array().unwrap();
+    assert!(
+        evs2.iter().any(|e| e["id"] == 1288 && e["kind"] == "exit"),
+        "General's Tomb 2F stairs ev#1288 must be visible as kind=exit in fair mode: {evs2:?}"
+    );
+}
