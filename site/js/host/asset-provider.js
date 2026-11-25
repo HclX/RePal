@@ -146,8 +146,9 @@ export class WasmAssetProvider {
     if (mapId > 0) {
       const pad = String(mapId).padStart(3, "0");
       tasks.push(this._fetchAndUpload(2, `graphics/gop/gop_${pad}.json`, `2:graphics/gop/gop_${pad}.json`));
-      tasks.push(this.prefetchTexture(`graphics/gop/gop_${pad}_1x.webp`));
+      tasks.push(this.prefetchTexture(`graphics/gop/gop_${pad}_${suffix}.webp`));
       if (hdMode) {
+        tasks.push(this.prefetchTexture(`graphics/gop/gop_${pad}_1x.webp`));
         const metaKey = `graphics/maps_hd/map_${pad}/meta.json`;
         tasks.push(
           (async () => {
@@ -162,12 +163,25 @@ export class WasmAssetProvider {
               const jsonLen = this._writeScratch(bytes);
               this.w.wasm_upload_hd_map_json?.(keyLen, jsonLen);
               const meta = JSON.parse(textDecoder.decode(bytes));
-              const chunks = Array.isArray(meta?.chunks) ? meta.chunks : [];
+              const files = new Set();
+              const rooms = Array.isArray(meta?.rooms)
+                ? meta.rooms
+                : Array.isArray(meta?.chunks)
+                  ? meta.chunks
+                  : [];
+              for (const r of rooms) {
+                const f = r?.file || r?.path;
+                if (f) files.add(f);
+              }
+              const occ = meta?.occluders;
+              if (Array.isArray(occ?.pages)) {
+                for (const p of occ.pages) if (p) files.add(p);
+              }
+              if (occ?.file) files.add(occ.file);
               await Promise.all(
-                chunks.map((c) => {
-                  const file = c?.file || c?.path;
-                  return file ? this.prefetchTexture(`graphics/maps_hd/map_${pad}/${file}`) : null;
-                })
+                Array.from(files).map((file) =>
+                  this.prefetchTexture(`graphics/maps_hd/map_${pad}/${file}`)
+                )
               );
             } catch {
               // Fall back cleanly to GOP tiles if map has no HD pack
