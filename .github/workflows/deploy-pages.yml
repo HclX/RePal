@@ -29,30 +29,6 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
-      - name: Fetch pinned legacy assets (skipped when assets-lock.json uses repal-packs/1)
-        if: ${{ secrets.ASSETS_REPO_TOKEN != '' }}
-        env:
-          GH_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
-        run: |
-          python3 -c '
-          import json, subprocess, hashlib, pathlib
-          lock = json.load(open("assets-lock.json"))
-          if lock.get("format") == "repal-packs/1" or "filename" not in lock:
-              print("repal-packs/1 manifest lock active; browser fetches .rpk packs on demand.")
-              raise SystemExit(0)
-          subprocess.check_call([
-              "gh", "release", "download", lock["tag"],
-              "--repo", lock["repo"],
-              "--pattern", lock["filename"],
-              "--output", "pal-assets.tar.gz",
-          ])
-          actual = hashlib.sha256(pathlib.Path("pal-assets.tar.gz").read_bytes()).hexdigest()
-          assert actual == lock["sha256"], f"SHA-256 mismatch: {actual} != {lock[\"sha256\"]}"
-          subprocess.check_call(["tar", "-xzf", "pal-assets.tar.gz", "-C", "site"])
-          pathlib.Path("pal-assets.tar.gz").unlink()
-          print("Verified & unpacked assets:", lock["version"], lock["sha256"][:12])
-          '
-
       - name: Install Rust toolchain with wasm32 target
         uses: dtolnay/rust-toolchain@stable
         with:

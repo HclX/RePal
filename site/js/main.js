@@ -194,18 +194,25 @@ class PalRemakeApp {
             } catch {}
             window.location.reload();
           };
-          box.append(inp, btn);
-          this.loadingOverlay.append(box);
+          box.append?.(inp, btn);
+          this.loadingOverlay.append?.(box);
         }
       }
     }
   }
 
   async _initPackManagerIfNeeded() {
-    const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const isBrowserHttp =
+      typeof window !== "undefined" &&
+      typeof window.location?.protocol === "string" &&
+      (window.location.protocol === "http:" || window.location.protocol === "https:");
+    const params = typeof window !== "undefined" ? new URLSearchParams(window.location?.search || "") : null;
     const explicitPacks = params?.get("packs");
     const explicitAssets = params?.get("assets");
     const base = resolveAssetBaseUrl();
+
+    // In headless Node/test harnesses without a real HTTP(S) browser origin, stay in loose mode unless `?packs=` is set.
+    if (!explicitPacks && !isBrowserHttp) return;
 
     // If user explicitly passed `?assets=...` (and not `?packs=`), stick to loose asset mode.
     if (explicitAssets && !explicitPacks) return;
