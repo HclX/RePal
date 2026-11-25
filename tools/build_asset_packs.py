@@ -278,6 +278,7 @@ def analyze_dependencies(
     fbp_files: Dict[int, List[str]] = collections.defaultdict(list)
     abc_files: Dict[int, List[str]] = collections.defaultdict(list)
     rng_files: Dict[int, List[str]] = collections.defaultdict(list)
+    bgm_hd_files: Dict[int, List[str]] = collections.defaultdict(list)
 
     for k in all_files:
         if m := re.match(r"^graphics/mgo/mgo_(\d+)", k):
@@ -292,6 +293,8 @@ def analyze_dependencies(
             abc_files[int(m.group(1))].append(k)
         elif m := re.match(r"^graphics/rng/rng_(\d+)/", k):
             rng_files[int(m.group(1))].append(k)
+        elif m := re.match(r"^audio/bgm_hd/mus_(\d+)\.(mp3|ogg)$", k):
+            bgm_hd_files[int(m.group(1))].append(k)
 
     pack_keys: Dict[str, Set[str]] = collections.defaultdict(set)
     assigned_non_region: Set[str] = set()
@@ -321,6 +324,9 @@ def analyze_dependencies(
     for fid in (0, 1, 2, 3, 4, 68, 69):
         for k in fbp_files.get(fid, []):
             put_boot(k)
+    # Title screen HD BGM (track #4) in boot so opening screen plays HD audio immediately
+    for k in bgm_hd_files.get(4, []):
+        put_boot(k)
 
     # 2. Shared-by-construction: all runtime/save-dependent assets (#237 review)
     for k in all_files:
@@ -460,6 +466,11 @@ def analyze_dependencies(
                 elif op == "fbp_show":
                     fid = int(st.get("fbp_id", args[0] if args else 0) or 0)
                     for k in fbp_files.get(fid, []):
+                        if k not in assigned_non_region:
+                            key_regions[k].update(regs)
+                elif op in ("music_play", "battle_music_set"):
+                    tid = int(st.get("track", args[0] if args else 0) or 0)
+                    for k in bgm_hd_files.get(tid, []):
                         if k not in assigned_non_region:
                             key_regions[k].update(regs)
 

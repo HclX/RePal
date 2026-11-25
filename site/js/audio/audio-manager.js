@@ -27,6 +27,10 @@ export class AudioManager {
     this.currentLoop = true;
     this.pendingTrack = null;
     this.midiCache = new Map();
+    this.hdBgmCache = new Map();
+    this.hdBgmMissing = new Set();
+    this.hdBgmSource = null;
+    this.hdBgmActive = false;
     this.sfxCache = new Map();
     this.sfxInFlight = new Map();
     this.unlocked = false;
@@ -133,7 +137,7 @@ export class AudioManager {
             const need = ev.data?.need || 2048;
             const outL = new Float32Array(need);
             const outR = new Float32Array(need);
-            if (this.musicEnabled && this.wasm?.exports) {
+            if (this.musicEnabled && !this.hdBgmActive && this.wasm?.exports) {
               this.wasm.synthRenderInto(outL, outR);
             }
             node.port.postMessage({ l: outL, r: outR }, [outL.buffer, outR.buffer]);
@@ -167,7 +171,7 @@ export class AudioManager {
     this.scriptNode.onaudioprocess = (ev) => {
       const outL = ev.outputBuffer.getChannelData(0);
       const outR = ev.outputBuffer.getChannelData(1);
-      if (!this.musicEnabled) {
+      if (!this.musicEnabled || this.hdBgmActive) {
         outL.fill(0);
         outR.fill(0);
         return;
@@ -198,12 +202,70 @@ export class AudioManager {
     this.workletNode?.port?.postMessage({ type: "clear" });
   }
 
+  _stopHdBgm() {
+    if (this.hdBgmSource) {
+      try {
+        this.hdBgmSource.stop();
+        this.hdBgmSource.disconnect();
+      } catch {
+        // Ignore already-stopped source
+      }
+      this.hdBgmSource = null;
+    }
+    this.hdBgmActive = false;
+  }
+
+  async _loadHdBgmBuffer(id) {
+    if (this.hdBgmMissing.has(id)) return null;
+    if (this.hdBgmCache.has(id)) {
+      const buf = this.hdBgmCache.get(id);
+      this.hdBgmCache.delete(id);
+      this.hdBgmCache.set(id, buf);
+      return buf;
+    }
+    const pad = String(id).padStart(3, "0");
+    for (const ext of ["mp3", "ogg"]) {
+      const relKey = `audio/bgm_hd/mus_${pad}.${ext}`;
+      try {
+        let raw = null;
+        if (this.packManager) {
+          const u8 = await this.packManager.readBytes(relKey);
+          if (u8) raw = u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength);
+        }
+        if (!raw && !this.packManager) {
+          const url = withAssetVersion(`${this.assetBaseUrl}/${relKey}`);
+          const resp = await fetch(url);
+          if (resp.ok) raw = await resp.arrayBuffer();
+        }
+        if (!raw) continue;
+        const decoded = await this.ctx.decodeAudioData(raw);
+        if (this.hdBgmCache.size >= 6) {
+          const oldest = this.hdBgmCache.keys().next().value;
+          if (oldest !== undefined) this.hdBgmCache.delete(oldest);
+        }
+        this.hdBgmCache.set(id, decoded);
+        return decoded;
+      } catch {
+        // Try next format or fall back to DualSynth MIDI
+      }
+    }
+    this.hdBgmMissing.add(id);
+    return null;
+  }
+
   setHdMode(hd) {
-    this.hdMode = Boolean(hd);
+    const next = Boolean(hd);
+    const changed = next !== this.hdMode;
+    this.hdMode = next;
     if (this.wasm?.exports) {
       this.wasm.synthSetHdMode(this.hdMode);
     }
     this._clearWorklet();
+    if (changed && this.currentTrackId > 0 && this.ctx) {
+      const tid = this.currentTrackId;
+      const lp = this.currentLoop;
+      this.playMusic(tid, lp, true);
+    }
   }
 
   setMusicEnabled(enabled) {
@@ -242,13 +304,13 @@ export class AudioManager {
     return this.muted;
   }
 
-  async playMusic(trackId, loop = true) {
+  async playMusic(trackId, loop = true, force = false) {
     const id = Number(trackId) | 0;
     if (id <= 0) {
       this.stopMusic();
       return;
     }
-    if (id === this.currentTrackId && loop === this.currentLoop && this.ctx) {
+    if (!force && id === this.currentTrackId && loop === this.currentLoop && this.ctx) {
       return;
     }
     if (!this.ctx) {
@@ -261,6 +323,27 @@ export class AudioManager {
       this.ctx.resume().catch(() => {});
     }
 
+    // Hybrid HD BGM (#3): when in HD mode, prefer pre-rendered `audio/bgm_hd/mus_XXX.{mp3,ogg}`
+    // (0% WASM synth CPU), falling back seamlessly to DualSynth MIDI if not present.
+    if (this.hdMode) {
+      const hdBuf = await this._loadHdBgmBuffer(id);
+      if (this.currentTrackId !== id) return;
+      if (hdBuf) {
+        this._stopHdBgm();
+        this._clearWorklet();
+        if (this.wasm?.exports) this.wasm.synthStop();
+        const src = this.ctx.createBufferSource();
+        src.buffer = hdBuf;
+        src.loop = Boolean(loop);
+        src.connect(this.masterGain);
+        src.start(0);
+        this.hdBgmSource = src;
+        this.hdBgmActive = true;
+        return;
+      }
+    }
+
+    this._stopHdBgm();
     try {
       let bytes = this.midiCache.get(id);
       if (!bytes) {
@@ -292,6 +375,7 @@ export class AudioManager {
   stopMusic() {
     this.currentTrackId = 0;
     this.pendingTrack = null;
+    this._stopHdBgm();
     this._clearWorklet();
     if (this.wasm?.exports) {
       this.wasm.synthStop();
