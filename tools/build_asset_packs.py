@@ -534,8 +534,13 @@ def cmd_build(args: argparse.Namespace) -> int:
         raw_hex = args.master_key_hex
         if args.master_key_file:
             raw_hex = Path(args.master_key_file).read_text("utf-8").strip()
+        if args.master_key_env:
+            raw_hex = os.environ.get(args.master_key_env, "").strip()
         if not raw_hex:
-            print("ERROR: --encrypt requires --master-key-hex or --master-key-file", file=sys.stderr)
+            print(
+                "ERROR: --encrypt requires --master-key-hex, --master-key-file, or --master-key-env",
+                file=sys.stderr,
+            )
             return 2
         master_key = bytes.fromhex(raw_hex.strip())
         if len(master_key) != 32:
@@ -740,6 +745,7 @@ def main() -> int:
     pb.add_argument("--opaque-names", action="store_true", help="Use opaque p-<hash>.rpk filenames")
     pb.add_argument("--master-key-hex", default="", help="64-hex-char master key (for dev/CI)")
     pb.add_argument("--master-key-file", default="", help="Path to file containing 64-hex-char master key")
+    pb.add_argument("--master-key-env", default="", help="Env var name containing 64-hex-char master key (recommended for CI)")
 
     pr = sub.add_parser("rotate-key", help="Re-wrap pack content keys in pack-manifest.json under a new master key")
     pr.add_argument("--manifest", required=True, help="Path to pack-manifest.json")

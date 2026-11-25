@@ -1,0 +1,142 @@
+name: Publish Encrypted Asset Packs (RePal_Packs)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Pack release tag in HclX/RePal_Packs (e.g. packs-v3)"
+        required: true
+        default: "packs-v3"
+      assets_ref:
+        description: "Git ref in HclX/RePal_Assets to build from"
+        required: false
+        default: "main"
+      max_pack_mb:
+        description: "Max single .rpk size in MiB (<= 18 for jsDelivr 20 MiB cap)"
+        required: false
+        default: "18"
+      update_lock:
+        description: "Automatically update assets-lock.json in HclX/RePal main"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish-packs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Validate required secrets
+        env:
+          REPAL_PACK_KEY: ${{ secrets.REPAL_PACK_KEY }}
+          PACKS_PUBLISH_TOKEN: ${{ secrets.PACKS_PUBLISH_TOKEN }}
+        run: |
+          if [ -z "$REPAL_PACK_KEY" ]; then
+            echo "::error::Missing secret REPAL_PACK_KEY (64-hex AES-256 master key)."
+            exit 1
+          fi
+          if [ -z "$PACKS_PUBLISH_TOKEN" ]; then
+            echo "::error::Missing secret PACKS_PUBLISH_TOKEN (PAT with Contents:Read on HclX/RePal_Assets and Contents:Write on HclX/RePal_Packs)."
+            exit 1
+          fi
+
+      - name: Checkout HclX/RePal
+        uses: actions/checkout@v4
+
+      - name: Checkout HclX/RePal_Assets
+        uses: actions/checkout@v4
+        with:
+          repository: HclX/RePal_Assets
+          ref: ${{ inputs.assets_ref }}
+          token: ${{ secrets.PACKS_PUBLISH_TOKEN }}
+          path: _repal_assets
+          fetch-depth: 1
+
+      - name: Checkout HclX/RePal_Packs
+        uses: actions/checkout@v4
+        with:
+          repository: HclX/RePal_Packs
+          token: ${{ secrets.PACKS_PUBLISH_TOKEN }}
+          path: _repal_packs
+          fetch-depth: 1
+
+      - name: Install Python pack-builder dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pyyaml cryptography
+
+      - name: Build encrypted RPK1 packs
+        env:
+          REPAL_PACK_KEY: ${{ secrets.REPAL_PACK_KEY }}
+          PACK_VERSION: ${{ inputs.version }}
+          MAX_PACK_MB: ${{ inputs.max_pack_mb }}
+        run: |
+          rm -rf _packs_out
+          python3 tools/build_asset_packs.py build \
+            --assets _repal_assets/assets \
+            --out _packs_out \
+            --version "$PACK_VERSION" \
+            --max-pack-mb "$MAX_PACK_MB" \
+            --encrypt \
+            --master-key-env REPAL_PACK_KEY \
+            --opaque-names \
+            --base-url "https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@${PACK_VERSION}" \
+            --mirror-url "https://raw.githubusercontent.com/HclX/RePal_Packs/${PACK_VERSION}"
+
+      - name: Publish packs and tag in HclX/RePal_Packs
+        env:
+          PACK_VERSION: ${{ inputs.version }}
+          ASSETS_SHA: ${{ steps.assets.outputs.sha }}
+        run: |
+          ASSETS_REV=$(git -C _repal_assets rev-parse --short HEAD)
+          cd _repal_packs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Replace published .rpk and pack-manifest.json cleanly (keep README/LICENSE/.git)
+          rm -f p-*.rpk *.rpk pack-manifest.json
+          cp ../_packs_out/*.rpk ../_packs_out/pack-manifest.json .
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(packs): publish ${PACK_VERSION} from RePal_Assets@${ASSETS_REV}"
+          fi
+          git tag -f "$PACK_VERSION"
+          git push origin HEAD:main
+          git push -f origin "refs/tags/${PACK_VERSION}"
+
+      - name: Update assets-lock.json in HclX/RePal
+        if: ${{ inputs.update_lock }}
+        env:
+          PACK_VERSION: ${{ inputs.version }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+          ver = os.environ["PACK_VERSION"]
+          mp = pathlib.Path("_packs_out/pack-manifest.json")
+          raw = mp.read_bytes()
+          lock = {
+              "format": "repal-packs/1",
+              "schema_version": 1,
+              "version": ver,
+              "manifest": {
+                  "urls": [
+                      f"https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@{ver}/pack-manifest.json",
+                      f"https://raw.githubusercontent.com/HclX/RePal_Packs/{ver}/pack-manifest.json",
+                  ],
+                  "sha256": hashlib.sha256(raw).hexdigest(),
+                  "size_bytes": len(raw),
+              },
+          }
+          pathlib.Path("assets-lock.json").write_text(
+              json.dumps(lock, indent=2) + "\n", encoding="utf-8"
+          )
+          print("Updated assets-lock.json:", json.dumps(lock, indent=2))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(assets): bump assets-lock.json to ${PACK_VERSION}"
+            git push origin HEAD:main
+          fi
