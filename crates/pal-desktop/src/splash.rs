@@ -6,6 +6,8 @@ pub struct SplashState {
     pub stage: String,
     pub detail: String,
     pub error: Option<String>,
+    pub update_available: Option<String>,
+    pub update_status: Option<String>,
     pub tick: u32,
 }
 
@@ -16,6 +18,8 @@ impl Default for SplashState {
             stage: "PREPARING ASSETS...".to_string(),
             detail: "CHECKING LOCAL CACHE".to_string(),
             error: None,
+            update_available: None,
+            update_status: None,
             tick: 0,
         }
     }
@@ -116,11 +120,16 @@ pub fn render_splash(buf: &mut [u32], width: usize, height: usize, state: &Splas
         fill_rect(buf, width, height, box_x, box_y, box_w, box_h, 0x002B1418);
         draw_rect_outline(buf, width, height, box_x, box_y, box_w, box_h, 2, 0x00E06464);
 
+        let err_title = if err.to_ascii_lowercase().contains("key") {
+            "ASSET PACK KEY REQUIRED"
+        } else {
+            "ASSET DOWNLOAD FAILED"
+        };
         draw_text_centered(
             buf,
             width,
             height,
-            "ASSET DOWNLOAD FAILED",
+            err_title,
             cx,
             box_y + 18,
             err_scale,
@@ -147,11 +156,18 @@ pub fn render_splash(buf: &mut [u32], width: usize, height: usize, state: &Splas
                 line_y += err_scale * 9;
             }
         }
+        let footer = if let Some(st) = &state.update_status {
+            st.clone()
+        } else if let Some(ver) = &state.update_available {
+            format!("PRESS U TO UPDATE TO {ver}   -   ESC TO EXIT")
+        } else {
+            "PRESS ESC TO EXIT".to_string()
+        };
         draw_text_centered(
             buf,
             width,
             height,
-            "PRESS ESC TO EXIT",
+            &footer,
             cx,
             box_y + box_h.saturating_sub(err_scale * 10),
             err_scale,

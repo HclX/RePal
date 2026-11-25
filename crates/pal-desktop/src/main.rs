@@ -361,6 +361,9 @@ impl DesktopApp {
         };
         rt.set_lang(user_cfg.lang);
         rt.ui.fullscreen = self.fullscreen;
+        if let Some(info) = &self.pending_update {
+            rt.ui.update_available = Some(info.version.clone());
+        }
 
         let mut audio = NativeAudio::new(self.cfg.assets_root.clone(), hd_mode);
         if !user_cfg.music_on {

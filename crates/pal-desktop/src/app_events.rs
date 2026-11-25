@@ -132,8 +132,16 @@ impl ApplicationHandler for DesktopApp {
                     return;
                 }
                 if self.rt.is_none() {
-                    if code == KeyCode::Escape && self.splash.error.is_some() {
-                        event_loop.exit();
+                    if self.splash.error.is_some() {
+                        if code == KeyCode::Escape {
+                            event_loop.exit();
+                        } else if code == KeyCode::KeyU && self.update_rx.is_none() {
+                            if let Some(info) = self.pending_update.clone() {
+                                self.splash.update_status =
+                                    Some(format!("DOWNLOADING {}...", info.version));
+                                self.update_rx = Some(updater::spawn_self_update(info));
+                            }
+                        }
                     }
                     return;
                 }

@@ -262,6 +262,7 @@ impl DesktopApp {
                     updater::UpdateMsg::Available(info) => {
                         let version = info.version.clone();
                         self.pending_update = Some(info);
+                        self.splash.update_available = Some(version.clone());
                         if let Some(rt) = self.rt.as_mut() {
                             rt.ui.update_available = Some(version.clone());
                             rt.show_toast(format!("发现新版本 {version}，可在更多选项中更新"), 180);
@@ -276,11 +277,13 @@ impl DesktopApp {
                         clear_rx = true;
                     }
                     updater::UpdateMsg::Progress(text) => {
+                        self.splash.update_status = Some(text.clone());
                         if let Some(rt) = self.rt.as_mut() {
                             rt.show_toast(text, 240);
                         }
                     }
                     updater::UpdateMsg::ReadyToRestart { version, exe_path } => {
+                        self.splash.update_status = Some(format!("UPDATED TO {version} - RESTARTING..."));
                         if let Some(rt) = self.rt.as_mut() {
                             rt.show_toast(format!("已更新至 {version}，正在重启..."), 120);
                         }
@@ -288,6 +291,7 @@ impl DesktopApp {
                         clear_rx = true;
                     }
                     updater::UpdateMsg::Error(err) => {
+                        self.splash.update_status = Some(format!("UPDATE ERROR: {err}"));
                         if let Some(rt) = self.rt.as_mut() {
                             rt.show_toast(err, 150);
                         }
