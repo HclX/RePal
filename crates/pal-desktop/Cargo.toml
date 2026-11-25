@@ -1,6 +1,6 @@
 [package]
 name = "pal-desktop"
-version = "0.5.2"
+version = "0.5.3"
 edition = "2021"
 description = "Unified native binary `repal` (GUI + headless Text Mode + GUI+Text socket/stdio)"
 
