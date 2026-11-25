@@ -552,24 +552,45 @@ class PalRemakeApp {
     });
     document.addEventListener?.("visibilitychange", () => document.hidden && release());
 
+    // Wire single-button system dropdown menu (#7)
+    const menuWrap = document.getElementById("pal-stage-menu-wrap");
+    const menuBtn = document.getElementById("btn-stage-menu");
+    const closeStageMenu = () => {
+      menuWrap?.classList?.remove("open");
+      menuBtn?.setAttribute?.("aria-expanded", "false");
+    };
+    menuBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = menuWrap?.classList?.toggle("open");
+      menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    window.addEventListener("pointerdown", (e) => {
+      if (menuWrap?.classList?.contains("open") && !menuWrap.contains(e.target)) {
+        closeStageMenu();
+      }
+    });
+
     // Wire visible Web Replay Library / `.repal` loader button (#2)
     const replayBtn = document.getElementById("btn-stage-replay");
     replayBtn?.addEventListener("click", () => {
+      closeStageMenu();
       if (this.replayTheater?.active) this.replayTheater.openReplayMenu();
       else this.replayTheater?.openLibrary();
     });
 
     // Wire mobile virtual touch controls & toggle (#1)
-    this._wireMobileTouchControls();
+    this._wireMobileTouchControls(closeStageMenu);
 
     // Wire in-game bug report toolbar button (F9 shortcut)
     const bugBtn = document.getElementById("btn-stage-bug");
     bugBtn?.addEventListener("click", () => {
+      closeStageMenu();
       this.core.openBugReportDialog("Toolbar");
     });
 
     // Wire fullscreen / cinema-fill button (#17) + landscape orientation lock on mobile
     const enterFullscreenLandscape = () => {
+      closeStageMenu();
       const stage = document.getElementById("game-stage") || document.documentElement;
       const tryLock = () => {
         try {
@@ -591,6 +612,7 @@ class PalRemakeApp {
     };
     const fsBtn = document.getElementById("btn-stage-fullscreen");
     fsBtn?.addEventListener("click", () => {
+      closeStageMenu();
       if (document.fullscreenElement) {
         document.exitFullscreen?.().catch?.(() => {});
         document.body?.classList?.remove("pal-cinema-fill");
@@ -697,7 +719,7 @@ class PalRemakeApp {
     document.querySelectorAll?.(".touch-dpad-arrow.active")?.forEach?.((el) => el.classList.remove("active"));
   }
 
-  _wireMobileTouchControls() {
+  _wireMobileTouchControls(onAfterToggle = null) {
     const TOUCH_PREF_KEY = "repal_touch_pad_v1";
     const toggleBtn = document.getElementById("btn-stage-touchpad");
     const isCoarse = typeof window !== "undefined" && window.matchMedia?.("(hover: none) and (pointer: coarse)")?.matches;
@@ -707,6 +729,7 @@ class PalRemakeApp {
       else if (saved === "1") document.body?.classList?.add("touch-pad-shown");
     } catch {}
     toggleBtn?.addEventListener("click", () => {
+      onAfterToggle?.();
       const currentlyHidden =
         document.body.classList.contains("touch-pad-hidden") ||
         (!isCoarse && !document.body.classList.contains("touch-pad-shown"));
@@ -727,8 +750,20 @@ class PalRemakeApp {
       e.preventDefault();
       e.stopPropagation();
     });
+    // Suppress OS long-press haptic vibration & callout on Android/iOS touch controls (#7)
+    const preventNativeLongPress = (el) => {
+      el?.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
+      el?.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+      el?.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    };
 
     const dpad = document.getElementById("touch-dpad");
+    preventNativeLongPress(dpad);
+    preventNativeLongPress(document.getElementById("touch-btn-a"));
+    preventNativeLongPress(document.getElementById("touch-btn-b"));
     const nub = document.getElementById("touch-dpad-nub");
     const dirToKey = ["ArrowDown", "ArrowLeft", "ArrowUp", "ArrowRight"];
 

@@ -219,12 +219,37 @@ impl Game {
                 q.push_back(Tl::NeedFadeIn(true));
                 Flow::Wait(Wait::Timeline(q))
             }
-            "screen_fade_in" | "screen_fade_to_scene" => {
+            "screen_fade_in" => {
                 if auto {
                     return Flow::Next;
                 }
                 let mut q = VecDeque::from([Tl::NeedFadeIn(false)]);
                 q.extend(fade_in_steps());
+                Flow::Wait(Wait::Timeline(q))
+            }
+            "screen_fade_to_scene" => {
+                // SDLPAL 0x0073: cross-fade transition (e.g. smashing Asura statues with 破天锤, #6).
+                // When the screen is currently visible (`fade_alpha < 0.1`), emit a crisp warm-white
+                // shatter flash pulse so the player clearly sees the statue shatter; otherwise fade in.
+                if auto {
+                    return Flow::Next;
+                }
+                let mut q = VecDeque::from([Tl::NeedFadeIn(false)]);
+                if self.world.view.fade_alpha < 0.1 {
+                    let step = ms_to_ticks(28).max(1);
+                    q.push_back(Tl::Color([255, 248, 224]));
+                    for i in 1..=4 {
+                        q.push_back(Tl::Alpha(i as f32 * 0.18));
+                        q.push_back(Tl::Sleep(step));
+                    }
+                    for i in (0..4).rev() {
+                        q.push_back(Tl::Alpha(i as f32 * 0.18));
+                        q.push_back(Tl::Sleep(step));
+                    }
+                    q.push_back(Tl::Color([0, 0, 0]));
+                } else {
+                    q.extend(fade_in_steps());
+                }
                 Flow::Wait(Wait::Timeline(q))
             }
             "screen_fade_step" => {

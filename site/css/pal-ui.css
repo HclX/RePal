@@ -53,13 +53,64 @@ body {
   contain: layout paint;
 }
 
-.pal-stage-toolbar {
+.pal-stage-menu-wrap {
   position: fixed;
   top: max(8px, env(safe-area-inset-top));
   right: max(10px, env(safe-area-inset-right));
   z-index: 45;
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 6px;
+}
+
+.pal-stage-menu-trigger {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pal-stage-dropdown {
+  display: none;
+  flex-direction: column;
+  min-width: 140px;
+  padding: 6px;
+  gap: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(224, 185, 107, 0.55);
+  background: rgba(12, 18, 26, 0.94);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+}
+
+.pal-stage-menu-wrap.open .pal-stage-dropdown {
+  display: flex;
+}
+
+.pal-stage-drop-item {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--paper-text);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pal-stage-drop-item:hover,
+.pal-stage-drop-item:active {
+  background: rgba(224, 185, 107, 0.16);
+  border-color: rgba(224, 185, 107, 0.45);
+  color: var(--dos-gold-hi);
 }
 
 .pal-stage-fs-btn {
@@ -404,14 +455,15 @@ body.touch-pad-shown #mobile-touch-controls {
 
 .touch-actions {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: center;
   gap: 14px;
   pointer-events: auto;
 }
 
 .touch-action-btn {
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
@@ -423,20 +475,22 @@ body.touch-pad-shown #mobile-touch-controls {
   color: var(--paper-text);
   font-family: inherit;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   touch-action: none;
   cursor: pointer;
 }
 
 .touch-btn-a {
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
   border-color: rgba(252, 252, 84, 0.72);
   background: rgba(42, 66, 56, 0.74);
   color: var(--dos-gold-hi);
 }
 
 .touch-btn-b {
-  margin-bottom: 18px;
   border-color: rgba(224, 148, 120, 0.65);
   background: rgba(68, 34, 28, 0.72);
 }
