@@ -44,6 +44,8 @@ pub enum FgKind {
 pub enum Tl {
     Alpha(f32),
     Color([u8; 3]),
+    CrossfadeStart,
+    CrossfadeAlpha(f32),
     Sleep(u32),
     AutoTick,
     FadeInIfNeeded,
@@ -538,6 +540,7 @@ impl Game {
             self.vmc.need_fade_in = false;
             self.world.view.fade_alpha = 0.0;
         }
+        self.world.view.crossfade_alpha = 0.0;
         self.emit(HostCmd::HideDialogue);
         self.sync_obstacles(0);
         match t.kind {
@@ -657,6 +660,11 @@ impl Game {
             match q.pop_front().unwrap() {
                 Tl::Alpha(a) => self.world.view.fade_alpha = a,
                 Tl::Color(c) => self.world.view.fade_color = c,
+                Tl::CrossfadeStart => {
+                    self.world.view.crossfade_seq = self.world.view.crossfade_seq.wrapping_add(1);
+                    self.world.view.crossfade_alpha = 1.0;
+                }
+                Tl::CrossfadeAlpha(a) => self.world.view.crossfade_alpha = a,
                 Tl::AutoTick => self.tick_auto_scripts(),
                 Tl::NeedFadeIn(b) => self.vmc.need_fade_in = b,
                 Tl::FadeInIfNeeded => {

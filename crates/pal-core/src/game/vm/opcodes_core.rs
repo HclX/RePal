@@ -571,18 +571,12 @@ impl Game {
                         self.sync_obstacles(id);
                     }
                     let e = self.world.event(id).unwrap();
-                    let (ox, oy) = (e.x, e.y);
-                    let (nx, ny) = npc_walk_dir(&self.grid, ox, oy, dir, solid);
+                    let (nx, ny) = npc_walk_dir(&self.grid, e.x, e.y, dir, solid);
                     let e = self.world.event_mut(id).unwrap();
                     e.direction = dir as i32;
                     e.x = nx;
                     e.y = ny;
-                    if nx != ox || ny != oy {
-                        e.advance_frame(3);
-                    } else {
-                        // Blocked by wall/party: settle cleanly on standing frame instead of mid-stride (#5).
-                        e.current_frame = 0;
-                    }
+                    e.advance_frame(3);
                 }
                 if auto {
                     self.update_caller(caller, ScriptPos::new(cur.label, cur.idx + 1));

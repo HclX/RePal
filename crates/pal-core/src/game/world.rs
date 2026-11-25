@@ -217,7 +217,11 @@ impl Event {
 
     pub fn advance_frame(&mut self, fallback: i32) {
         let total = self.anim_frames(fallback);
-        self.current_frame = (self.current_frame + 1).rem_euclid(total);
+        // Authentic SDLPAL PAL_NPCWalkOneStep: 3-frame directional walk sprites (0=stand, 1=left, 2=right)
+        // cycle through a 4-phase stride (0 -> 1 -> 2 -> 3 -> 0) where phase 2 renders as stand (0)
+        // and phase 3 renders as frame 2, so even-step walks (e.g. s_135d count=8) end standing (#5).
+        let period = if self.sprite_frames == 3 { 4 } else { total };
+        self.current_frame = (self.current_frame + 1).rem_euclid(period);
     }
 }
 
@@ -234,6 +238,10 @@ pub struct CounterKey {
 pub struct ViewState {
     pub fade_alpha: f32,
     pub fade_color: [u8; 3],
+    /// Active `0x0073` (`VIDEO_FadeScreen`) cross-fade weight: `1.0` = backed-up pre-change frame, `0.0` = new frame.
+    pub crossfade_alpha: f32,
+    /// Monotonic counter bumped each time `0x0073` starts a cross-fade so the renderer snapshots `fb` once.
+    pub crossfade_seq: u32,
     pub active_fbp: i32,
     pub cam_override: Option<(i32, i32)>,
     pub shake_ticks: i32,
@@ -248,6 +256,8 @@ impl Default for ViewState {
         Self {
             fade_alpha: 0.0,
             fade_color: [0, 0, 0],
+            crossfade_alpha: 0.0,
+            crossfade_seq: 0,
             active_fbp: -1,
             cam_override: None,
             shake_ticks: 0,

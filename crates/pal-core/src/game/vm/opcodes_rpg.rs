@@ -228,25 +228,23 @@ impl Game {
                 Flow::Wait(Wait::Timeline(q))
             }
             "screen_fade_to_scene" => {
-                // SDLPAL 0x0073: cross-fade transition (e.g. smashing Asura statues with 破天锤, #6).
-                // When the screen is currently visible (`fade_alpha < 0.1`), emit a crisp warm-white
-                // shatter flash pulse so the player clearly sees the statue shatter; otherwise fade in.
+                // Authentic SDLPAL 0x0073 (`VIDEO_BackupScreen` + `PAL_MakeScene` + `VIDEO_FadeScreen`):
+                // when the screen is visible, cross-fade smoothly from the backed-up pre-change frame
+                // to the updated scene (e.g. smashing Asura statues in Scene #17 with 破天锤, #6);
+                // when currently faded to black, fade in from black.
                 if auto {
                     return Flow::Next;
                 }
                 let mut q = VecDeque::from([Tl::NeedFadeIn(false)]);
                 if self.world.view.fade_alpha < 0.1 {
-                    let step = ms_to_ticks(28).max(1);
-                    q.push_back(Tl::Color([255, 248, 224]));
-                    for i in 1..=4 {
-                        q.push_back(Tl::Alpha(i as f32 * 0.18));
-                        q.push_back(Tl::Sleep(step));
+                    let speed = ins.arg_or(0, 1).clamp(0, 8) as u32;
+                    let ticks_per_step = (speed + 1).clamp(1, 5);
+                    q.push_back(Tl::CrossfadeStart);
+                    for i in 1..=12 {
+                        let alpha = (12 - i) as f32 / 12.0;
+                        q.push_back(Tl::Sleep(ticks_per_step));
+                        q.push_back(Tl::CrossfadeAlpha(alpha));
                     }
-                    for i in (0..4).rev() {
-                        q.push_back(Tl::Alpha(i as f32 * 0.18));
-                        q.push_back(Tl::Sleep(step));
-                    }
-                    q.push_back(Tl::Color([0, 0, 0]));
                 } else {
                     q.extend(fade_in_steps());
                 }

@@ -868,6 +868,8 @@ impl PalRuntime {
         wr.cam_override = v.cam_override;
         wr.fade_alpha = v.fade_alpha.clamp(0.0, 1.0);
         wr.fade_color = Color::rgba(v.fade_color[0], v.fade_color[1], v.fade_color[2], 255);
+        wr.crossfade_alpha = v.crossfade_alpha.clamp(0.0, 1.0);
+        wr.crossfade_seq = v.crossfade_seq;
         wr.night_palette = w.night_palette;
         wr.wave_amplitude = if w.screen_wave > 0 {
             (w.screen_wave as f32 * 1.8).min(16.0)

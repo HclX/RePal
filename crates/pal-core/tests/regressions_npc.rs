@@ -280,6 +280,7 @@ fn walking_npcs_respect_walls() {
     }
     let e = h.game.world.event(27).unwrap();
     assert_eq!((e.x, e.y), (1296, 1032));
+    assert_eq!(e.current_frame, 0, "Ev#27 must finish 8-step s_135d walk on standing frame 0 (#5)");
 
     // Solid NPCs facing a wall turn and animate but do not move.
     for (d, sx, sy) in [(0u8, 1360, 960), (1, 1360, 960), (1, 1256, 1012), (2, 1312, 984), (3, 1296, 968)] {

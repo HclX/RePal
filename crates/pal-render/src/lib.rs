@@ -28,6 +28,9 @@ pub struct PalCompositor {
     pub hd_mode: bool,
     pub cache: AssetCache,
     pub fonts: FontEngine,
+    crossfade_backup: Vec<u8>,
+    crossfade_backup_dims: (u32, u32),
+    last_crossfade_seq: u32,
 }
 
 impl Default for PalCompositor {
@@ -47,6 +50,9 @@ impl PalCompositor {
             hd_mode,
             cache: AssetCache::default(),
             fonts: FontEngine::new(),
+            crossfade_backup: Vec::new(),
+            crossfade_backup_dims: (0, 0),
+            last_crossfade_seq: 0,
         }
     }
 
@@ -82,7 +88,35 @@ impl PalCompositor {
         F: FnOnce(&mut Framebuffer, &mut AssetCache, &mut FontEngine, bool),
     {
         self.cache.advance_tick();
+        if world.crossfade_alpha > 0.001 && world.crossfade_seq != self.last_crossfade_seq {
+            // Snapshot the pre-change world framebuffer (authentic SDLPAL VIDEO_BackupScreen).
+            self.crossfade_backup = self.fb.pixels.clone();
+            self.crossfade_backup_dims = (self.fb.width, self.fb.height);
+            self.last_crossfade_seq = world.crossfade_seq;
+        }
         render_world(&mut self.fb, &mut self.cache, &mut self.fonts, state, world, self.hd_mode);
+        if world.crossfade_alpha > 0.001
+            && self.crossfade_backup_dims == (self.fb.width, self.fb.height)
+            && self.crossfade_backup.len() == self.fb.pixels.len()
+        {
+            // Authentic SDLPAL VIDEO_FadeScreen cross-fade: blend backup (old scene) into new scene.
+            let a = (world.crossfade_alpha.clamp(0.0, 1.0) * 256.0) as u32;
+            let inv = 256 - a;
+            for (dst, src) in self
+                .fb
+                .pixels
+                .chunks_exact_mut(4)
+                .zip(self.crossfade_backup.chunks_exact(4))
+            {
+                dst[0] = ((src[0] as u32 * a + dst[0] as u32 * inv) >> 8) as u8;
+                dst[1] = ((src[1] as u32 * a + dst[1] as u32 * inv) >> 8) as u8;
+                dst[2] = ((src[2] as u32 * a + dst[2] as u32 * inv) >> 8) as u8;
+            }
+        } else if world.crossfade_alpha <= 0.001 && !self.crossfade_backup.is_empty() {
+            self.crossfade_backup.clear();
+            self.crossfade_backup.shrink_to_fit();
+            self.crossfade_backup_dims = (0, 0);
+        }
 
         if self.ui_dirty {
             self.ui_layer.clear(Color::TRANSPARENT);
@@ -112,5 +146,28 @@ mod tests {
         assert_eq!((comp.fb.width, comp.fb.height), (320, 200));
         assert_eq!((comp.ui_layer.width, comp.ui_layer.height), (320, 200));
         assert!(comp.ui_dirty);
+    }
+
+    #[test]
+    fn test_compositor_crossfade_blends_backup_and_frees_when_done() {
+        let mut comp = PalCompositor::new(false);
+        // Simulate a pre-change rendered frame filled with solid blue.
+        comp.fb.clear(Color::rgba(0, 0, 200, 255));
+        let state = GameState::default();
+        let mut world = WorldRenderState {
+            crossfade_alpha: 0.5,
+            crossfade_seq: 1,
+            ..Default::default()
+        };
+        // New frame renders black (empty world); 50% blend with blue backup should produce ~100 blue.
+        comp.render_frame(&state, &world, |_, _, _, _| {});
+        assert!(comp.fb.pixels[2] >= 95 && comp.fb.pixels[2] <= 105, "expected ~100 blue, got {}", comp.fb.pixels[2]);
+        assert!(!comp.crossfade_backup.is_empty());
+
+        // Finishing cross-fade frees backup buffer and shows pure new frame.
+        world.crossfade_alpha = 0.0;
+        comp.render_frame(&state, &world, |_, _, _, _| {});
+        assert_eq!(comp.fb.pixels[2], 0);
+        assert!(comp.crossfade_backup.is_empty());
     }
 }

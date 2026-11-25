@@ -102,6 +102,10 @@ pub struct WorldRenderState {
     pub fade_alpha: f32,
     /// Full-screen fade tint color (defaults to `Color::BLACK`; supports red/white flashes).
     pub fade_color: Color,
+    /// Active `0x0073` (`VIDEO_FadeScreen`) cross-fade weight: `1.0` = backed-up pre-change frame, `0.0` = new frame.
+    pub crossfade_alpha: f32,
+    /// Monotonic counter bumped each time `0x0073` starts a cross-fade so `PalCompositor` snapshots `fb` once.
+    pub crossfade_seq: u32,
     /// Subtle night palette atmospheric tint (applied in both HD and Retro modes).
     pub night_palette: bool,
     /// Optional HD click-to-walk ground ripple `(world_x, world_y, age_0_to_1)`.
@@ -127,6 +131,8 @@ impl Default for WorldRenderState {
             shake_offset: (0, 0),
             fade_alpha: 0.0,
             fade_color: Color::BLACK,
+            crossfade_alpha: 0.0,
+            crossfade_seq: 0,
             night_palette: false,
             click_ripple: None,
             wave_amplitude: 0.0,
@@ -605,7 +611,16 @@ enum DepthItem {
 /// - Absolute pose frames (`frame >= sprite_frames`, e.g. Fisherman `Ev#113` frames `4..5`) and
 ///   non-directional ambient props (`sprite_frames == 0`) index directly by `frame % total_frames`.
 pub fn resolve_npc_frame_idx(dir: u32, frame: u32, sprite_frames: usize, total_frames: usize) -> usize {
-    if sprite_frames > 0 && (frame as usize) < sprite_frames && total_frames >= sprite_frames * 4 {
+    if sprite_frames == 3 && (frame as usize) < 4 && total_frames >= 12 {
+        // Authentic SDLPAL PAL_SceneDrawSprites 4-phase walk cycle for 3-frame sprites (#5):
+        // phase 0 -> 0 (stand), 1 -> 1 (left step), 2 -> 0 (stand), 3 -> 2 (right step).
+        let mapped = match frame {
+            2 => 0,
+            3 => 2,
+            f => f as usize,
+        };
+        ((dir & 3) as usize) * 3 + mapped
+    } else if sprite_frames > 0 && (frame as usize) < sprite_frames && total_frames >= sprite_frames * 4 {
         ((dir & 3) as usize) * sprite_frames + (frame as usize)
     } else if total_frames > 0 {
         (frame as usize) % total_frames
@@ -853,8 +868,7 @@ pub fn render_world(
                 .get((sp.id as usize).saturating_sub(1))
                 .map(|e| e.sprite_frames as usize)
                 .unwrap_or(0);
-            let clamped_frame = if ev_sf == 3 && sp.frame == 3 { 0 } else { sp.frame };
-            resolve_npc_frame_idx(sp.dir, clamped_frame, ev_sf, total_frames)
+            resolve_npc_frame_idx(sp.dir, sp.frame, ev_sf, total_frames)
         };
 
         let cast_shadow = is_party_like || (sp.layer >= 0 && total_frames >= 3);
@@ -1412,9 +1426,12 @@ mod tests {
         assert_eq!(resolve_npc_frame_idx(2, 0, 1, 4), 2);
         assert_eq!(resolve_npc_frame_idx(3, 0, 1, 4), 3);
 
-        // 12-frame walking villagers (sprite_frames = 3, total_frames = 12)
+        // 12-frame walking villagers (sprite_frames = 3, total_frames = 12):
+        // SDLPAL 4-phase cycle: 0 -> 0 (stand), 1 -> 1 (left), 2 -> 0 (stand), 3 -> 2 (right).
+        assert_eq!(resolve_npc_frame_idx(2, 0, 3, 12), 6);
         assert_eq!(resolve_npc_frame_idx(2, 1, 3, 12), 7);
-        assert_eq!(resolve_npc_frame_idx(3, 2, 3, 12), 11);
+        assert_eq!(resolve_npc_frame_idx(2, 2, 3, 12), 6);
+        assert_eq!(resolve_npc_frame_idx(3, 3, 3, 12), 11);
 
         // 16-frame 4-dir animals (sprite_frames = 4, total_frames = 16)
         assert_eq!(resolve_npc_frame_idx(2, 3, 4, 16), 11);
