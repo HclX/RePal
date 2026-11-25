@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RePal MGO 4× HD 精灵图验收台</title>
+<style>
+  :root {
+    --bg: #12151c;
+    --panel: #1a1f2b;
+    --panel2: #222938;
+    --border: #2e374a;
+    --text: #e6ebf5;
+    --muted: #8b96ad;
+    --accent: #5b9cff;
+    --ok: #34d399;
+    --warn: #fbbf24;
+    --bad: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px;
+  }
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(18, 21, 28, 0.94); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border); padding: 12px 18px;
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+  }
+  .title-wrap { display: flex; align-items: center; gap: 12px; }
+  .title-wrap h1 { margin: 0; font-size: 17px; font-weight: 600; }
+  .stats { color: var(--muted); font-size: 13px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input[type="text"], select, button {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 10px; font-size: 13px; outline: none;
+  }
+  input[type="text"]:focus, select:focus { border-color: var(--accent); }
+  button { cursor: pointer; transition: 0.12s; }
+  button:hover { border-color: var(--accent); background: #293246; }
+  button.primary { background: var(--accent); color: #0c1220; border-color: var(--accent); font-weight: 600; }
+  button.primary:hover { filter: brightness(1.08); }
+  .bar {
+    padding: 10px 18px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    background: var(--panel); border-bottom: 1px solid var(--border);
+  }
+  .pill {
+    padding: 4px 10px; border-radius: 99px; font-size: 12px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--panel2); color: var(--muted);
+  }
+  .pill.active { background: var(--accent); color: #0c1220; border-color: var(--accent); font-weight: 600; }
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 14px; padding: 16px 18px 60px;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .card.v-ok { border-color: rgba(52, 211, 153, 0.65); }
+  .card.v-warn { border-color: rgba(251, 191, 36, 0.75); }
+  .card.v-bad { border-color: rgba(248, 113, 113, 0.85); }
+  .card-hd {
+    padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);
+  }
+  .card-title { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge {
+    font-size: 11px; padding: 2px 7px; border-radius: 99px; background: var(--panel2); color: var(--muted);
+    white-space: nowrap;
+  }
+  .badge.done_v2 { background: rgba(52,211,153,0.16); color: var(--ok); }
+  .badge.legacy_track_b { background: rgba(91,156,255,0.15); color: var(--accent); }
+  .badge.qc-pass { background: rgba(52,211,153,0.14); color: var(--ok); }
+  .badge.qc-warn { background: rgba(251,191,36,0.18); color: var(--warn); }
+  .badge.qc-fail { background: rgba(248,113,113,0.22); color: var(--bad); }
+  .badge.recheck { background: rgba(56,189,248,0.24); color: #38bdf8; border: 1px solid rgba(56,189,248,0.5); font-weight: 600; }
+  .badge.name-review { background: rgba(192,132,252,0.20); color: #c084fc; border: 1px solid rgba(192,132,252,0.45); font-weight: 600; }
+  .card.v-recheck { box-shadow: 0 0 0 1px rgba(56,189,248,0.55); }
+  .preview-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border);
+    cursor: pointer;
+  }
+  .stage {
+    position: relative; height: 170px; display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .stage .tag {
+    position: absolute; top: 6px; left: 6px; font-size: 11px; padding: 2px 6px;
+    border-radius: 4px; background: rgba(0,0,0,0.65); color: #fff; pointer-events: none;
+  }
+  .bg-checker {
+    background-color: #2b303a;
+    background-image: linear-gradient(45deg, #3a4150 25%, transparent 25%),
+      linear-gradient(-45deg, #3a4150 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #3a4150 75%),
+      linear-gradient(-45deg, transparent 75%, #3a4150 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  }
+  .bg-dark { background: #141820; }
+  .bg-light { background: #e8ecf2; }
+  .bg-map { background: #4a5942; }
+  .card-ft {
+    padding: 8px 10px; display: flex; flex-direction: column; gap: 6px;
+    border-top: 1px solid var(--border);
+  }
+  .verdict-row { display: flex; gap: 6px; align-items: center; }
+  .vbtn {
+    flex: 1; padding: 5px 6px; font-size: 12px; border-radius: 6px;
+    background: var(--panel2); border: 1px solid var(--border); color: var(--muted);
+  }
+  .vbtn.on-ok { background: rgba(52,211,153,0.2); border-color: var(--ok); color: var(--ok); font-weight: 600; }
+  .vbtn.on-warn { background: rgba(251,191,36,0.2); border-color: var(--warn); color: var(--warn); font-weight: 600; }
+  .vbtn.on-bad { background: rgba(248,113,113,0.2); border-color: var(--bad); color: var(--bad); font-weight: 600; }
+  .note-in { width: 100%; font-size: 12px; padding: 5px 8px; }
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0; z-index: 100; background: rgba(8,10,15,0.85);
+    display: none; align-items: center; justify-content: center; padding: 18px;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    width: min(1280px, 96vw); max-height: 94vh; overflow-y: auto;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    display: flex; flex-direction: column;
+  }
+  .modal-hd {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    position: sticky; top: 0; background: var(--panel); z-index: 5;
+  }
+  .modal-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .anim-panel {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .anim-box {
+    border: 1px solid var(--border); border-radius: 8px; min-height: 280px;
+    padding: 36px 16px 16px;
+    display: flex; align-items: center; justify-content: center; position: relative; overflow: auto;
+  }
+  .anim-ctrl {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    background: var(--panel2); padding: 8px 12px; border-radius: 8px;
+  }
+  .sheet-wrap {
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px; overflow: auto;
+  }
+  .sheet-wrap h4 { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+  .sheet-wrap img { display: block; max-width: none; }
+  .pixelated { image-rendering: pixelated; }
+  .toast {
+    position: fixed; bottom: 20px; right: 20px; z-index: 200;
+    background: var(--ok); color: #0b1612; padding: 10px 16px; border-radius: 8px;
+    font-weight: 600; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-wrap">
+    <h1>RePal MGO 4× HD 精灵图验收台</h1>
+    <span class="stats" id="statsText">加载中...</span>
+  </div>
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="搜索 ID / 角色名 / 场景..." style="width:210px" />
+    <select id="groupSelect"><option value="">全部角色</option></select>
+    <select id="bgSelect" title="背景色">
+      <option value="bg-checker">透明棋盘格</option>
+      <option value="bg-dark">深色暗底</option>
+      <option value="bg-light">浅色亮底</option>
+      <option value="bg-map">模拟草地底</option>
+    </select>
+    <button id="copyMdBtn" class="primary">📋 复制返修清单 (Markdown)</button>
+    <button id="exportJsonBtn">⬇ 导出 JSON</button>
+  </div>
+</header>
+
+<div class="bar" id="filterBar">
+  <span style="color:var(--muted);font-size:12px">状态：</span>
+  <span class="pill active" data-status="done_v2">本次已完成 (done_v2)</span>
+  <span class="pill" data-status="legacy_track_b">旧版 Track-B</span>
+  <span class="pill" data-status="todo">未重绘</span>
+  <span class="pill" data-status="all">全部 636</span>
+  <span style="color:var(--muted);font-size:12px;margin-left:10px">审核筛选：</span>
+  <span class="pill active" data-verdict="all">全部</span>
+  <span class="pill" data-verdict="unreviewed">未审核</span>
+  <span class="pill" data-verdict="ok">✅ 通过</span>
+  <span class="pill" data-verdict="warn">⚠️ 需微调</span>
+  <span class="pill" data-verdict="bad">❌ 重做</span>
+  <span class="pill" data-verdict="updated">🔄 已重跑·待复检</span>
+  <span class="pill" data-verdict="qc_flag">🤖 QC 预警</span>
+  <span class="pill" data-verdict="name_review">🏷️ 名字待确认</span>
+</div>
+
+<main class="grid" id="cardGrid"></main>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-hd">
+      <div>
+        <strong id="mTitle" style="font-size:16px"></strong>
+        <span id="mMeta" style="color:var(--muted);margin-left:10px;font-size:12px"></span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="mPrevItem">← 上一个</button>
+        <button id="mNextItem">下一个 →</button>
+        <button id="mClose">✕ 关闭 (Esc)</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="anim-ctrl">
+        <button id="btnPlayPause">⏸ 暂停</button>
+        <button id="btnPrevFrame">◀ 上一帧</button>
+        <button id="btnNextFrame">下一帧 ▶</button>
+        <span id="frameLabel" style="min-width:80px;text-align:center;font-family:monospace">0 / 0</span>
+        <label>倍速:
+          <select id="speedSelect">
+            <option value="400">0.5×</option>
+            <option value="200" selected>1×</option>
+            <option value="100">2×</option>
+          </select>
+        </label>
+        <label>缩放:
+          <select id="zoomSelect">
+            <option value="1">1×</option>
+            <option value="1.5" selected>1.5×</option>
+            <option value="2">2×</option>
+            <option value="3">3×</option>
+          </select>
+        </label>
+        <div style="flex:1"></div>
+        <button class="vbtn" id="mBtnOk" style="flex:none;padding:5px 12px">✅ 通过</button>
+        <button class="vbtn" id="mBtnWarn" style="flex:none;padding:5px 12px">⚠️ 需微调</button>
+        <button class="vbtn" id="mBtnBad" style="flex:none;padding:5px 12px">❌ 重做</button>
+      </div>
+      <input type="text" id="mNote" placeholder="填写审核备注（如：第6帧朝向错误 / 左下角有紫边）..." />
+
+      <div class="anim-panel">
+        <div class="anim-box bg-checker" id="animBox1x">
+          <span class="tag" style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.7);padding:2px 8px;border-radius:4px;font-size:12px">1× 原版动画（等比放大对齐）</span>
+          <canvas id="cvs1x"></canvas>
+        </div>
+        <div class="anim-box bg-checker" id="animBox4x">
+          <span class="tag" style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.7);padding:2px 8px;border-radius:4px;font-size:12px">4× HD 新版动画</span>
+          <canvas id="cvs4x"></canvas>
+        </div>
+      </div>
+
+      <div class="sheet-wrap bg-checker" id="sheetWrap4x">
+        <h4>4× HD 完整图集（1:1 原像素）</h4>
+        <img id="sheetImg4x" />
+      </div>
+      <div class="sheet-wrap bg-checker" id="sheetWrap1x">
+        <h4>1× 原版图集（2× 像素放大便于对照）</h4>
+        <img id="sheetImg1x" class="pixelated" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = "repal_mgo_reviews_v1";
+const ASSET_BASE = "/site/assets/graphics/mgo";
+const CACHE_BUST = Date.now();
+
+let allItems = [];
+let filteredItems = [];
+let reviews = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+let curStatus = "done_v2";
+let curVerdict = "all";
+let curGroup = "";
+let curBg = "bg-checker";
+
+// Modal animation state
+let modalIdx = -1;
+let animPlaying = true;
+let animFrame = 0;
+let animTimer = null;
+let img1xObj = null;
+let img4xObj = null;
+
+let saveSyncTimer = null;
+function setSyncStatus(text, color) {
+  let el = document.getElementById("syncStatus");
+  if (!el) {
+    el = document.createElement("span");
+    el.id = "syncStatus";
+    el.style.cssText = "font-size:12px;margin-left:8px;";
+    document.querySelector(".title-wrap").appendChild(el);
+  }
+  el.textContent = text;
+  el.style.color = color || "var(--muted)";
+}
+function syncToServer() {
+  setSyncStatus("⏳ 同步中...", "var(--warn)");
+  clearTimeout(saveSyncTimer);
+  saveSyncTimer = setTimeout(() => {
+    const token = document.querySelector('meta[name="mgo-review-token"]')?.content || "";
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["X-Review-Token"] = token;
+    fetch("/api/reviews", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(reviews),
+    })
+      .then(r => r.ok ? setSyncStatus("☁️ 已自动同步", "var(--ok)") : setSyncStatus("⚠️ 同步失败", "var(--bad)"))
+      .catch(() => setSyncStatus("⚠️ 仅存本地", "var(--warn)"));
+  }, 150);
+}
+function saveReviews() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
+  updateStats();
+  syncToServer();
+}
+function getReview(id) {
+  return reviews[id] || { verdict: "", note: "" };
+}
+function isUpdatedSinceReview(it) {
+  const r = getReview(it.id);
+  return Boolean(r.verdict && r.reviewed_hash && it.hash_4x && r.reviewed_hash !== it.hash_4x);
+}
+function setVerdict(id, v) {
+  const cur = getReview(id);
+  cur.verdict = (cur.verdict === v) ? "" : v;
+  const it = allItems.find(x => x.id === id);
+  if (cur.verdict && it && it.hash_4x) cur.reviewed_hash = it.hash_4x;
+  reviews[id] = cur;
+  saveReviews();
+  renderGrid();
+  if (modalIdx >= 0 && filteredItems[modalIdx]?.id === id) syncModalVerdict();
+}
+function setNote(id, note) {
+  const cur = getReview(id);
+  cur.note = note;
+  reviews[id] = cur;
+  saveReviews();
+}
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  clearTimeout(t._tm);
+  t._tm = setTimeout(() => t.style.display = "none", 2200);
+}
+function updateStats() {
+  const doneCount = allItems.filter(x => x.status === "done_v2").length;
+  let ok = 0, warn = 0, bad = 0, updated = 0;
+  for (const it of allItems) {
+    const r = getReview(it.id);
+    if (r.verdict === "ok") ok++;
+    else if (r.verdict === "warn") warn++;
+    else if (r.verdict === "bad") bad++;
+    if (isUpdatedSinceReview(it)) updated++;
+  }
+  document.getElementById("statsText").textContent =
+    `总计 ${allItems.length} | 本次已完成 ${doneCount} | 已标：✅${ok} ⚠️${warn} ❌${bad}` +
+    (updated ? ` | 🔄待复检 ${updated}` : "");
+}
+
+function applyFilters() {
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+  filteredItems = allItems.filter(it => {
+    if (curStatus !== "all" && it.status !== curStatus) return false;
+    if (curGroup && it.group !== curGroup) return false;
+    const v = getReview(it.id).verdict;
+    if (curVerdict === "unreviewed" && v !== "") return false;
+    if (curVerdict === "updated" && !isUpdatedSinceReview(it)) return false;
+    if (curVerdict === "qc_flag" && (!it.qc || it.qc.status === "pass")) return false;
+    if (curVerdict === "name_review" && !it.name_needs_review) return false;
+    if (curVerdict !== "all" && curVerdict !== "unreviewed" && curVerdict !== "updated" && curVerdict !== "qc_flag" && curVerdict !== "name_review" && v !== curVerdict) return false;
+    if (q) {
+      const hay = `${it.id} ${it.id_str} ${it.name} ${it.group_label} ${it.scenes.join(" ")}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  renderGrid();
+}
+
+function drawThumb(canvas, img, rect, is1x) {
+  if (!rect || rect[2] === 0 || rect[3] === 0) return;
+  const scale = is1x ? 1 : 4;
+  const sx = rect[0] * scale, sy = rect[1] * scale, sw = rect[2] * scale, sh = rect[3] * scale;
+  const maxW = 160, maxH = 152;
+  const fit = Math.min(maxW / sw, maxH / sh, is1x ? 4 : 1);
+  const dw = Math.max(1, Math.round(sw * fit));
+  const dh = Math.max(1, Math.round(sh * fit));
+  canvas.width = dw; canvas.height = dh;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = !is1x;
+  ctx.clearRect(0, 0, dw, dh);
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
+}
+
+const thumbObserver = new IntersectionObserver((entries) => {
+  for (const ent of entries) {
+    if (!ent.isIntersecting) continue;
+    const card = ent.target;
+    thumbObserver.unobserve(card);
+    const it = card._item;
+    if (!it) continue;
+    const c1 = card.querySelector(".c1"), c4 = card.querySelector(".c4");
+    const i1 = new Image(), i4 = new Image();
+    i1.onload = () => drawThumb(c1, i1, it.frames[0], true);
+    i4.onload = () => drawThumb(c4, i4, it.frames[0], false);
+    i1.src = `${ASSET_BASE}/mgo_${it.id_str}_1x.webp`;
+    i4.src = `${ASSET_BASE}/mgo_${it.id_str}_4x.webp?v=${it.hash_4x || CACHE_BUST}`;
+  }
+}, { rootMargin: "300px" });
+
+function renderGrid() {
+  const grid = document.getElementById("cardGrid");
+  grid.innerHTML = "";
+  if (!filteredItems.length) {
+    grid.innerHTML = `<div style="color:var(--muted);padding:30px">没有匹配的 MGO 精灵图。</div>`;
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  filteredItems.forEach((it, idx) => {
+    const rev = getReview(it.id);
+    const updated = isUpdatedSinceReview(it);
+    const card = document.createElement("div");
+    card.className = `card ${rev.verdict ? "v-" + rev.verdict : ""} ${updated ? "v-recheck" : ""}`;
+    card.innerHTML = `
+      <div class="card-hd">
+        <div class="card-title" title="${it.name}">#${it.id_str} ${it.name}</div>
+        <div style="display:flex;gap:5px;align-items:center">
+          ${updated ? `<span class="badge recheck" title="4× 贴图已在上次审核后重新生成/修复">🔄 待复检</span>` : ""}
+          ${it.name_needs_review ? `<span class="badge name-review" title="AI 看图推断的名字，建议人工确认">🏷️ 名字待确认</span>` : ""}
+          ${it.qc ? `<span class="badge qc-${it.qc.status}" title="${(it.qc.reasons||[]).join(', ') || 'Auto-QC pass'}">QC ${it.qc.score}</span>` : ""}
+          <span class="badge">${it.frames.length}帧</span>
+          <span class="badge ${it.status}">${it.status}</span>
+        </div>
+      </div>
+      <div class="preview-row">
+        <div class="stage ${curBg}"><span class="tag">1× 原版</span><canvas class="c1"></canvas></div>
+        <div class="stage ${curBg}"><span class="tag">4× HD</span><canvas class="c4"></canvas></div>
+      </div>
+      <div class="card-ft">
+        <div class="verdict-row">
+          <button class="vbtn ${rev.verdict==='ok'?'on-ok':''}" data-v="ok">✅ 通过</button>
+          <button class="vbtn ${rev.verdict==='warn'?'on-warn':''}" data-v="warn">⚠️ 微调</button>
+          <button class="vbtn ${rev.verdict==='bad'?'on-bad':''}" data-v="bad">❌ 重做</button>
+        </div>
+        <input class="note-in" type="text" placeholder="备注（回车或失焦自动保存）..." value="${(rev.note||'').replace(/"/g,'&quot;')}" />
+      </div>
+    `;
+    card.querySelector(".preview-row").onclick = () => openModal(idx);
+    card.querySelectorAll(".vbtn").forEach(b => {
+      b.onclick = (e) => { e.stopPropagation(); setVerdict(it.id, b.dataset.v); };
+    });
+    const noteEl = card.querySelector(".note-in");
+    noteEl.onchange = () => setNote(it.id, noteEl.value);
+    noteEl.onclick = (e) => e.stopPropagation();
+
+    card._item = it;
+    thumbObserver.observe(card);
+    frag.appendChild(card);
+  });
+  grid.appendChild(frag);
+}
+
+function openModal(idx) {
+  modalIdx = idx;
+  const it = filteredItems[idx];
+  if (!it) return;
+  document.getElementById("modalBg").classList.add("open");
+  document.getElementById("mTitle").textContent = `mgo_${it.id_str} — ${it.name}`;
+  document.getElementById("mMeta").textContent =
+    `${it.frames.length} 帧 | 1× ${it.w}×${it.h} | 分组: ${it.group_label} | 状态: ${it.status}` +
+    (isUpdatedSinceReview(it) ? " | 🔄 已重跑·待复检" : "") +
+    (it.has_p1_backup ? " | ✨含 Pass 2 超分" : "");
+  document.getElementById("mNote").value = getReview(it.id).note || "";
+  syncModalVerdict();
+
+  const u1 = `${ASSET_BASE}/mgo_${it.id_str}_1x.webp`;
+  const u4 = `${ASSET_BASE}/mgo_${it.id_str}_4x.webp?v=${it.hash_4x || CACHE_BUST}`;
+  const s1 = document.getElementById("sheetImg1x");
+  const s4 = document.getElementById("sheetImg4x");
+  s1.src = u1; s1.style.width = (it.w * 2) + "px";
+  s4.src = u4;
+
+  img1xObj = new Image(); img4xObj = new Image();
+  animFrame = 0; animPlaying = true;
+  document.getElementById("btnPlayPause").textContent = "⏸ 暂停";
+  let loaded = 0;
+  const onLoad = () => { if (++loaded === 2) { drawModalFrame(); restartAnimTimer(); } };
+  img1xObj.onload = onLoad; img4xObj.onload = onLoad;
+  img1xObj.src = u1; img4xObj.src = u4;
+}
+
+function syncModalVerdict() {
+  const it = filteredItems[modalIdx];
+  if (!it) return;
+  const v = getReview(it.id).verdict;
+  document.getElementById("mBtnOk").className = "vbtn" + (v === "ok" ? " on-ok" : "");
+  document.getElementById("mBtnWarn").className = "vbtn" + (v === "warn" ? " on-warn" : "");
+  document.getElementById("mBtnBad").className = "vbtn" + (v === "bad" ? " on-bad" : "");
+}
+
+function drawModalFrame() {
+  const it = filteredItems[modalIdx];
+  if (!it || !img1xObj || !img4xObj) return;
+  const n = it.frames.length;
+  const r = it.frames[animFrame % n];
+  document.getElementById("frameLabel").textContent = `${(animFrame % n) + 1} / ${n}`;
+  if (!r || r[2] === 0 || r[3] === 0) return;
+  const zoom = parseFloat(document.getElementById("zoomSelect").value);
+  const maxH4 = Math.max(...it.frames.map(f => (f ? f[3] : 0))) * 4;
+  const boxMinH = Math.max(280, Math.round(maxH4 * zoom) + 56);
+  document.getElementById("animBox1x").style.minHeight = boxMinH + "px";
+  document.getElementById("animBox4x").style.minHeight = boxMinH + "px";
+  const w4 = r[2] * 4, h4 = r[3] * 4;
+  const dw = Math.round(w4 * zoom), dh = Math.round(h4 * zoom);
+
+  const c1 = document.getElementById("cvs1x"), c4 = document.getElementById("cvs4x");
+  c1.width = dw; c1.height = dh; c4.width = dw; c4.height = dh;
+  const x1 = c1.getContext("2d"), x4 = c4.getContext("2d");
+  x1.imageSmoothingEnabled = false;
+  x1.clearRect(0, 0, dw, dh);
+  x1.drawImage(img1xObj, r[0], r[1], r[2], r[3], 0, 0, dw, dh);
+  x4.imageSmoothingEnabled = true;
+  x4.clearRect(0, 0, dw, dh);
+  x4.drawImage(img4xObj, r[0]*4, r[1]*4, w4, h4, 0, 0, dw, dh);
+}
+
+function restartAnimTimer() {
+  clearInterval(animTimer);
+  if (!animPlaying) return;
+  const ms = parseInt(document.getElementById("speedSelect").value, 10);
+  animTimer = setInterval(() => {
+    const it = filteredItems[modalIdx];
+    if (!it || it.frames.length <= 1) return;
+    animFrame = (animFrame + 1) % it.frames.length;
+    drawModalFrame();
+  }, ms);
+}
+
+function closeModal() {
+  clearInterval(animTimer);
+  document.getElementById("modalBg").classList.remove("open");
+  modalIdx = -1;
+}
+
+// Wire events
+document.querySelectorAll("#filterBar .pill[data-status]").forEach(p => {
+  p.onclick = () => {
+    document.querySelectorAll("#filterBar .pill[data-status]").forEach(x => x.classList.remove("active"));
+    p.classList.add("active"); curStatus = p.dataset.status; applyFilters();
+  };
+});
+document.querySelectorAll("#filterBar .pill[data-verdict]").forEach(p => {
+  p.onclick = () => {
+    document.querySelectorAll("#filterBar .pill[data-verdict]").forEach(x => x.classList.remove("active"));
+    p.classList.add("active"); curVerdict = p.dataset.verdict; applyFilters();
+  };
+});
+document.getElementById("searchInput").oninput = applyFilters;
+document.getElementById("groupSelect").onchange = (e) => { curGroup = e.target.value; applyFilters(); };
+document.getElementById("bgSelect").onchange = (e) => {
+  curBg = e.target.value;
+  document.querySelectorAll(".stage, .anim-box, .sheet-wrap").forEach(el => {
+    el.classList.remove("bg-checker", "bg-dark", "bg-light", "bg-map");
+    el.classList.add(curBg);
+  });
+};
+document.getElementById("mClose").onclick = closeModal;
+document.getElementById("modalBg").onclick = (e) => { if (e.target.id === "modalBg") closeModal(); };
+document.getElementById("mPrevItem").onclick = () => { if (modalIdx > 0) openModal(modalIdx - 1); };
+document.getElementById("mNextItem").onclick = () => { if (modalIdx < filteredItems.length - 1) openModal(modalIdx + 1); };
+document.getElementById("btnPlayPause").onclick = () => {
+  animPlaying = !animPlaying;
+  document.getElementById("btnPlayPause").textContent = animPlaying ? "⏸ 暂停" : "▶ 播放";
+  restartAnimTimer();
+};
+document.getElementById("btnPrevFrame").onclick = () => {
+  animPlaying = false; document.getElementById("btnPlayPause").textContent = "▶ 播放"; clearInterval(animTimer);
+  const n = filteredItems[modalIdx].frames.length;
+  animFrame = (animFrame - 1 + n) % n; drawModalFrame();
+};
+document.getElementById("btnNextFrame").onclick = () => {
+  animPlaying = false; document.getElementById("btnPlayPause").textContent = "▶ 播放"; clearInterval(animTimer);
+  const n = filteredItems[modalIdx].frames.length;
+  animFrame = (animFrame + 1) % n; drawModalFrame();
+};
+document.getElementById("speedSelect").onchange = restartAnimTimer;
+document.getElementById("zoomSelect").onchange = drawModalFrame;
+document.getElementById("mBtnOk").onclick = () => setVerdict(filteredItems[modalIdx].id, "ok");
+document.getElementById("mBtnWarn").onclick = () => setVerdict(filteredItems[modalIdx].id, "warn");
+document.getElementById("mBtnBad").onclick = () => setVerdict(filteredItems[modalIdx].id, "bad");
+document.getElementById("mNote").onchange = (e) => setNote(filteredItems[modalIdx].id, e.target.value);
+
+document.addEventListener("keydown", (e) => {
+  if (modalIdx < 0) return;
+  if (e.key === "Escape") closeModal();
+  if (document.activeElement.tagName === "INPUT") return;
+  if (e.key === "ArrowLeft") document.getElementById("btnPrevFrame").click();
+  if (e.key === "ArrowRight") document.getElementById("btnNextFrame").click();
+  if (e.key === " ") { e.preventDefault(); document.getElementById("btnPlayPause").click(); }
+});
+
+document.getElementById("copyMdBtn").onclick = async () => {
+  const lines = ["# MGO 验收反馈清单", ""];
+  const byType = { bad: [], warn: [], ok: [] };
+  for (const it of allItems) {
+    const r = getReview(it.id);
+    if (r.verdict && byType[r.verdict]) byType[r.verdict].push({ it, r });
+  }
+  if (byType.bad.length) {
+    lines.push("## ❌ 需重做");
+    byType.bad.forEach(({ it, r }) => lines.push(`- \`mgo_${it.id_str}\`（${it.name}）${r.note ? "：" + r.note : ""}`));
+    lines.push("");
+  }
+  if (byType.warn.length) {
+    lines.push("## ⚠️ 需微调");
+    byType.warn.forEach(({ it, r }) => lines.push(`- \`mgo_${it.id_str}\`（${it.name}）${r.note ? "：" + r.note : ""}`));
+    lines.push("");
+  }
+  if (byType.ok.length) {
+    lines.push(`## ✅ 已通过（${byType.ok.length} 组）`);
+    lines.push(byType.ok.map(({ it }) => `\`${it.id_str}\``).join(", "));
+  }
+  const md = lines.join("\n");
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(md);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = md; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+  showToast(`已复制反馈清单（❌${byType.bad.length} ⚠️${byType.warn.length} ✅${byType.ok.length}）`);
+};
+
+document.getElementById("exportJsonBtn").onclick = () => {
+  const blob = new Blob([JSON.stringify(reviews, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "mgo_review_feedback.json";
+  a.click();
+};
+
+Promise.all([
+  fetch("./mgo_data.json?t=" + CACHE_BUST).then(r => r.json()),
+  fetch("/api/reviews?t=" + CACHE_BUST).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+]).then(([data, serverReviews]) => {
+    // Merge server reviews with localStorage (local non-empty entries win if server lacks them)
+    if (serverReviews && typeof serverReviews === "object") {
+      const merged = { ...serverReviews };
+      for (const [k, v] of Object.entries(reviews)) {
+        if (!merged[k] || (!merged[k].verdict && !merged[k].note)) merged[k] = v;
+      }
+      reviews = merged;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
+      setSyncStatus("☁️ 已自动同步", "var(--ok)");
+    }
+    allItems = data.items;
+    const sel = document.getElementById("groupSelect");
+    for (const [k, label] of Object.entries(data.groups)) {
+      const opt = document.createElement("option");
+      opt.value = k; opt.textContent = label;
+      sel.appendChild(opt);
+    }
+    updateStats();
+    applyFilters();
+  });
+</script>
+</body>
+</html>

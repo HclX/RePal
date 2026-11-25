@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hclx.github.io/RePal/schemas/repal-text-1.schema.json",
+  "title": "RePal Text Mode Response Envelope (repal-text/1)",
+  "type": "object",
+  "required": [
+    "protocol",
+    "obs_mode",
+    "ok",
+    "cmd",
+    "mode",
+    "lang",
+    "ui_view",
+    "view",
+    "tick",
+    "scene",
+    "party",
+    "cash",
+    "walkable",
+    "walkable_dist",
+    "minimap",
+    "events",
+    "prompt",
+    "battle",
+    "menu",
+    "rng",
+    "notices",
+    "artifacts",
+    "log",
+    "interrupted_by",
+    "error",
+    "error_code"
+  ],
+  "properties": {
+    "protocol": { "const": "repal-text/1" },
+    "obs_mode": { "enum": ["debug", "fair"] },
+    "ok": { "type": "boolean" },
+    "cmd": { "type": "string" },
+    "mode": {
+      "enum": [
+        "title",
+        "explore",
+        "dialog",
+        "choice",
+        "modal",
+        "shop",
+        "menu",
+        "battle",
+        "battle_anim",
+        "battle_victory",
+        "cutscene"
+      ]
+    },
+    "lang": { "enum": ["hans", "hant", "en"] },
+    "ui_view": {
+      "enum": [
+        "none",
+        "title",
+        "title_options",
+        "dialog",
+        "root_menu",
+        "role_select_status",
+        "role_select_magic",
+        "role_select_equip",
+        "status",
+        "equip",
+        "magic_grid",
+        "item_submenu",
+        "item_grid",
+        "system_submenu",
+        "remake_submenu",
+        "save_slots",
+        "load_slots",
+        "replay_chapters",
+        "replay_finished",
+        "shop",
+        "pawnshop",
+        "battle_command_wheel",
+        "battle_misc_menu",
+        "battle_select_enemy_attack",
+        "battle_select_enemy_coop",
+        "battle_select_magic",
+        "battle_select_enemy_magic",
+        "battle_select_ally_magic",
+        "battle_select_item",
+        "battle_select_enemy_item",
+        "battle_select_ally_item",
+        "battle_victory"
+      ]
+    },
+    "view": {
+      "type": "object",
+      "required": ["camera", "hd", "lang", "fb"],
+      "properties": {
+        "camera": {
+          "type": "object",
+          "required": ["x", "y", "w", "h"],
+          "properties": {
+            "x": { "type": "integer" },
+            "y": { "type": "integer" },
+            "w": { "const": 320 },
+            "h": { "const": 200 }
+          }
+        },
+        "hd": { "type": "boolean" },
+        "lang": { "enum": ["hans", "hant", "en"] },
+        "fb": {
+          "type": "object",
+          "required": ["w", "h"],
+          "properties": {
+            "w": { "type": "integer" },
+            "h": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "tick": { "type": "integer", "minimum": 0 },
+    "scene": {
+      "type": ["object", "null"],
+      "properties": {
+        "id": { "type": "integer" },
+        "map_id": { "type": "integer" },
+        "name": { "type": "string" }
+      }
+    },
+    "party": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["idx", "role_id", "name", "level", "hp", "max_hp", "mp", "max_mp", "x", "y", "dir", "statuses", "poisons"]
+      }
+    },
+    "cash": { "type": "integer", "minimum": 0 },
+    "walkable": {
+      "type": ["object", "null"],
+      "properties": {
+        "sw": { "type": "boolean" },
+        "nw": { "type": "boolean" },
+        "ne": { "type": "boolean" },
+        "se": { "type": "boolean" }
+      }
+    },
+    "walkable_dist": {
+      "type": ["object", "null"],
+      "properties": {
+        "sw": { "type": "integer", "minimum": 0 },
+        "nw": { "type": "integer", "minimum": 0 },
+        "ne": { "type": "integer", "minimum": 0 },
+        "se": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "minimap": {
+      "type": ["object", "null"],
+      "required": ["origin", "step", "cols", "rows", "staggered", "legend", "grid"],
+      "properties": {
+        "origin": {
+          "type": "object",
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "type": "integer" },
+            "y": { "type": "integer" }
+          }
+        },
+        "step": {
+          "type": "object",
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "const": 16 },
+            "y": { "const": 8 }
+          }
+        },
+        "cols": { "const": 20 },
+        "rows": { "const": 25 },
+        "staggered": { "const": true },
+        "legend": { "type": "object" },
+        "grid": {
+          "type": "array",
+          "minItems": 25,
+          "maxItems": 25,
+          "items": { "type": "string", "minLength": 20, "maxLength": 20 }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "kind_label", "hint", "x", "y", "screen", "dist", "dir"],
+        "properties": {
+          "kind": { "enum": ["portal", "trigger", "npc", "object", "exit"] },
+          "kind_label": { "type": "string" },
+          "visual_kind": { "type": "string" },
+          "visual": { "type": "string" },
+          "interactable": { "type": "boolean" },
+          "dir": { "enum": ["sw", "nw", "ne", "se"] }
+        }
+      }
+    },
+    "prompt": { "type": ["object", "null"] },
+    "battle": {
+      "type": ["object", "null"],
+      "properties": {
+        "active": { "type": "boolean" },
+        "prompting": { "type": ["integer", "null"] },
+        "can_flee": { "type": "boolean" },
+        "spell_banner": { "type": ["string", "null"] },
+        "heroes": { "type": "array" },
+        "enemies": { "type": "array" },
+        "feed": { "type": "array" }
+      }
+    },
+    "menu": { "type": ["object", "null"] },
+    "rng": {
+      "type": ["object", "null"],
+      "properties": {
+        "id": { "type": "integer" },
+        "frame": { "type": "integer" },
+        "end": { "type": "integer" },
+        "skippable": { "type": "boolean" }
+      }
+    },
+    "notices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tick", "kind", "text"],
+        "properties": {
+          "tick": { "type": "integer" },
+          "kind": { "type": "string" },
+          "text": { "type": "string" }
+        }
+      }
+    },
+    "artifacts": { "type": "object" },
+    "log": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "interrupted_by": {
+      "type": ["string", "null"],
+      "enum": ["dialog", "battle", "scene_change", "human", null]
+    },
+    "error": { "type": ["string", "null"] },
+    "error_code": { "type": ["string", "null"] },
+    "bye": { "type": "boolean" }
+  }
+}

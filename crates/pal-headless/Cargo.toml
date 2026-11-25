@@ -1,0 +1,12 @@
+[package]
+name = "pal-headless"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pal-core = { path = "../pal-core" }
+pal-render = { path = "../pal-render" }
+pal-runtime = { path = "../pal-runtime", features = ["disk"] }
+pal-ui = { path = "../pal-ui" }
+image = { version = "0.25", default-features = false, features = ["png", "webp"] }
+serde_json = "1"

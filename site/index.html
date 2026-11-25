@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; worker-src 'self' blob:; media-src 'self' blob: data:; object-src 'none'; base-uri 'self';"
+  />
+  <title>RePal — 仙剑奇侠传 (1995 DOS 现代高清重制版)</title>
+  <meta name="theme-color" content="#142026" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+  <link rel="stylesheet" href="./css/pal-ui.css?v=rust_core_v11" />
+  <style>
+    #boot-loading {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, #142026 0%, #070b0e 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      gap: 16px;
+      color: #f3ecdc;
+      font-family: "Noto Serif SC", "Songti SC", serif;
+    }
+    .boot-title {
+      font-size: 32px;
+      letter-spacing: 8px;
+      color: #e0b96b;
+    }
+    .boot-bar {
+      width: min(360px, 78vw);
+      height: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    #boot-bar-fill {
+      width: 5%;
+      height: 100%;
+      background: linear-gradient(90deg, #56c2b1, #e0b96b);
+      transition: width 0.2s ease;
+    }
+    #boot-status {
+      font-size: 13px;
+      color: #a5b4b8;
+    }
+  </style>
+</head>
+<body>
+  <div id="boot-loading">
+    <div class="boot-title">仙剑奇侠传 · RePal</div>
+    <div class="boot-bar"><div id="boot-bar-fill"></div></div>
+    <div id="boot-status">正在初始化静态引擎...</div>
+  </div>
+
+  <main id="game-stage">
+    <div class="pal-stage-toolbar">
+      <button id="btn-stage-bug" class="pal-stage-fs-btn" title="反馈 Bug (F9)">🐞 反馈</button>
+      <button id="btn-stage-fullscreen" class="pal-stage-fs-btn" title="切换全屏">⛶ 全屏</button>
+    </div>
+    <canvas id="game-canvas" width="1280" height="800"></canvas>
+  </main>
+
+  <dialog id="bug-report-dialog" class="pal-bug-dialog">
+    <form method="dialog" class="pal-bug-card">
+      <div class="pal-bug-header">
+        <span>🐞 一键反馈 Bug（自动附带截图与确定性录像）</span>
+        <button type="button" id="bug-close-btn" class="pal-bug-close" aria-label="关闭">✕</button>
+      </div>
+      <div class="pal-bug-body">
+        <div class="pal-bug-preview-col">
+          <img id="bug-shot-preview" alt="当前游戏画面截图" />
+          <div id="bug-meta-summary" class="pal-bug-meta"></div>
+        </div>
+        <div class="pal-bug-form-col">
+          <label class="pal-bug-label" for="bug-title-input">标题</label>
+          <input id="bug-title-input" type="text" placeholder="简述遇到的问题..." />
+          <label class="pal-bug-label" for="bug-desc-input">问题描述（复现步骤 / 预期行为）</label>
+          <textarea id="bug-desc-input" rows="5" placeholder="例如：走到客栈二楼门前按空格没有反应..."></textarea>
+          <div class="pal-bug-hint">
+            点击提交会自动下载 <code>.png</code> 截图与 <code>.json</code> 录像（截图同时复制到剪贴板），并打开预填好的 GitHub Issue 页面：直接按 <b>Ctrl+V / Cmd+V</b> 粘贴截图、把 <code>.json</code> 拖进输入框即可。
+          </div>
+        </div>
+      </div>
+      <div class="pal-bug-actions">
+        <button type="button" id="bug-download-png-btn" class="pal-bug-btn">仅下载截图</button>
+        <button type="button" id="bug-download-only-btn" class="pal-bug-btn">仅下载 .png + .json</button>
+        <button type="button" id="bug-submit-gh-btn" class="pal-bug-btn pal-bug-btn-primary">下载并打开 GitHub Issue</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./js/main.js?v=rust_core_v11"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+[project]
+name = "palremake"
+version = "0.1.0"
+description = "Pure-static 4x HD web remake of 1995 DOS Chinese Paladin (Rust + WASM + Track-B offline pipeline)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pillow>=10.0",
+    "pyyaml>=6.0",
+    "opencc-python-reimplemented>=0.1.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tools/tests"]

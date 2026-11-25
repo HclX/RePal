@@ -1,0 +1,128 @@
+name: Deploy PalRemake Static Site to GitHub Pages
+
+on:
+  workflow_run:
+    workflows: ["CI Verification Suite"]
+    types: [completed]
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout verified commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Fetch pinned legacy assets (skipped when assets-lock.json uses repal-packs/1)
+        if: ${{ secrets.ASSETS_REPO_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: |
+          python3 -c '
+          import json, subprocess, hashlib, pathlib
+          lock = json.load(open("assets-lock.json"))
+          if lock.get("format") == "repal-packs/1" or "filename" not in lock:
+              print("repal-packs/1 manifest lock active; browser fetches .rpk packs on demand.")
+              raise SystemExit(0)
+          subprocess.check_call([
+              "gh", "release", "download", lock["tag"],
+              "--repo", lock["repo"],
+              "--pattern", lock["filename"],
+              "--output", "pal-assets.tar.gz",
+          ])
+          actual = hashlib.sha256(pathlib.Path("pal-assets.tar.gz").read_bytes()).hexdigest()
+          assert actual == lock["sha256"], f"SHA-256 mismatch: {actual} != {lock[\"sha256\"]}"
+          subprocess.check_call(["tar", "-xzf", "pal-assets.tar.gz", "-C", "site"])
+          pathlib.Path("pal-assets.tar.gz").unlink()
+          print("Verified & unpacked assets:", lock["version"], lock["sha256"][:12])
+          '
+
+      - name: Install Rust toolchain with wasm32 target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo registry & target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build pal-wasm into site/wasm/pal.wasm
+        run: |
+          cargo build -p pal-wasm --target wasm32-unknown-unknown --release
+          mkdir -p site/wasm
+          cp target/wasm32-unknown-unknown/release/pal_wasm.wasm site/wasm/pal.wasm
+
+      - name: Stamp cache-busting build SHA across HTML, ES modules, SW, and ASSET_VER
+        env:
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re
+          code_ver = os.environ["DEPLOY_SHA"][:10]
+          # Stamp ASSET_VER from assets-lock.json sha256 so static assets are NOT cache-busted
+          # on code-only deploys (#208).
+          asset_ver = code_ver
+          lock_path = pathlib.Path("assets-lock.json")
+          if lock_path.is_file():
+              try:
+                  lock_obj = json.loads(lock_path.read_text("utf-8"))
+                  lock_sha = lock_obj.get("manifest", {}).get("sha256", "") or lock_obj.get("sha256", "")
+                  if len(lock_sha) >= 10:
+                      asset_ver = lock_sha[:10]
+              except Exception:
+                  pass
+          ap = pathlib.Path("site/js/host/asset-provider.js")
+          ap_txt = ap.read_text("utf-8")
+          ap_txt = re.sub(r'export const ASSET_VER = "[^"]*";', f'export const ASSET_VER = "{asset_ver}";', ap_txt)
+          ap_txt = re.sub(r'export const CODE_VER = "[^"]*";', f'export const CODE_VER = "{code_ver}";', ap_txt)
+          ap.write_text(ap_txt, "utf-8")
+          idx = pathlib.Path("site/index.html")
+          idx.write_text(
+              re.sub(r'\?v=[A-Za-z0-9_.-]+', f'?v={code_ver}', idx.read_text("utf-8")),
+              "utf-8",
+          )
+          imp_re = re.compile(r'(from\s+["\'])(\.\.?/[^"\']+?\.js)(["\'])')
+          for js in pathlib.Path("site/js").rglob("*.js"):
+              txt = js.read_text("utf-8")
+              new_txt = imp_re.sub(rf'\1\2?v={code_ver}\3', txt)
+              if new_txt != txt:
+                  js.write_text(new_txt, "utf-8")
+          sw = pathlib.Path("site/sw.js")
+          if sw.is_file():
+              sw_txt = sw.read_text("utf-8")
+              sw_txt = re.sub(r'const SHELL_CACHE = "[^"]*";', f'const SHELL_CACHE = "repal-shell-{code_ver}";', sw_txt)
+              sw_txt = re.sub(
+                  r'"(\./(?:css/pal-ui\.css|wasm/pal\.wasm|js/main\.js|js/audio/pal-synth-worklet\.js))(?:\?v=[^"]*)?"',
+                  rf'"\1?v={code_ver}"',
+                  sw_txt,
+              )
+              sw.write_text(sw_txt, "utf-8")
+          print(f"Stamped code ?v={code_ver}, ASSET_VER={asset_ver}")
+          PY
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload static site/ artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./site"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

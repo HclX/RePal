@@ -1,0 +1,28 @@
+[package]
+name = "pal-desktop"
+version = "0.5.0"
+edition = "2021"
+description = "Unified native binary `repal` (GUI + headless Text Mode + GUI+Text socket/stdio)"
+
+[[bin]]
+name = "repal"
+path = "src/main.rs"
+
+[features]
+default = []
+audio = ["dep:cpal"]
+
+[dependencies]
+pal-core = { path = "../pal-core" }
+pal-render = { path = "../pal-render" }
+pal-runtime = { path = "../pal-runtime", features = ["disk"] }
+pal-ui = { path = "../pal-ui" }
+pal-headless = { path = "../pal-headless" }
+image = { version = "0.25", default-features = false, features = ["png"] }
+serde_json = "1"
+winit = "0.30"
+softbuffer = "0.4"
+cpal = { version = "0.15", optional = true }
+
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+cpal = "0.15"

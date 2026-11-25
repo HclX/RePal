@@ -1,0 +1,6420 @@
+sprites:
+- id: 1
+  name: 游鱼
+  category: other_multiframe
+  frames: 16
+  size_1x: 224x34
+  status: done_v2
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - 019:仙灵岛·水月宫内殿
+  - '035:场景 #035 (Map 15)'
+  - '176:场景 #176 (Map 201)'
+- id: 2
+  name: 李逍遥 - 行走 (锚点)
+  category: core_character
+  frames: 12
+  size_1x: 208x108
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - 020:苏州城·码头外
+  - '173:场景 #173 (Map 202)'
+  - '196:场景 #196 (Map 18)'
+  - '203:场景 #203 (Map 175)'
+- id: 3
+  name: 赵灵儿 - 蓝白装行走 (锚点)
+  category: core_character
+  frames: 12
+  size_1x: 240x100
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  speaker_hints:
+  - 少女
+  scenes:
+  - 003:盛渔村·逍遥客栈大堂
+  - 014:仙灵岛·荷花池迷宫
+  - 019:仙灵岛·水月宫内殿
+  - 022:苏州城·林家堡前厅
+- id: 4
+  name: 秀兰
+  category: npc
+  frames: 12
+  size_1x: 216x102
+  status: done_v2
+  speaker_hints:
+  - 秀兰
+  scenes:
+  - 004:盛渔村
+  - 008:盛渔村·铁匠与装备铺
+- id: 5
+  name: 阿奴 - 行走 (锚点)
+  category: core_character
+  frames: 12
+  size_1x: 264x100
+  status: done_v2
+  character_group: a_nu
+  anchor_mgo: 5
+  scenes:
+  - '173:场景 #173 (Map 202)'
+  - '182:场景 #182 (Map 17)'
+  - '188:场景 #188 (Map 153)'
+  - '200:场景 #200 (Map 187)'
+- id: 6
+  name: 铁面煞星 / 犯人
+  category: npc
+  frames: 12
+  size_1x: 248x108
+  status: done_v2
+  speaker_hints:
+  - 铁面煞星
+  - 犯人
+  scenes:
+  - '027:场景 #027 (Map 37)'
+  - '091:场景 #091 (Map 83)'
+- id: 7
+  name: 林月如 - 行走 (锚点)
+  category: core_character
+  frames: 12
+  size_1x: 264x102
+  status: done_v2
+  character_group: lin_yueru
+  anchor_mgo: 7
+  speaker_hints:
+  - 李逍遥
+  - 林月如
+  scenes:
+  - 022:苏州城·林家堡前厅
+  - '032:场景 #032 (Map 31)'
+  - '039:场景 #039 (Map 35)'
+  - '052:场景 #052 (Map 47)'
+- id: 8
+  name: 红蜡烛
+  category: other_multiframe
+  frames: 4
+  size_1x: 72x25
+  status: legacy_track_b
+  scenes:
+  - 020:苏州城·码头外
+  - '058:场景 #058 (Map 71)'
+  - '159:场景 #159 (Map 135)'
+- id: 9
+  name: 铜油灯
+  category: other_multiframe
+  frames: 4
+  size_1x: 60x27
+  status: legacy_track_b
+  scenes:
+  - 020:苏州城·码头外
+  - '034:场景 #034 (Map 32)'
+  - '036:场景 #036 (Map 51)'
+  - '037:场景 #037 (Map 33)'
+- id: 10
+  name: 小孩
+  category: npc
+  frames: 3
+  size_1x: 114x29
+  status: done_v2
+  speaker_hints:
+  - 小孩
+  scenes:
+  - 017:盛渔村(夜)
+  - 020:苏州城·码头外
+  - '036:场景 #036 (Map 51)'
+  - '040:场景 #040 (Map 42)'
+- id: 11
+  name: 蓝色灵火/鬼火
+  category: other_multiframe
+  frames: 11
+  size_1x: 80x104
+  status: legacy_track_b
+  scenes:
+  - 006:罗刹洞·梦境
+  - '040:场景 #040 (Map 42)'
+  - '041:场景 #041 (Map 131)'
+  - '042:场景 #042 (Map 39)'
+- id: 12
+  name: 拜月教主 - 行走 (锚点)
+  category: core_character
+  frames: 12
+  size_1x: 344x142
+  status: done_v2
+  character_group: moon_leader
+  anchor_mgo: 12
+  scenes:
+  - '148:场景 #148 (Map 146)'
+  - '153:场景 #153 (Map 74)'
+- id: 13
+  name: 张四 / 张四哥 / 老板
+  category: npc
+  frames: 12
+  size_1x: 200x108
+  status: done_v2
+  speaker_hints:
+  - 张四
+  - 张四哥
+  - 老板
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - '077:场景 #077 (Map 24)'
+  - '209:场景 #209 (Map 169)'
+- id: 14
+  name: 赌客 / 居民 / 犯人
+  category: npc
+  frames: 12
+  size_1x: 200x108
+  status: done_v2
+  speaker_hints:
+  - 赌客
+  - 居民
+  - 犯人
+  scenes:
+  - '028:场景 #028 (Map 27)'
+  - '031:场景 #031 (Map 30)'
+  - '091:场景 #091 (Map 83)'
+- id: 15
+  name: 江少云
+  category: npc
+  frames: 12
+  size_1x: 200x110
+  status: done_v2
+  speaker_hints:
+  - 江少云
+  scenes:
+  - '053:场景 #053 (Map 49)'
+- id: 16
+  name: 酒剑仙 - 行走 (锚点)
+  category: npc
+  frames: 12
+  size_1x: 200x112
+  status: done_v2
+  speaker_hints:
+  - 酒剑仙
+  - 醉道士
+  scenes:
+  - 011:盛渔村·渡口树林
+  - '138:场景 #138 (Map 130)'
+  - '140:场景 #140 (Map 130)'
+  - '155:场景 #155 (Map 132)'
+  character_group: jiu_jianxian
+  anchor_mgo: 16
+- id: 17
+  name: 黄衣持扇女子
+  category: other_multiframe
+  frames: 13
+  size_1x: 200x110
+  status: done_v2
+  name_needs_review: true
+- id: 18
+  name: 姥姥 - 行走 (锚点)
+  category: core_character
+  frames: 13
+  size_1x: 528x200
+  status: done_v2
+  character_group: grandma_and_saintess
+  anchor_mgo: 18
+  speaker_hints:
+  - 李逍遥
+  scenes:
+  - 020:苏州城·码头外
+- id: 19
+  name: 柳媚娘 / 女子
+  category: npc
+  frames: 12
+  size_1x: 208x102
+  status: done_v2
+  speaker_hints:
+  - 柳媚娘
+  - 女子
+  scenes:
+  - '093:场景 #093 (Map 86)'
+  - '097:场景 #097 (Map 90)'
+  - '101:场景 #101 (Map 98)'
+  - '103:场景 #103 (Map 99)'
+- id: 20
+  name: 香兰
+  category: npc
+  frames: 12
+  size_1x: 200x102
+  status: done_v2
+  speaker_hints:
+  - 香兰
+  scenes:
+  - 004:盛渔村
+  - 008:盛渔村·铁匠与装备铺
+  - '047:场景 #047 (Map 43)'
+- id: 21
+  name: 李大娘 - 行走 (锚点)
+  category: core_character
+  frames: 12
+  size_1x: 192x104
+  status: done_v2
+  character_group: auntie_li
+  anchor_mgo: 21
+  speaker_hints:
+  - 李大娘
+  - 苗人头领
+  scenes:
+  - 001:盛渔村·客栈客房与厨房
+  - 002:盛渔村·客栈柴房密道
+  - 003:盛渔村·逍遥客栈大堂
+  - '254:场景 #254 (Map 196)'
+- id: 22
+  name: 阿桃
+  category: npc
+  frames: 12
+  size_1x: 200x102
+  status: done_v2
+  speaker_hints:
+  - 阿桃
+  scenes:
+  - '175:场景 #175 (Map 158)'
+  - '181:场景 #181 (Map 160)'
+  - '183:场景 #183 (Map 158)'
+- id: 23
+  name: 彩　依
+  category: npc
+  frames: 12
+  size_1x: 232x110
+  status: done_v2
+  speaker_hints:
+  - 彩　依
+  scenes:
+  - '108:场景 #108 (Map 108)'
+  - '117:场景 #117 (Map 109)'
+  - '124:场景 #124 (Map 114)'
+  - '142:场景 #142 (Map 106)'
+- id: 24
+  name: 白苗族长
+  category: npc
+  frames: 12
+  size_1x: 216x108
+  status: done_v2
+  speaker_hints:
+  - 白苗族长
+  scenes:
+  - '205:场景 #205 (Map 170)'
+  - '262:场景 #262 (Map 176)'
+  - '265:场景 #265 (Map 175)'
+- id: 25
+  name: 白苗少女
+  category: other_multiframe
+  frames: 12
+  size_1x: 208x104
+  status: done_v2
+  scenes:
+  - '147:场景 #147 (Map 144)'
+- id: 26
+  name: 盖罗娇 - 行走 (锚点)
+  category: core_character
+  frames: 12
+  size_1x: 200x104
+  status: done_v2
+  character_group: gai_luojiao
+  anchor_mgo: 26
+  speaker_hints:
+  - 盖罗娇
+  - 李逍遥
+  - 阿奴
+  scenes:
+  - '083:场景 #083 (Map 78)'
+  - '106:场景 #106 (Map 101)'
+  - '109:场景 #109 (Map 101)'
+  - '110:场景 #110 (Map 126)'
+- id: 27
+  name: 仙灵岛侍女/仙女
+  category: other_multiframe
+  frames: 12
+  size_1x: 232x114
+  status: done_v2
+  scenes:
+  - '138:场景 #138 (Map 130)'
+  name_needs_review: true
+- id: 28
+  name: 苗族头目/黑苗男子 - 行走 (原误标圣姑)
+  category: core_character
+  frames: 12
+  size_1x: 240x116
+  status: done_v2
+  character_group: miao_elder_man
+  anchor_mgo: 28
+  speaker_hints:
+  - 士兵
+  scenes:
+  - '229:场景 #229 (Map 178)'
+- id: 29
+  name: 石长老 - 行走 (锚点)
+  category: core_character
+  frames: 12
+  size_1x: 200x106
+  status: done_v2
+  character_group: elder_shi_and_miao
+  anchor_mgo: 29
+  speaker_hints:
+  - 苗人喽啰
+  scenes:
+  - 001:盛渔村·客栈客房与厨房
+  - 003:盛渔村·逍遥客栈大堂
+- id: 30
+  name: 王宫卫兵 / 苗人喽啰
+  category: npc
+  frames: 12
+  size_1x: 304x108
+  status: done_v2
+  speaker_hints:
+  - 王宫卫兵
+  - 苗人喽啰
+  scenes:
+  - 001:盛渔村·客栈客房与厨房
+  - 003:盛渔村·逍遥客栈大堂
+  - '067:场景 #067 (Map 73)'
+  - '237:场景 #237 (Map 183)'
+- id: 31
+  name: 洪大夫
+  category: npc
+  frames: 12
+  size_1x: 200x108
+  status: done_v2
+  speaker_hints:
+  - 洪大夫
+  scenes:
+  - 002:盛渔村·客栈柴房密道
+  - 008:盛渔村·铁匠与装备铺
+- id: 32
+  name: 王小虎
+  category: npc
+  frames: 12
+  size_1x: 176x82
+  status: done_v2
+  speaker_hints:
+  - 王小虎
+  scenes:
+  - 002:盛渔村·客栈柴房密道
+- id: 33
+  name: 老王 / 赌客 / 村人
+  category: npc
+  frames: 12
+  size_1x: 200x116
+  status: done_v2
+  speaker_hints:
+  - 老王
+  - 赌客
+  - 村人
+  scenes:
+  - 008:盛渔村·铁匠与装备铺
+  - '028:场景 #028 (Map 27)'
+  - '052:场景 #052 (Map 47)'
+  - '253:场景 #253 (Map 199)'
+- id: 34
+  name: 赌客 / 张大夫 / 赵大夫
+  category: npc_or_prop
+  frames: 1
+  size_1x: 23x52
+  status: done_v2
+  speaker_hints:
+  - 赌客
+  - 张大夫
+  - 赵大夫
+  scenes:
+  - 004:盛渔村
+  - '028:场景 #028 (Map 27)'
+  - '100:场景 #100 (Map 105)'
+  - '209:场景 #209 (Map 169)'
+- id: 35
+  name: 丁大伯 / 老农夫
+  category: npc
+  frames: 6
+  size_1x: 348x63
+  status: done_v2
+  speaker_hints:
+  - 丁大伯
+  - 老农夫
+  scenes:
+  - 004:盛渔村
+  - '048:场景 #048 (Map 45)'
+  - '248:场景 #248 (Map 195)'
+- id: 36
+  name: 渔翁
+  category: npc
+  frames: 4
+  size_1x: 304x65
+  status: done_v2
+  speaker_hints:
+  - 渔翁
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+- id: 37
+  name: 水面波纹
+  category: other_multiframe
+  frames: 4
+  size_1x: 92x12
+  status: legacy_track_b
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+- id: 38
+  name: 赵灵儿 - 圣女装持天蛇杖行走
+  category: core_character
+  frames: 12
+  size_1x: 360x118
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  scenes:
+  - '264:场景 #264 (Map 175)'
+  - '278:场景 #278 (Map 183)'
+  - '281:场景 #281 (Map 194)'
+- id: 39
+  name: 持斧樵夫 - 行走 (原误标酒剑仙)
+  category: core_character
+  frames: 4
+  size_1x: 140x54
+  status: done_v2
+  character_group: woodcutter
+  anchor_mgo: 39
+  speaker_hints:
+  - 村民
+  scenes:
+  - '049:场景 #049 (Map 46)'
+- id: 40
+  name: 方老板 / 赌客 / 铁铺老板
+  category: npc
+  frames: 4
+  size_1x: 92x52
+  status: done_v2
+  speaker_hints:
+  - 方老板
+  - 赌客
+  - 铁铺老板
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - 022:苏州城·林家堡前厅
+  - '028:场景 #028 (Map 27)'
+  - '031:场景 #031 (Map 30)'
+- id: 41
+  name: 水生叔 / 村人
+  category: npc
+  frames: 4
+  size_1x: 104x56
+  status: done_v2
+  speaker_hints:
+  - 水生叔
+  - 村人
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - '052:场景 #052 (Map 47)'
+- id: 42
+  name: 阿珠 / 少女 / 汉人居民
+  category: npc
+  frames: 5
+  size_1x: 135x50
+  status: done_v2
+  speaker_hints:
+  - 阿珠
+  - 少女
+  - 汉人居民
+  scenes:
+  - 004:盛渔村
+  - '047:场景 #047 (Map 43)'
+  - '208:场景 #208 (Map 167)'
+- id: 43
+  name: 飞舞虫群/花瓣
+  category: other_multiframe
+  frames: 8
+  size_1x: 256x22
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+  name_needs_review: true
+- id: 44
+  name: 花公鸡
+  category: other_multiframe
+  frames: 4
+  size_1x: 116x22
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+  - '049:场景 #049 (Map 46)'
+- id: 45
+  name: 大公鸡
+  category: other_multiframe
+  frames: 2
+  size_1x: 48x31
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+  - '049:场景 #049 (Map 46)'
+  - '206:场景 #206 (Map 163)'
+- id: 46
+  name: 白母鸡
+  category: other_multiframe
+  frames: 8
+  size_1x: 184x23
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+  - '049:场景 #049 (Map 46)'
+  - '206:场景 #206 (Map 163)'
+- id: 47
+  name: 小黄鸡
+  category: other_multiframe
+  frames: 18
+  size_1x: 288x63
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+  - '049:场景 #049 (Map 46)'
+  - '206:场景 #206 (Map 163)'
+- id: 48
+  name: 旺财嫂 / 来福婶
+  category: npc
+  frames: 7
+  size_1x: 308x42
+  status: legacy_track_b
+  speaker_hints:
+  - 旺财嫂
+  - 来福婶
+  scenes:
+  - 004:盛渔村
+  - '248:场景 #248 (Map 195)'
+- id: 49
+  name: 来福婶 / 旺财嫂
+  category: npc
+  frames: 7
+  size_1x: 301x42
+  status: legacy_track_b
+  speaker_hints:
+  - 来福婶
+  - 旺财嫂
+  scenes:
+  - 004:盛渔村
+  - '248:场景 #248 (Map 195)'
+- id: 50
+  name: 孩童唱道 / 孩童
+  category: npc
+  frames: 4
+  size_1x: 516x73
+  status: legacy_track_b
+  speaker_hints:
+  - 孩童唱道
+  - 孩童
+  scenes:
+  - 004:盛渔村
+- id: 51
+  name: 居民 / 观众 / 村民
+  category: npc
+  frames: 4
+  size_1x: 116x51
+  status: done_v2
+  speaker_hints:
+  - 居民
+  - 观众
+  - 村民
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - '024:场景 #024 (Map 38)'
+  - '032:场景 #032 (Map 31)'
+  - '049:场景 #049 (Map 46)'
+- id: 52
+  name: 黑游鱼
+  category: other_multiframe
+  frames: 16
+  size_1x: 152x26
+  status: legacy_track_b
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - 019:仙灵岛·水月宫内殿
+  - '035:场景 #035 (Map 15)'
+  - '176:场景 #176 (Map 201)'
+- id: 53
+  name: 红木花格门 (左)
+  category: other_multiframe
+  frames: 2
+  size_1x: 72x61
+  status: legacy_track_b
+  scenes:
+  - 003:盛渔村·逍遥客栈大堂
+- id: 54
+  name: 红木花格门 (右)
+  category: other_multiframe
+  frames: 2
+  size_1x: 72x68
+  status: legacy_track_b
+  scenes:
+  - 003:盛渔村·逍遥客栈大堂
+- id: 55
+  name: 木地板/暗门盖板
+  category: prop_1f
+  frames: 1
+  size_1x: 68x35
+  status: legacy_track_b
+  scenes:
+  - 001:盛渔村·客栈客房与厨房
+- id: 56
+  name: 酒剑仙 - 醉倒与咧嘴笑
+  category: core_character
+  frames: 3
+  size_1x: 165x56
+  status: done_v2
+  character_group: jiu_jianxian
+  anchor_mgo: 16
+  scenes:
+  - 003:盛渔村·逍遥客栈大堂
+- id: 57
+  name: 酒菜托盘
+  category: other_multiframe
+  frames: 2
+  size_1x: 50x38
+  status: legacy_track_b
+  scenes:
+  - 001:盛渔村·客栈客房与厨房
+  - '026:场景 #026 (Map 36)'
+- id: 58
+  name: 李逍遥
+  category: npc_or_prop
+  frames: 1
+  size_1x: 68x46
+  status: done_v2
+  speaker_hints:
+  - 李逍遥
+  scenes:
+  - 002:盛渔村·客栈柴房密道
+- id: 59
+  name: 黑发僵尸
+  category: other_multiframe
+  frames: 12
+  size_1x: 288x82
+  status: legacy_track_b
+  scenes:
+  - '054:场景 #054 (Map 59)'
+  - '059:场景 #059 (Map 76)'
+  - '060:场景 #060 (Map 55)'
+  - '061:场景 #061 (Map 52)'
+- id: 60
+  name: 枯树桩
+  category: other_multiframe
+  frames: 2
+  size_1x: 66x37
+  status: legacy_track_b
+  scenes:
+  - 006:罗刹洞·梦境
+  - '139:场景 #139 (Map 129)'
+  - '180:场景 #180 (Map 157)'
+  - '184:场景 #184 (Map 154)'
+- id: 61
+  name: 飞鹰
+  category: other_multiframe
+  frames: 8
+  size_1x: 264x44
+  status: done_v2
+  scenes:
+  - '185:场景 #185 (Map 152)'
+  - '192:场景 #192 (Map 151)'
+- id: 62
+  name: 福字木门 (左)
+  category: prop_1f
+  frames: 1
+  size_1x: 36x56
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+  - 005:盛渔村·民居与洪大夫药铺
+- id: 63
+  name: 福字木门 (右)
+  category: prop_1f
+  frames: 1
+  size_1x: 36x57
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+  - 005:盛渔村·民居与洪大夫药铺
+- id: 64
+  name: 福字木门 (斜左)
+  category: prop_1f
+  frames: 1
+  size_1x: 36x57
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+- id: 65
+  name: 福字木门 (斜右)
+  category: prop_1f
+  frames: 1
+  size_1x: 36x57
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+- id: 66
+  name: 石像武士/罗汉像
+  category: other_multiframe
+  frames: 4
+  size_1x: 216x92
+  status: legacy_track_b
+  scenes:
+  - 017:盛渔村(夜)
+- id: 67
+  name: 观音像上刻著一行字
+  category: npc_or_prop
+  frames: 1
+  size_1x: 42x102
+  status: done_v2
+  speaker_hints:
+  - 观音像上刻著一行字
+  scenes:
+  - 014:仙灵岛·荷花池迷宫
+  - 017:盛渔村(夜)
+  - 019:仙灵岛·水月宫内殿
+- id: 68
+  name: 小花丛
+  category: prop_1f
+  frames: 1
+  size_1x: 23x18
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+  - 006:罗刹洞·梦境
+  - '069:场景 #069 (Map 62)'
+  - '080:场景 #080 (Map 77)'
+- id: 69
+  name: 草丛蘑菇
+  category: prop_1f
+  frames: 1
+  size_1x: 22x19
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+  - 006:罗刹洞·梦境
+  - 014:仙灵岛·荷花池迷宫
+  - '176:场景 #176 (Map 201)'
+- id: 70
+  name: 三株野蘑菇
+  category: prop_1f
+  frames: 1
+  size_1x: 22x19
+  status: done_v2
+  scenes:
+  - '176:场景 #176 (Map 201)'
+  - '186:场景 #186 (Map 150)'
+  - '188:场景 #188 (Map 153)'
+  - '192:场景 #192 (Map 151)'
+- id: 71
+  name: 仙剑奇侠传竖排标题
+  category: prop_1f
+  frames: 1
+  size_1x: 66x191
+  status: done_v2
+- id: 72
+  name: 客人甲 / 客人乙 / 旅客
+  category: npc
+  frames: 4
+  size_1x: 192x34
+  status: done_v2
+  speaker_hints:
+  - 客人甲
+  - 客人乙
+  - 旅客
+  scenes:
+  - '025:场景 #025 (Map 26)'
+  - '093:场景 #093 (Map 86)'
+  - '128:场景 #128 (Map 115)'
+- id: 73
+  name: 青色仙鹤
+  category: other_multiframe
+  frames: 8
+  size_1x: 272x36
+  status: done_v2
+- id: 74
+  name: 长剑 (地上)
+  category: prop_1f
+  frames: 1
+  size_1x: 30x18
+  status: legacy_track_b
+  scenes:
+  - '025:场景 #025 (Map 26)'
+  - '093:场景 #093 (Map 86)'
+  - '128:场景 #128 (Map 115)'
+- id: 75
+  name: 丁大伯
+  category: npc_or_prop
+  frames: 1
+  size_1x: 68x46
+  status: legacy_track_b
+  speaker_hints:
+  - 丁大伯
+  scenes:
+  - 008:盛渔村·铁匠与装备铺
+- id: 76
+  name: 大宝
+  category: npc
+  frames: 4
+  size_1x: 212x60
+  status: legacy_track_b
+  speaker_hints:
+  - 大宝
+- id: 77
+  name: 小孩
+  category: npc
+  frames: 4
+  size_1x: 212x60
+  status: done_v2
+  speaker_hints:
+  - 小孩
+  scenes:
+  - '208:场景 #208 (Map 167)'
+- id: 78
+  name: 小孩
+  category: npc
+  frames: 4
+  size_1x: 212x60
+  status: done_v2
+  speaker_hints:
+  - 小孩
+  scenes:
+  - '208:场景 #208 (Map 167)'
+- id: 79
+  name: 二宝 / 小童 / 小孩
+  category: npc
+  frames: 16
+  size_1x: 240x90
+  status: legacy_track_b
+  speaker_hints:
+  - 二宝
+  - 小童
+  - 小孩
+  scenes:
+  - 021:苏州城
+  - '049:场景 #049 (Map 46)'
+- id: 80
+  name: 蓝袍官员/县令
+  category: other_multiframe
+  frames: 12
+  size_1x: 232x112
+  status: done_v2
+  scenes:
+  - '143:场景 #143 (Map 114)'
+  name_needs_review: true
+- id: 81
+  name: 刘夫人
+  category: npc
+  frames: 12
+  size_1x: 192x102
+  status: done_v2
+  speaker_hints:
+  - 刘夫人
+  scenes:
+  - '100:场景 #100 (Map 105)'
+  - '108:场景 #108 (Map 108)'
+  - '111:场景 #111 (Map 103)'
+  - '118:场景 #118 (Map 110)'
+- id: 82
+  name: 居民 / 妻 / 夫
+  category: npc
+  frames: 12
+  size_1x: 200x112
+  status: done_v2
+  speaker_hints:
+  - 居民
+  - 妻
+  - 夫
+  scenes:
+  - '077:场景 #077 (Map 24)'
+  - '082:场景 #082 (Map 79)'
+  - '209:场景 #209 (Map 169)'
+- id: 83
+  name: 秀才 / 宋贺文
+  category: npc
+  frames: 12
+  size_1x: 208x114
+  status: done_v2
+  speaker_hints:
+  - 秀才
+  - 宋贺文
+  scenes:
+  - '102:场景 #102 (Map 97)'
+  - '181:场景 #181 (Map 160)'
+  - '183:场景 #183 (Map 158)'
+  - '190:场景 #190 (Map 159)'
+- id: 84
+  name: 大荷叶
+  category: other_multiframe
+  frames: 16
+  size_1x: 344x46
+  status: legacy_track_b
+  scenes:
+  - 017:盛渔村(夜)
+  - '213:场景 #213 (Map 225)'
+- id: 85
+  name: 白莲花 (开放)
+  category: other_multiframe
+  frames: 2
+  size_1x: 58x21
+  status: done_v2
+- id: 86
+  name: 青草坟冢
+  category: prop_1f
+  frames: 1
+  size_1x: 71x43
+  status: legacy_track_b
+  scenes:
+  - 019:仙灵岛·水月宫内殿
+- id: 87
+  name: 水月宫木匾
+  category: prop_1f
+  frames: 1
+  size_1x: 69x36
+  status: legacy_track_b
+  scenes:
+  - 019:仙灵岛·水月宫内殿
+- id: 88
+  name: 仙灵洞天石碑
+  category: prop_1f
+  frames: 1
+  size_1x: 87x167
+  status: legacy_track_b
+  scenes:
+  - 018:盛渔村·逍遥客栈(夜)
+- id: 89
+  name: 棕袍胡须书生
+  category: other_multiframe
+  frames: 12
+  size_1x: 200x112
+  status: done_v2
+  name_needs_review: true
+- id: 90
+  name: 老板 / 卖酱老苏 / 居民
+  category: npc
+  frames: 4
+  size_1x: 92x55
+  status: done_v2
+  speaker_hints:
+  - 老板
+  - 卖酱老苏
+  - 居民
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - '024:场景 #024 (Map 38)'
+  - '028:场景 #028 (Map 27)'
+  - '029:场景 #029 (Map 28)'
+- id: 91
+  name: 韩医仙
+  category: npc
+  frames: 12
+  size_1x: 200x112
+  status: legacy_track_b
+  speaker_hints:
+  - 韩医仙
+  scenes:
+  - '053:场景 #053 (Map 49)'
+  - '077:场景 #077 (Map 24)'
+- id: 92
+  name: 药铺老板
+  category: npc
+  frames: 4
+  size_1x: 92x55
+  status: legacy_track_b
+  speaker_hints:
+  - 药铺老板
+  scenes:
+  - '030:场景 #030 (Map 29)'
+- id: 93
+  name: 紫袍青带书生
+  category: other_multiframe
+  frames: 12
+  size_1x: 208x112
+  status: done_v2
+  name_needs_review: true
+- id: 94
+  name: 赵大夫
+  category: npc
+  frames: 4
+  size_1x: 104x55
+  status: done_v2
+  speaker_hints:
+  - 赵大夫
+  scenes:
+  - '100:场景 #100 (Map 105)'
+- id: 95
+  name: 赵海 / 飞鹰帮 / 巨鲸帮
+  category: npc
+  frames: 12
+  size_1x: 208x108
+  status: legacy_track_b
+  speaker_hints:
+  - 赵海
+  - 飞鹰帮
+  - 巨鲸帮
+  scenes:
+  - '026:场景 #026 (Map 36)'
+  - '128:场景 #128 (Map 115)'
+- id: 96
+  name: 曾伯 / 铁匠
+  category: npc
+  frames: 4
+  size_1x: 296x64
+  status: legacy_track_b
+  speaker_hints:
+  - 曾伯
+  - 铁匠
+  scenes:
+  - 012:仙灵岛·洞天水路
+  - '256:场景 #256 (Map 21)'
+- id: 97
+  name: 巡捕 / 官差
+  category: npc
+  frames: 12
+  size_1x: 264x112
+  status: done_v2
+  speaker_hints:
+  - 巡捕
+  - 官差
+  scenes:
+  - '079:场景 #079 (Map 79)'
+  - '082:场景 #082 (Map 79)'
+  - '084:场景 #084 (Map 80)'
+  - '086:场景 #086 (Map 93)'
+- id: 98
+  name: 衙役 / 官差
+  category: npc
+  frames: 4
+  size_1x: 136x55
+  status: done_v2
+  speaker_hints:
+  - 衙役
+  - 官差
+  scenes:
+  - '081:场景 #081 (Map 84)'
+  - '091:场景 #091 (Map 83)'
+  - '096:场景 #096 (Map 89)'
+- id: 99
+  name: 黑白袍年轻侠客
+  category: other_multiframe
+  frames: 12
+  size_1x: 200x108
+  status: done_v2
+  name_needs_review: true
+- id: 100
+  name: 飞鹰堡 / 报名者戊 / 剑客
+  category: npc
+  frames: 4
+  size_1x: 96x53
+  status: done_v2
+  speaker_hints:
+  - 飞鹰堡
+  - 报名者戊
+  - 剑客
+  scenes:
+  - 023:苏州城·比武招亲擂台
+  - '027:场景 #027 (Map 37)'
+  - '028:场景 #028 (Map 27)'
+  - '031:场景 #031 (Map 30)'
+- id: 101
+  name: 灰绿衣年轻护卫
+  category: other_multiframe
+  frames: 12
+  size_1x: 208x110
+  status: done_v2
+  name_needs_review: true
+- id: 102
+  name: 观众 / 报名者丁 / 护院
+  category: npc
+  frames: 4
+  size_1x: 96x53
+  status: done_v2
+  speaker_hints:
+  - 观众
+  - 报名者丁
+  - 护院
+  scenes:
+  - 023:苏州城·比武招亲擂台
+  - '027:场景 #027 (Map 37)'
+  - '032:场景 #032 (Map 31)'
+  - '096:场景 #096 (Map 89)'
+- id: 103
+  name: 红棕衣蓝裤青年
+  category: other_multiframe
+  frames: 12
+  size_1x: 232x108
+  status: done_v2
+  name_needs_review: true
+- id: 104
+  name: 巨鲸帮众 / 报名者丙 / 拳师
+  category: npc
+  frames: 4
+  size_1x: 88x53
+  status: done_v2
+  speaker_hints:
+  - 巨鲸帮众
+  - 报名者丙
+  - 拳师
+  scenes:
+  - 023:苏州城·比武招亲擂台
+  - '027:场景 #027 (Map 37)'
+  - '032:场景 #032 (Map 31)'
+  - '082:场景 #082 (Map 79)'
+- id: 105
+  name: 员外 / 古董商
+  category: npc
+  frames: 12
+  size_1x: 216x112
+  status: legacy_track_b
+  speaker_hints:
+  - 员外
+  - 古董商
+  scenes:
+  - 021:苏州城
+  - '097:场景 #097 (Map 90)'
+- id: 106
+  name: 赌客 / 村民 / 村人
+  category: npc
+  frames: 4
+  size_1x: 96x54
+  status: done_v2
+  speaker_hints:
+  - 赌客
+  - 村民
+  - 村人
+  scenes:
+  - '025:场景 #025 (Map 26)'
+  - '028:场景 #028 (Map 27)'
+  - '050:场景 #050 (Map 58)'
+  - '052:场景 #052 (Map 47)'
+- id: 107
+  name: 赌鬼 / 乞丐
+  category: npc
+  frames: 12
+  size_1x: 224x104
+  status: legacy_track_b
+  speaker_hints:
+  - 赌鬼
+  - 乞丐
+  scenes:
+  - '029:场景 #029 (Map 28)'
+  - '091:场景 #091 (Map 83)'
+- id: 108
+  name: 白发持铃老道士
+  category: other_multiframe
+  frames: 4
+  size_1x: 104x57
+  status: done_v2
+  scenes:
+  - '181:场景 #181 (Map 160)'
+  name_needs_review: true
+- id: 109
+  name: 白发幽灵/鬼魂
+  category: prop_1f
+  frames: 1
+  size_1x: 31x54
+  status: done_v2
+  scenes:
+  - '147:场景 #147 (Map 144)'
+- id: 110
+  name: 绿衣少女/丫鬟
+  category: other_multiframe
+  frames: 12
+  size_1x: 224x110
+  status: legacy_track_b
+  scenes:
+  - 022:苏州城·林家堡前厅
+  name_needs_review: true
+- id: 111
+  name: 青衣弟子 / 书生 / 报名者乙
+  category: npc
+  frames: 4
+  size_1x: 112x53
+  status: done_v2
+  speaker_hints:
+  - 青衣弟子
+  - 书生
+  - 报名者乙
+  scenes:
+  - 023:苏州城·比武招亲擂台
+  - '027:场景 #027 (Map 37)'
+  - '096:场景 #096 (Map 89)'
+  - '130:场景 #130 (Map 117)'
+- id: 112
+  name: 青灰衣书童/小厮
+  category: other_multiframe
+  frames: 12
+  size_1x: 240x110
+  status: done_v2
+  scenes:
+  - '077:场景 #077 (Map 24)'
+  name_needs_review: true
+- id: 113
+  name: 伙计 / 观众 / 小贩
+  category: npc
+  frames: 4
+  size_1x: 112x54
+  status: done_v2
+  speaker_hints:
+  - 伙计
+  - 观众
+  - 小贩
+  scenes:
+  - '032:场景 #032 (Map 31)'
+  - '050:场景 #050 (Map 58)'
+  - '112:场景 #112 (Map 103)'
+  - '193:场景 #193 (Map 31)'
+- id: 114
+  name: 书生
+  category: npc
+  frames: 12
+  size_1x: 216x108
+  status: done_v2
+  speaker_hints:
+  - 书生
+  scenes:
+  - '137:场景 #137 (Map 124)'
+- id: 115
+  name: 蓝衣持书书生
+  category: other_multiframe
+  frames: 4
+  size_1x: 112x52
+  status: done_v2
+  name_needs_review: true
+- id: 116
+  name: 村民 / 汉人居民
+  category: npc
+  frames: 12
+  size_1x: 208x110
+  status: done_v2
+  speaker_hints:
+  - 村民
+  - 汉人居民
+  scenes:
+  - '175:场景 #175 (Map 158)'
+  - '208:场景 #208 (Map 167)'
+- id: 117
+  name: 掌柜 / 村民 / 骆记总管
+  category: npc
+  frames: 4
+  size_1x: 104x54
+  status: done_v2
+  speaker_hints:
+  - 掌柜
+  - 村民
+  - 骆记总管
+  scenes:
+  - '025:场景 #025 (Map 26)'
+  - '049:场景 #049 (Map 46)'
+  - '050:场景 #050 (Map 58)'
+  - '052:场景 #052 (Map 47)'
+- id: 118
+  name: 村人
+  category: npc
+  frames: 12
+  size_1x: 264x106
+  status: done_v2
+  speaker_hints:
+  - 村人
+  scenes:
+  - '175:场景 #175 (Map 158)'
+- id: 119
+  name: 斗笠持棍行者/樵夫
+  category: other_multiframe
+  frames: 4
+  size_1x: 144x53
+  status: legacy_track_b
+  scenes:
+  - '051:场景 #051 (Map 48)'
+  name_needs_review: true
+- id: 120
+  name: 白须拄拐老翁
+  category: other_multiframe
+  frames: 12
+  size_1x: 224x102
+  status: done_v2
+- id: 121
+  name: 居民 / 观众 / 张老头
+  category: npc
+  frames: 4
+  size_1x: 104x51
+  status: done_v2
+  speaker_hints:
+  - 居民
+  - 观众
+  - 张老头
+  scenes:
+  - 010:十里坡·山神庙
+  - 021:苏州城
+  - '052:场景 #052 (Map 47)'
+  - '253:场景 #253 (Map 199)'
+- id: 122
+  name: 算命仙
+  category: npc
+  frames: 12
+  size_1x: 240x118
+  status: legacy_track_b
+  speaker_hints:
+  - 算命仙
+  scenes:
+  - 023:苏州城·比武招亲擂台
+  - '034:场景 #034 (Map 32)'
+- id: 123
+  name: 算命仙
+  category: npc
+  frames: 4
+  size_1x: 112x58
+  status: done_v2
+  speaker_hints:
+  - 算命仙
+  scenes:
+  - '127:场景 #127 (Map 115)'
+- id: 124
+  name: 管家林忠
+  category: npc
+  frames: 12
+  size_1x: 208x106
+  status: done_v2
+  speaker_hints:
+  - 管家林忠
+  scenes:
+  - '034:场景 #034 (Map 32)'
+- id: 125
+  name: 村民 / 林家家仆 / 观众
+  category: npc
+  frames: 4
+  size_1x: 100x52
+  status: done_v2
+  speaker_hints:
+  - 村民
+  - 林家家仆
+  - 观众
+  scenes:
+  - '032:场景 #032 (Map 31)'
+  - '049:场景 #049 (Map 46)'
+  - '050:场景 #050 (Map 58)'
+  - '051:场景 #051 (Map 48)'
+- id: 126
+  name: 灰衣灰帽小厮
+  category: other_multiframe
+  frames: 12
+  size_1x: 216x114
+  status: done_v2
+  name_needs_review: true
+- id: 127
+  name: 村民 / 水果贩 / 卖包子
+  category: npc
+  frames: 4
+  size_1x: 96x55
+  status: done_v2
+  speaker_hints:
+  - 村民
+  - 水果贩
+  - 卖包子
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - '049:场景 #049 (Map 46)'
+  - '050:场景 #050 (Map 58)'
+  - '127:场景 #127 (Map 115)'
+- id: 128
+  name: 褐衣灰帽护卫
+  category: other_multiframe
+  frames: 12
+  size_1x: 232x110
+  status: done_v2
+  name_needs_review: true
+- id: 129
+  name: 卖吃小贩 / 报名者甲 / 村民
+  category: npc
+  frames: 4
+  size_1x: 96x55
+  status: done_v2
+  speaker_hints:
+  - 卖吃小贩
+  - 报名者甲
+  - 村民
+  scenes:
+  - 023:苏州城·比武招亲擂台
+  - '050:场景 #050 (Map 58)'
+  - '093:场景 #093 (Map 86)'
+- id: 130
+  name: 浅灰衣随从
+  category: other_multiframe
+  frames: 12
+  size_1x: 240x110
+  status: done_v2
+  name_needs_review: true
+- id: 131
+  name: 小厮
+  category: npc
+  frames: 4
+  size_1x: 96x55
+  status: legacy_track_b
+  speaker_hints:
+  - 小厮
+  scenes:
+  - '027:场景 #027 (Map 37)'
+- id: 132
+  name: 和尚
+  category: npc
+  frames: 12
+  size_1x: 200x100
+  status: legacy_track_b
+  speaker_hints:
+  - 和尚
+  scenes:
+  - '058:场景 #058 (Map 71)'
+- id: 133
+  name: 黄袍和尚
+  category: other_multiframe
+  frames: 4
+  size_1x: 112x49
+  status: done_v2
+- id: 134
+  name: 官兵 / 守　卫 / 守卫阿德
+  category: npc
+  frames: 4
+  size_1x: 108x69
+  status: done_v2
+  speaker_hints:
+  - 官兵
+  - 守　卫
+  - 守卫阿德
+  scenes:
+  - '081:场景 #081 (Map 84)'
+  - '100:场景 #100 (Map 105)'
+  - '111:场景 #111 (Map 103)'
+  - '114:场景 #114 (Map 106)'
+- id: 135
+  name: 智修大师
+  category: npc
+  frames: 4
+  size_1x: 112x54
+  status: legacy_track_b
+  speaker_hints:
+  - 智修大师
+  scenes:
+  - '058:场景 #058 (Map 71)'
+- id: 136
+  name: 茅山道士
+  category: npc
+  frames: 4
+  size_1x: 120x56
+  status: done_v2
+  speaker_hints:
+  - 茅山道士
+  scenes:
+  - '119:场景 #119 (Map 111)'
+  - '126:场景 #126 (Map 114)'
+  - '128:场景 #128 (Map 115)'
+  - '135:场景 #135 (Map 122)'
+- id: 137
+  name: 官差 / 衙役
+  category: npc
+  frames: 4
+  size_1x: 100x62
+  status: done_v2
+  speaker_hints:
+  - 官差
+  - 衙役
+  scenes:
+  - '081:场景 #081 (Map 84)'
+  - '084:场景 #084 (Map 80)'
+  - '086:场景 #086 (Map 93)'
+- id: 138
+  name: 韩梦慈
+  category: npc
+  frames: 12
+  size_1x: 208x102
+  status: done_v2
+  speaker_hints:
+  - 韩梦慈
+  scenes:
+  - '053:场景 #053 (Map 49)'
+  - '067:场景 #067 (Map 73)'
+  - '077:场景 #077 (Map 24)'
+- id: 139
+  name: 红裙白袖女子
+  category: other_multiframe
+  frames: 12
+  size_1x: 224x104
+  status: legacy_track_b
+  scenes:
+  - '048:场景 #048 (Map 45)'
+  name_needs_review: true
+- id: 140
+  name: 林家家仆 / 少女 / 妇人
+  category: npc
+  frames: 4
+  size_1x: 100x51
+  status: done_v2
+  speaker_hints:
+  - 林家家仆
+  - 少女
+  - 妇人
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - 023:苏州城·比武招亲擂台
+  - '032:场景 #032 (Map 31)'
+  - '047:场景 #047 (Map 43)'
+- id: 141
+  name: 秋菊 / 丫鬟 / 小孩
+  category: npc
+  frames: 12
+  size_1x: 216x104
+  status: done_v2
+  speaker_hints:
+  - 秋菊
+  - 丫鬟
+  - 小孩
+  scenes:
+  - '035:场景 #035 (Map 15)'
+  - '048:场景 #048 (Map 45)'
+  - '175:场景 #175 (Map 158)'
+- id: 142
+  name: 林家家仆 / 路人乙 / 观众
+  category: npc
+  frames: 4
+  size_1x: 108x51
+  status: done_v2
+  speaker_hints:
+  - 林家家仆
+  - 路人乙
+  - 观众
+  scenes:
+  - 023:苏州城·比武招亲擂台
+  - '032:场景 #032 (Map 31)'
+  - '047:场景 #047 (Map 43)'
+  - '050:场景 #050 (Map 58)'
+- id: 143
+  name: 村民 / 妇人甲
+  category: npc
+  frames: 12
+  size_1x: 224x104
+  status: done_v2
+  speaker_hints:
+  - 村民
+  - 妇人甲
+  scenes:
+  - '038:场景 #038 (Map 34)'
+  - '048:场景 #048 (Map 45)'
+  - '175:场景 #175 (Map 158)'
+- id: 144
+  name: 居民 / 路人甲 / 仆人
+  category: npc
+  frames: 4
+  size_1x: 108x51
+  status: done_v2
+  speaker_hints:
+  - 居民
+  - 路人甲
+  - 仆人
+  scenes:
+  - 009:盛渔村·当铺与酒家
+  - 023:苏州城·比武招亲擂台
+  - '034:场景 #034 (Map 32)'
+  - '047:场景 #047 (Map 43)'
+- id: 145
+  name: 女子
+  category: npc_or_prop
+  frames: 1
+  size_1x: 33x37
+  status: done_v2
+  speaker_hints:
+  - 女子
+  scenes:
+  - '101:场景 #101 (Map 98)'
+- id: 146
+  name: 仆人 / 丫鬟 / 少女
+  category: npc
+  frames: 12
+  size_1x: 248x100
+  status: done_v2
+  speaker_hints:
+  - 仆人
+  - 丫鬟
+  - 少女
+  scenes:
+  - '035:场景 #035 (Map 15)'
+  - '047:场景 #047 (Map 43)'
+  - '194:场景 #194 (Map 15)'
+- id: 147
+  name: 仆人 / 晓慧 / 少女
+  category: npc
+  frames: 12
+  size_1x: 240x100
+  status: done_v2
+  speaker_hints:
+  - 仆人
+  - 晓慧
+  - 少女
+  scenes:
+  - '034:场景 #034 (Map 32)'
+  - '035:场景 #035 (Map 15)'
+  - '038:场景 #038 (Map 34)'
+  - '047:场景 #047 (Map 43)'
+- id: 148
+  name: 少女 / 丫鬟 / 夏竹
+  category: npc
+  frames: 12
+  size_1x: 216x100
+  status: done_v2
+  speaker_hints:
+  - 少女
+  - 丫鬟
+  - 夏竹
+  scenes:
+  - 022:苏州城·林家堡前厅
+  - '030:场景 #030 (Map 29)'
+  - '034:场景 #034 (Map 32)'
+  - '035:场景 #035 (Map 15)'
+- id: 149
+  name: 小孩 / 小童 / 小花
+  category: npc
+  frames: 12
+  size_1x: 192x86
+  status: done_v2
+  speaker_hints:
+  - 小孩
+  - 小童
+  - 小花
+  scenes:
+  - 023:苏州城·比武招亲擂台
+  - '100:场景 #100 (Map 105)'
+  - '136:场景 #136 (Map 123)'
+  - '265:场景 #265 (Map 175)'
+- id: 150
+  name: 阿九 / 小童 / 小孩
+  category: npc
+  frames: 12
+  size_1x: 184x86
+  status: legacy_track_b
+  speaker_hints:
+  - 阿九
+  - 小童
+  - 小孩
+  scenes:
+  - '049:场景 #049 (Map 46)'
+  - '208:场景 #208 (Map 167)'
+- id: 151
+  name: 小孩
+  category: npc
+  frames: 12
+  size_1x: 176x88
+  status: legacy_track_b
+  speaker_hints:
+  - 小孩
+  scenes:
+  - 021:苏州城
+  - '049:场景 #049 (Map 46)'
+- id: 152
+  name: 小孩 / 妇人
+  category: npc
+  frames: 12
+  size_1x: 176x82
+  status: done_v2
+  speaker_hints:
+  - 小孩
+  - 妇人
+  scenes:
+  - '175:场景 #175 (Map 158)'
+  - '183:场景 #183 (Map 158)'
+- id: 153
+  name: 小孩 / 孩童甲 / 孩童丙
+  category: npc
+  frames: 12
+  size_1x: 184x84
+  status: legacy_track_b
+  speaker_hints:
+  - 小孩
+  - 孩童甲
+  - 孩童丙
+  scenes:
+  - 021:苏州城
+  - '112:场景 #112 (Map 103)'
+- id: 154
+  name: 孩童乙 / 孩童甲
+  category: npc
+  frames: 12
+  size_1x: 192x84
+  status: done_v2
+  speaker_hints:
+  - 孩童乙
+  - 孩童甲
+  scenes:
+  - '112:场景 #112 (Map 103)'
+- id: 155
+  name: 小孩
+  category: npc
+  frames: 12
+  size_1x: 176x88
+  status: done_v2
+  speaker_hints:
+  - 小孩
+  scenes:
+  - '099:场景 #099 (Map 94)'
+- id: 156
+  name: 大宝 / 二宝 / 小宝
+  category: npc
+  frames: 12
+  size_1x: 184x86
+  status: legacy_track_b
+  speaker_hints:
+  - 大宝
+  - 二宝
+  - 小宝
+  scenes:
+  - 021:苏州城
+  - '082:场景 #082 (Map 79)'
+- id: 157
+  name: 小孩
+  category: npc
+  frames: 12
+  size_1x: 184x84
+  status: legacy_track_b
+  speaker_hints:
+  - 小孩
+  scenes:
+  - '051:场景 #051 (Map 48)'
+- id: 158
+  name: 学徒 / 小孩
+  category: npc
+  frames: 12
+  size_1x: 192x84
+  status: legacy_track_b
+  speaker_hints:
+  - 学徒
+  - 小孩
+  scenes:
+  - 013:仙灵岛·草庐外景
+  - '084:场景 #084 (Map 80)'
+- id: 159
+  name: 小豆子 / 小孩
+  category: npc
+  frames: 12
+  size_1x: 176x84
+  status: done_v2
+  speaker_hints:
+  - 小豆子
+  - 小孩
+  scenes:
+  - 023:苏州城·比武招亲擂台
+  - '024:场景 #024 (Map 38)'
+  - '049:场景 #049 (Map 46)'
+- id: 160
+  name: 红蝴蝶
+  category: other_multiframe
+  frames: 8
+  size_1x: 128x13
+  status: legacy_track_b
+  scenes:
+  - 019:仙灵岛·水月宫内殿
+  - '049:场景 #049 (Map 46)'
+  - '052:场景 #052 (Map 47)'
+  - '108:场景 #108 (Map 108)'
+- id: 161
+  name: 绿蝴蝶
+  category: other_multiframe
+  frames: 8
+  size_1x: 136x13
+  status: legacy_track_b
+  scenes:
+  - 019:仙灵岛·水月宫内殿
+  - '108:场景 #108 (Map 108)'
+- id: 162
+  name: 黄蝴蝶
+  category: other_multiframe
+  frames: 8
+  size_1x: 136x13
+  status: legacy_track_b
+  scenes:
+  - 019:仙灵岛·水月宫内殿
+  - '052:场景 #052 (Map 47)'
+  - '108:场景 #108 (Map 108)'
+  - '275:场景 #275 (Map 165)'
+- id: 163
+  name: 持锤工匠/铁匠 - 挥锤
+  category: core_character
+  frames: 6
+  size_1x: 198x54
+  status: done_v2
+  character_group: woodcutter
+  anchor_mgo: 39
+  speaker_hints:
+  - 林木匠
+  - 村人
+  - 路人
+  scenes:
+  - 004:盛渔村
+  - 013:仙灵岛·草庐外景
+  - '052:场景 #052 (Map 47)'
+  - '084:场景 #084 (Map 80)'
+- id: 164
+  name: 酒葫芦
+  category: prop_1f
+  frames: 1
+  size_1x: 34x39
+  status: legacy_track_b
+  scenes:
+  - 004:盛渔村
+  - 023:苏州城·比武招亲擂台
+- id: 165
+  name: 白蝴蝶
+  category: other_multiframe
+  frames: 8
+  size_1x: 120x12
+  status: legacy_track_b
+  scenes:
+  - 019:仙灵岛·水月宫内殿
+  - '275:场景 #275 (Map 165)'
+- id: 166
+  name: 蓝蝴蝶
+  category: other_multiframe
+  frames: 8
+  size_1x: 144x18
+  status: legacy_track_b
+  scenes:
+  - 019:仙灵岛·水月宫内殿
+  - '049:场景 #049 (Map 46)'
+  - '052:场景 #052 (Map 47)'
+  - '108:场景 #108 (Map 108)'
+- id: 167
+  name: 乞丐
+  category: npc
+  frames: 4
+  size_1x: 100x52
+  status: done_v2
+  speaker_hints:
+  - 乞丐
+  scenes:
+  - '084:场景 #084 (Map 80)'
+- id: 168
+  name: 酒馆坐客·白蓝衣托腮女子
+  category: prop_1f
+  frames: 1
+  size_1x: 30x49
+  status: done_v2
+- id: 169
+  name: 观众
+  category: npc_or_prop
+  frames: 1
+  size_1x: 44x58
+  status: done_v2
+  speaker_hints:
+  - 观众
+  scenes:
+  - '112:场景 #112 (Map 103)'
+- id: 170
+  name: 酒馆坐客·白蓝衣女子 (背影)
+  category: prop_1f
+  frames: 1
+  size_1x: 30x58
+  status: done_v2
+- id: 171
+  name: 父 / 女
+  category: npc_or_prop
+  frames: 1
+  size_1x: 30x49
+  status: done_v2
+  speaker_hints:
+  - 父
+  - 女
+  scenes:
+  - '099:场景 #099 (Map 94)'
+- id: 172
+  name: 客人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 66x54
+  status: done_v2
+  speaker_hints:
+  - 客人
+  scenes:
+  - '093:场景 #093 (Map 86)'
+- id: 173
+  name: 客人甲 / 客人乙 / 观众
+  category: npc_or_prop
+  frames: 1
+  size_1x: 38x56
+  status: legacy_track_b
+  speaker_hints:
+  - 客人甲
+  - 客人乙
+  - 观众
+  scenes:
+  - '025:场景 #025 (Map 26)'
+  - '112:场景 #112 (Map 103)'
+- id: 174
+  name: 酒馆坐客·绿衣蝴蝶结女子 (背影)
+  category: prop_1f
+  frames: 1
+  size_1x: 31x56
+  status: done_v2
+- id: 175
+  name: 客人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 34x58
+  status: legacy_track_b
+  speaker_hints:
+  - 客人
+  scenes:
+  - '025:场景 #025 (Map 26)'
+- id: 176
+  name: 酒馆坐客·红马甲青年
+  category: prop_1f
+  frames: 1
+  size_1x: 36x53
+  status: done_v2
+- id: 177
+  name: 观众
+  category: npc_or_prop
+  frames: 1
+  size_1x: 30x56
+  status: done_v2
+  speaker_hints:
+  - 观众
+  scenes:
+  - '112:场景 #112 (Map 103)'
+- id: 178
+  name: 客人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 26x57
+  status: legacy_track_b
+  speaker_hints:
+  - 客人
+  scenes:
+  - '025:场景 #025 (Map 26)'
+  - '093:场景 #093 (Map 86)'
+- id: 179
+  name: 客人甲 / 客人乙
+  category: npc_or_prop
+  frames: 1
+  size_1x: 28x52
+  status: legacy_track_b
+  speaker_hints:
+  - 客人甲
+  - 客人乙
+  scenes:
+  - '025:场景 #025 (Map 26)'
+- id: 180
+  name: 酒馆坐客·蓝袍金冠贵人
+  category: prop_1f
+  frames: 1
+  size_1x: 40x55
+  status: done_v2
+- id: 181
+  name: 客人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 38x56
+  status: legacy_track_b
+  speaker_hints:
+  - 客人
+  scenes:
+  - '025:场景 #025 (Map 26)'
+- id: 182
+  name: 酒馆坐客·蓝袍金冠贵人 (背影)
+  category: prop_1f
+  frames: 1
+  size_1x: 30x56
+  status: done_v2
+- id: 183
+  name: 客人丁 / 客人戊 / 客人甲
+  category: npc_or_prop
+  frames: 1
+  size_1x: 36x53
+  status: legacy_track_b
+  speaker_hints:
+  - 客人丁
+  - 客人戊
+  - 客人甲
+  scenes:
+  - '025:场景 #025 (Map 26)'
+  - '127:场景 #127 (Map 115)'
+- id: 184
+  name: 酒馆坐客·黄衣双髻少女 (左向)
+  category: prop_1f
+  frames: 1
+  size_1x: 32x54
+  status: done_v2
+- id: 185
+  name: 客人丁 / 客人戊 / 观众
+  category: npc_or_prop
+  frames: 1
+  size_1x: 36x55
+  status: legacy_track_b
+  speaker_hints:
+  - 客人丁
+  - 客人戊
+  - 观众
+  scenes:
+  - '025:场景 #025 (Map 26)'
+  - '112:场景 #112 (Map 103)'
+- id: 186
+  name: 酒馆坐客·黄衣双髻少女 (背影)
+  category: prop_1f
+  frames: 1
+  size_1x: 30x56
+  status: done_v2
+- id: 187
+  name: 酒馆坐客·黄衣双髻少女 (右向)
+  category: prop_1f
+  frames: 1
+  size_1x: 28x52
+  status: done_v2
+- id: 188
+  name: 待诊病人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 30x49
+  status: legacy_track_b
+  speaker_hints:
+  - 待诊病人
+  scenes:
+  - '053:场景 #053 (Map 49)'
+- id: 189
+  name: 病人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 72x36
+  status: legacy_track_b
+  speaker_hints:
+  - 病人
+  scenes:
+  - '053:场景 #053 (Map 49)'
+- id: 190
+  name: 病人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 66x34
+  status: legacy_track_b
+  speaker_hints:
+  - 病人
+  scenes:
+  - '053:场景 #053 (Map 49)'
+- id: 191
+  name: 病人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 66x36
+  status: legacy_track_b
+  speaker_hints:
+  - 病人
+  scenes:
+  - '053:场景 #053 (Map 49)'
+- id: 192
+  name: 病人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 64x36
+  status: legacy_track_b
+  speaker_hints:
+  - 病人
+  scenes:
+  - '053:场景 #053 (Map 49)'
+- id: 193
+  name: 李逍遥 - 倒地/起身
+  category: core_character
+  frames: 14
+  size_1x: 480x154
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - 020:苏州城·码头外
+  - '067:场景 #067 (Map 73)'
+- id: 194
+  name: 李逍遥·挥剑剑气
+  category: other_multiframe
+  frames: 3
+  size_1x: 297x60
+  status: legacy_track_b
+  scenes:
+  - 022:苏州城·林家堡前厅
+- id: 195
+  name: 李逍遥与林月如·牵手/掩护
+  category: other_multiframe
+  frames: 2
+  size_1x: 70x60
+  status: legacy_track_b
+  scenes:
+  - 022:苏州城·林家堡前厅
+  name_needs_review: true
+- id: 196
+  name: 小木舟
+  category: other_multiframe
+  frames: 2
+  size_1x: 290x87
+  status: legacy_track_b
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - 015:仙灵岛·外滩渡口
+  - '100:场景 #100 (Map 105)'
+  - '111:场景 #111 (Map 103)'
+- id: 197
+  name: 撑船船夫 (张四)
+  category: other_multiframe
+  frames: 2
+  size_1x: 194x82
+  status: legacy_track_b
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - '111:场景 #111 (Map 103)'
+- id: 198
+  name: 盖罗娇 / 苗女 / 白苗壮丁
+  category: npc
+  frames: 12
+  size_1x: 192x102
+  status: done_v2
+  speaker_hints:
+  - 盖罗娇
+  - 苗女
+  - 白苗壮丁
+  scenes:
+  - '110:场景 #110 (Map 126)'
+  - '206:场景 #206 (Map 163)'
+  - '207:场景 #207 (Map 166)'
+  - '262:场景 #262 (Map 176)'
+- id: 199
+  name: 白苗妇女 / 小孩
+  category: npc
+  frames: 12
+  size_1x: 192x102
+  status: done_v2
+  speaker_hints:
+  - 白苗妇女
+  - 小孩
+  scenes:
+  - '110:场景 #110 (Map 126)'
+  - '206:场景 #206 (Map 163)'
+  - '207:场景 #207 (Map 166)'
+  - '275:场景 #275 (Map 165)'
+- id: 200
+  name: 苗女
+  category: npc
+  frames: 12
+  size_1x: 192x108
+  status: done_v2
+  speaker_hints:
+  - 苗女
+  scenes:
+  - '235:场景 #235 (Map 193)'
+- id: 201
+  name: 苗女
+  category: npc
+  frames: 12
+  size_1x: 248x104
+  status: done_v2
+  speaker_hints:
+  - 苗女
+  scenes:
+  - '235:场景 #235 (Map 193)'
+- id: 202
+  name: 苗女
+  category: npc
+  frames: 12
+  size_1x: 224x112
+  status: done_v2
+  speaker_hints:
+  - 苗女
+  scenes:
+  - '235:场景 #235 (Map 193)'
+- id: 203
+  name: 苗民
+  category: npc
+  frames: 12
+  size_1x: 224x110
+  status: done_v2
+  speaker_hints:
+  - 苗民
+  scenes:
+  - '235:场景 #235 (Map 193)'
+- id: 204
+  name: 苗民
+  category: npc
+  frames: 12
+  size_1x: 256x118
+  status: done_v2
+  speaker_hints:
+  - 苗民
+  scenes:
+  - '235:场景 #235 (Map 193)'
+- id: 205
+  name: 士兵 / 白苗长老 / 白苗居民
+  category: npc
+  frames: 12
+  size_1x: 216x108
+  status: done_v2
+  speaker_hints:
+  - 士兵
+  - 白苗长老
+  - 白苗居民
+  scenes:
+  - '202:场景 #202 (Map 162)'
+  - '205:场景 #205 (Map 170)'
+  - '206:场景 #206 (Map 163)'
+  - '207:场景 #207 (Map 166)'
+- id: 206
+  name: 白苗居民 / 白苗长老 / 路人
+  category: npc
+  frames: 12
+  size_1x: 216x106
+  status: done_v2
+  speaker_hints:
+  - 白苗居民
+  - 白苗长老
+  - 路人
+  scenes:
+  - '202:场景 #202 (Map 162)'
+  - '205:场景 #205 (Map 170)'
+  - '206:场景 #206 (Map 163)'
+  - '207:场景 #207 (Map 166)'
+- id: 207
+  name: 黑苗头领 - 行走
+  category: core_character
+  frames: 12
+  size_1x: 232x114
+  status: done_v2
+  character_group: miao_elder_man
+  anchor_mgo: 28
+  speaker_hints:
+  - 苗人头领
+  scenes:
+  - 001:盛渔村·客栈客房与厨房
+  - 003:盛渔村·逍遥客栈大堂
+- id: 208
+  name: 李逍遥 - 客栈端菜 (白头巾)
+  category: core_character
+  frames: 16
+  size_1x: 400x110
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 209
+  name: 一盘佳肴
+  category: prop_1f
+  frames: 1
+  size_1x: 25x16
+  status: done_v2
+  scenes:
+  - '110:场景 #110 (Map 126)'
+- id: 210
+  name: 李逍遥
+  category: npc
+  frames: 2
+  size_1x: 64x37
+  status: done_v2
+  speaker_hints:
+  - 李逍遥
+  scenes:
+  - 001:盛渔村·客栈客房与厨房
+- id: 211
+  name: 草鞋与布包
+  category: prop_1f
+  frames: 1
+  size_1x: 45x21
+  status: legacy_track_b
+  scenes:
+  - 001:盛渔村·客栈客房与厨房
+  name_needs_review: true
+- id: 212
+  name: 姥姥 - 受伤倒地
+  category: core_character
+  frames: 1
+  size_1x: 37x43
+  status: done_v2
+  character_group: grandma_and_saintess
+  anchor_mgo: 18
+  speaker_hints:
+  - 李逍遥
+  scenes:
+  - 020:苏州城·码头外
+- id: 213
+  name: 断木棍/拐杖
+  category: prop_1f
+  frames: 1
+  size_1x: 31x13
+  status: legacy_track_b
+  scenes:
+  - 020:苏州城·码头外
+  name_needs_review: true
+- id: 214
+  name: 黑苗头领 - 持刀吐血倒地
+  category: core_character
+  frames: 3
+  size_1x: 228x57
+  status: done_v2
+  character_group: miao_elder_man
+  anchor_mgo: 28
+  speaker_hints:
+  - 黑苗人
+  scenes:
+  - 003:盛渔村·逍遥客栈大堂
+  - '205:场景 #205 (Map 170)'
+- id: 215
+  name: 李大娘 - 持锅铲
+  category: core_character
+  frames: 3
+  size_1x: 111x51
+  status: done_v2
+  character_group: auntie_li
+  anchor_mgo: 21
+  scenes:
+  - 002:盛渔村·客栈柴房密道
+  - 003:盛渔村·逍遥客栈大堂
+- id: 216
+  name: 小孩
+  category: npc
+  frames: 12
+  size_1x: 176x86
+  status: done_v2
+  speaker_hints:
+  - 小孩
+  scenes:
+  - '235:场景 #235 (Map 193)'
+- id: 217
+  name: 小孩 / 小玉 / 白苗妇女
+  category: npc
+  frames: 12
+  size_1x: 184x78
+  status: done_v2
+  speaker_hints:
+  - 小孩
+  - 小玉
+  - 白苗妇女
+  scenes:
+  - '206:场景 #206 (Map 163)'
+  - '207:场景 #207 (Map 166)'
+  - '208:场景 #208 (Map 167)'
+  - '265:场景 #265 (Map 175)'
+- id: 218
+  name: 小孩
+  category: npc
+  frames: 12
+  size_1x: 192x82
+  status: done_v2
+  speaker_hints:
+  - 小孩
+  scenes:
+  - '235:场景 #235 (Map 193)'
+- id: 219
+  name: 小孩
+  category: npc
+  frames: 12
+  size_1x: 192x86
+  status: done_v2
+  speaker_hints:
+  - 小孩
+  scenes:
+  - '206:场景 #206 (Map 163)'
+  - '207:场景 #207 (Map 166)'
+- id: 220
+  name: 智泽
+  category: npc
+  frames: 12
+  size_1x: 208x86
+  status: legacy_track_b
+  speaker_hints:
+  - 智泽
+  scenes:
+  - '056:场景 #056 (Map 69)'
+  - '058:场景 #058 (Map 71)'
+- id: 221
+  name: 绿短裤赤脚少年
+  category: other_multiframe
+  frames: 12
+  size_1x: 216x108
+  status: done_v2
+  name_needs_review: true
+- id: 222
+  name: 赵灵儿 - 蓝白装跪倒
+  category: core_character
+  frames: 3
+  size_1x: 111x44
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  scenes:
+  - 019:仙灵岛·水月宫内殿
+  - 020:苏州城·码头外
+  - '264:场景 #264 (Map 175)'
+- id: 223
+  name: 青衣女子 (站立)
+  category: other_multiframe
+  frames: 4
+  size_1x: 92x52
+  status: legacy_track_b
+  scenes:
+  - 019:仙灵岛·水月宫内殿
+  - 020:苏州城·码头外
+  name_needs_review: true
+- id: 224
+  name: 婢　女 / 妇人
+  category: npc
+  frames: 2
+  size_1x: 46x54
+  status: done_v2
+  speaker_hints:
+  - 婢　女
+  - 妇人
+  scenes:
+  - 019:仙灵岛·水月宫内殿
+  - '116:场景 #116 (Map 107)'
+  - '204:场景 #204 (Map 176)'
+- id: 225
+  name: 青衣女子 (背影)
+  category: prop_1f
+  frames: 1
+  size_1x: 22x51
+  status: legacy_track_b
+  scenes:
+  - 020:苏州城·码头外
+  name_needs_review: true
+- id: 226
+  name: 倒地受伤青衣女子 (趴卧)
+  category: prop_1f
+  frames: 1
+  size_1x: 56x25
+  status: legacy_track_b
+  scenes:
+  - 020:苏州城·码头外
+- id: 227
+  name: 倒地受伤青衣女子 (仰卧)
+  category: prop_1f
+  frames: 1
+  size_1x: 51x23
+  status: legacy_track_b
+  scenes:
+  - 020:苏州城·码头外
+- id: 228
+  name: 李逍遥 - 剧情动作/奔跑
+  category: core_character
+  frames: 20
+  size_1x: 528x198
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - '196:场景 #196 (Map 18)'
+- id: 229
+  name: 林月如 - 挥剑动作
+  category: core_character
+  frames: 7
+  size_1x: 595x56
+  status: done_v2
+  character_group: lin_yueru
+  anchor_mgo: 7
+  speaker_hints:
+  - 赵灵儿
+  scenes:
+  - 022:苏州城·林家堡前厅
+  - '067:场景 #067 (Map 73)'
+  - '077:场景 #077 (Map 24)'
+- id: 230
+  name: 地上长剑
+  category: prop_1f
+  frames: 1
+  size_1x: 37x12
+  status: legacy_track_b
+  scenes:
+  - 022:苏州城·林家堡前厅
+  - '076:场景 #076 (Map 72)'
+- id: 231
+  name: 双帆大木船
+  category: prop_1f
+  frames: 1
+  size_1x: 182x149
+  status: legacy_track_b
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - 022:苏州城·林家堡前厅
+  - '079:场景 #079 (Map 79)'
+  - '084:场景 #084 (Map 80)'
+- id: 232
+  name: 李逍遥 - 大型剧情动作合集
+  category: core_character
+  frames: 64
+  size_1x: 40x40
+  status: legacy_track_b
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - '119:场景 #119 (Map 111)'
+  - '124:场景 #124 (Map 114)'
+- id: 233
+  name: 发光符文石板
+  category: other_multiframe
+  frames: 4
+  size_1x: 144x19
+  status: legacy_track_b
+  scenes:
+  - 017:盛渔村(夜)
+- id: 234
+  name: 书生
+  category: npc
+  frames: 3
+  size_1x: 219x66
+  status: legacy_track_b
+  speaker_hints:
+  - 书生
+  scenes:
+  - '028:场景 #028 (Map 27)'
+- id: 235
+  name: 赵灵儿 - 蓝白装托腮趴姿
+  category: core_character
+  frames: 2
+  size_1x: 76x26
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  scenes:
+  - '026:场景 #026 (Map 36)'
+- id: 236
+  name: 李逍遥 - 惊愕站姿
+  category: core_character
+  frames: 1
+  size_1x: 30x53
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 237
+  name: 金发青衣持扇女子
+  category: prop_1f
+  frames: 1
+  size_1x: 30x56
+  status: legacy_track_b
+  scenes:
+  - '026:场景 #026 (Map 36)'
+  name_needs_review: true
+- id: 238
+  name: 赵灵儿 - 盖红被睡觉与坐起
+  category: core_character
+  frames: 2
+  size_1x: 196x56
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  scenes:
+  - '053:场景 #053 (Map 49)'
+- id: 239
+  name: 李逍遥
+  category: npc_or_prop
+  frames: 1
+  size_1x: 68x47
+  status: done_v2
+  speaker_hints:
+  - 李逍遥
+  scenes:
+  - 001:盛渔村·客栈客房与厨房
+  - '026:场景 #026 (Map 36)'
+- id: 240
+  name: 林月如 - 持剑行走
+  category: core_character
+  frames: 12
+  size_1x: 640x136
+  status: done_v2
+  character_group: lin_yueru
+  anchor_mgo: 7
+  scenes:
+  - '032:场景 #032 (Map 31)'
+- id: 241
+  name: 倒吊/被绑男子
+  category: other_multiframe
+  frames: 8
+  size_1x: 576x60
+  status: legacy_track_b
+  scenes:
+  - '032:场景 #032 (Map 31)'
+  - '193:场景 #193 (Map 31)'
+  name_needs_review: true
+- id: 242
+  name: 李逍遥 - 挥剑/动作
+  category: core_character
+  frames: 5
+  size_1x: 290x66
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - '193:场景 #193 (Map 31)'
+- id: 243
+  name: 黄衣持扇女子 (挥扇)
+  category: other_multiframe
+  frames: 2
+  size_1x: 46x56
+  status: done_v2
+  name_needs_review: true
+- id: 244
+  name: 赵灵儿 - 蓝白装坐姿哭泣
+  category: core_character
+  frames: 14
+  size_1x: 288x90
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  speaker_hints:
+  - 李逍遥
+  scenes:
+  - 002:盛渔村·客栈柴房密道
+  - 020:苏州城·码头外
+  - '026:场景 #026 (Map 36)'
+  - '036:场景 #036 (Map 51)'
+- id: 245
+  name: 林月如 - 剧情动作
+  category: core_character
+  frames: 13
+  size_1x: 232x102
+  status: done_v2
+  character_group: lin_yueru
+  anchor_mgo: 7
+  speaker_hints:
+  - 李逍遥
+  scenes:
+  - '035:场景 #035 (Map 15)'
+  - '037:场景 #037 (Map 33)'
+- id: 246
+  name: 蛇妖女/女娲蛇尾背影
+  category: prop_1f
+  frames: 1
+  size_1x: 55x62
+  status: legacy_track_b
+  scenes:
+  - '036:场景 #036 (Map 51)'
+  name_needs_review: true
+- id: 247
+  name: 林天南
+  category: npc
+  frames: 4
+  size_1x: 96x53
+  status: done_v2
+  speaker_hints:
+  - 林天南
+  scenes:
+  - '032:场景 #032 (Map 31)'
+  - '034:场景 #034 (Map 32)'
+  - '118:场景 #118 (Map 110)'
+- id: 248
+  name: 丫鬟
+  category: npc
+  frames: 12
+  size_1x: 312x100
+  status: done_v2
+  speaker_hints:
+  - 丫鬟
+  scenes:
+  - '035:场景 #035 (Map 15)'
+  - '037:场景 #037 (Map 33)'
+  - '195:场景 #195 (Map 33)'
+- id: 249
+  name: 婢女阿香 / 婢女阿萍 / 婢　女
+  category: npc
+  frames: 4
+  size_1x: 120x50
+  status: done_v2
+  speaker_hints:
+  - 婢女阿香
+  - 婢女阿萍
+  - 婢　女
+  scenes:
+  - '119:场景 #119 (Map 111)'
+  - '120:场景 #120 (Map 127)'
+- id: 250
+  name: 守桥壮丁
+  category: npc_or_prop
+  frames: 1
+  size_1x: 46x55
+  status: legacy_track_b
+  speaker_hints:
+  - 守桥壮丁
+  scenes:
+  - '049:场景 #049 (Map 46)'
+- id: 251
+  name: 蛇妖男
+  category: npc
+  frames: 2
+  size_1x: 174x62
+  status: legacy_track_b
+  speaker_hints:
+  - 蛇妖男
+  scenes:
+  - '041:场景 #041 (Map 131)'
+  - '245:场景 #245 (Map 208)'
+- id: 252
+  name: 妖狐女
+  category: npc
+  frames: 2
+  size_1x: 66x57
+  status: legacy_track_b
+  speaker_hints:
+  - 妖狐女
+  scenes:
+  - '047:场景 #047 (Map 43)'
+- id: 253
+  name: 将军冢·开棺骷髅将军
+  category: other_multiframe
+  frames: 7
+  size_1x: 1120x77
+  status: done_v2
+  scenes:
+  - '065:场景 #065 (Map 57)'
+- id: 254
+  name: 血池僵尸/鬼将军
+  category: other_multiframe
+  frames: 6
+  size_1x: 450x71
+  status: legacy_track_b
+  scenes:
+  - '059:场景 #059 (Map 76)'
+- id: 255
+  name: 青铜石门/宝箱暗门
+  category: other_multiframe
+  frames: 4
+  size_1x: 216x74
+  status: legacy_track_b
+- id: 256
+  name: 大锦鲤
+  category: other_multiframe
+  frames: 16
+  size_1x: 224x34
+  status: legacy_track_b
+  scenes:
+  - '049:场景 #049 (Map 46)'
+  - '231:场景 #231 (Map 188)'
+  - '233:场景 #233 (Map 189)'
+- id: 257
+  name: 小锦鲤
+  category: other_multiframe
+  frames: 16
+  size_1x: 216x38
+  status: legacy_track_b
+  scenes:
+  - '049:场景 #049 (Map 46)'
+- id: 258
+  name: 鬼阴山石碑
+  category: prop_1f
+  frames: 1
+  size_1x: 66x85
+  status: legacy_track_b
+- id: 259
+  name: 李逍遥 - 挥剑/御剑
+  category: core_character
+  frames: 27
+  size_1x: 888x592
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 260
+  name: 飞落碎石/木块 (竖)
+  category: other_multiframe
+  frames: 25
+  size_1x: 544x356
+  status: legacy_track_b
+  scenes:
+  - '040:场景 #040 (Map 42)'
+  - '044:场景 #044 (Map 40)'
+  name_needs_review: true
+- id: 261
+  name: 崩塌泥板/浮木
+  category: other_multiframe
+  frames: 25
+  size_1x: 544x112
+  status: legacy_track_b
+  scenes:
+  - '040:场景 #040 (Map 42)'
+  - '044:场景 #044 (Map 40)'
+  name_needs_review: true
+- id: 262
+  name: 水流机关石柱
+  category: other_multiframe
+  frames: 4
+  size_1x: 240x79
+  status: legacy_track_b
+  scenes:
+  - '040:场景 #040 (Map 42)'
+  - '041:场景 #041 (Map 131)'
+  name_needs_review: true
+- id: 263
+  name: 洞穴瀑布水流
+  category: other_multiframe
+  frames: 4
+  size_1x: 240x79
+  status: legacy_track_b
+  scenes:
+  - '041:场景 #041 (Map 131)'
+  - '044:场景 #044 (Map 40)'
+- id: 264
+  name: 石阶流水
+  category: other_multiframe
+  frames: 4
+  size_1x: 528x75
+  status: done_v2
+  scenes:
+  - '064:场景 #064 (Map 54)'
+- id: 265
+  name: 煎药僮子
+  category: npc
+  frames: 2
+  size_1x: 50x40
+  status: legacy_track_b
+  speaker_hints:
+  - 煎药僮子
+  scenes:
+  - '052:场景 #052 (Map 47)'
+- id: 266
+  name: 奔跑梅花鹿
+  category: other_multiframe
+  frames: 17
+  size_1x: 424x159
+  status: legacy_track_b
+  scenes:
+  - '048:场景 #048 (Map 45)'
+- id: 267
+  name: 婢　女 / 少女 / 婢女阿萍
+  category: npc
+  frames: 12
+  size_1x: 240x100
+  status: done_v2
+  speaker_hints:
+  - 婢　女
+  - 少女
+  - 婢女阿萍
+  scenes:
+  - '047:场景 #047 (Map 43)'
+  - '048:场景 #048 (Map 45)'
+  - '111:场景 #111 (Map 103)'
+  - '114:场景 #114 (Map 106)'
+- id: 268
+  name: 捕兽夹
+  category: prop_1f
+  frames: 1
+  size_1x: 31x18
+  status: legacy_track_b
+  scenes:
+  - '048:场景 #048 (Map 45)'
+- id: 269
+  name: 龙纹石壁机关 (左)
+  category: other_multiframe
+  frames: 5
+  size_1x: 300x73
+  status: legacy_track_b
+  scenes:
+  - '060:场景 #060 (Map 55)'
+  - '065:场景 #065 (Map 57)'
+  - '067:场景 #067 (Map 73)'
+  - '187:场景 #187 (Map 155)'
+- id: 270
+  name: 龙纹石壁机关 (右)
+  category: other_multiframe
+  frames: 5
+  size_1x: 280x73
+  status: legacy_track_b
+  scenes:
+  - '060:场景 #060 (Map 55)'
+  - '065:场景 #065 (Map 57)'
+- id: 271
+  name: 菱形地砖踏板
+  category: other_multiframe
+  frames: 2
+  size_1x: 72x19
+  status: legacy_track_b
+  scenes:
+  - '059:场景 #059 (Map 76)'
+  - '060:场景 #060 (Map 55)'
+  - '065:场景 #065 (Map 57)'
+  - '089:场景 #089 (Map 82)'
+- id: 272
+  name: 血池红砖踏板/血块
+  category: other_multiframe
+  frames: 24
+  size_1x: 264x66
+  status: legacy_track_b
+  scenes:
+  - '059:场景 #059 (Map 76)'
+  - '156:场景 #156 (Map 156)'
+  name_needs_review: true
+- id: 273
+  name: 李逍遥/赵灵儿/林月如 - 倒地
+  category: core_character
+  frames: 4
+  size_1x: 432x73
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 274
+  name: 红木纸格门 (左)
+  category: other_multiframe
+  frames: 2
+  size_1x: 72x61
+  status: done_v2
+  scenes:
+  - '093:场景 #093 (Map 86)'
+- id: 275
+  name: 红木纸格门 (右)
+  category: other_multiframe
+  frames: 2
+  size_1x: 72x68
+  status: done_v2
+  scenes:
+  - '093:场景 #093 (Map 86)'
+- id: 276
+  name: 老汉 / 客人甲 / 客人乙
+  category: npc_or_prop
+  frames: 1
+  size_1x: 34x58
+  status: legacy_track_b
+  speaker_hints:
+  - 老汉
+  - 客人甲
+  - 客人乙
+  scenes:
+  - '051:场景 #051 (Map 48)'
+  - '127:场景 #127 (Map 115)'
+- id: 277
+  name: 酒馆坐客·蓝袍书生 (左背)
+  category: prop_1f
+  frames: 1
+  size_1x: 32x55
+  status: done_v2
+- id: 278
+  name: 酒馆坐客·蓝袍书生 (右背)
+  category: prop_1f
+  frames: 1
+  size_1x: 30x59
+  status: done_v2
+- id: 279
+  name: 居民
+  category: npc_or_prop
+  frames: 1
+  size_1x: 34x55
+  status: legacy_track_b
+  speaker_hints:
+  - 居民
+  scenes:
+  - '024:场景 #024 (Map 38)'
+- id: 280
+  name: 酒馆坐客·白须棕袍老翁 (左向)
+  category: prop_1f
+  frames: 1
+  size_1x: 40x51
+  status: done_v2
+- id: 281
+  name: 老头
+  category: npc_or_prop
+  frames: 1
+  size_1x: 30x56
+  status: done_v2
+  speaker_hints:
+  - 老头
+  scenes:
+  - '112:场景 #112 (Map 103)'
+- id: 282
+  name: 酒馆坐客·白须棕袍老翁 (背影)
+  category: prop_1f
+  frames: 1
+  size_1x: 28x57
+  status: done_v2
+- id: 283
+  name: 酒馆坐客·白须棕袍老翁 (右向)
+  category: prop_1f
+  frames: 1
+  size_1x: 28x51
+  status: done_v2
+- id: 284
+  name: 旅客
+  category: npc_or_prop
+  frames: 1
+  size_1x: 36x56
+  status: done_v2
+  speaker_hints:
+  - 旅客
+  scenes:
+  - '093:场景 #093 (Map 86)'
+- id: 285
+  name: 商人 / 伙计
+  category: npc_or_prop
+  frames: 1
+  size_1x: 40x57
+  status: done_v2
+  speaker_hints:
+  - 商人
+  - 伙计
+  scenes:
+  - '112:场景 #112 (Map 103)'
+- id: 286
+  name: 酒馆坐客·青袍书生 (背影)
+  category: prop_1f
+  frames: 1
+  size_1x: 26x57
+  status: done_v2
+- id: 287
+  name: 酒馆坐客·青袍胡须书生
+  category: prop_1f
+  frames: 1
+  size_1x: 30x55
+  status: done_v2
+- id: 288
+  name: 酒馆坐客·黑白袍侠客 (左向)
+  category: prop_1f
+  frames: 1
+  size_1x: 32x53
+  status: done_v2
+- id: 289
+  name: 路人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 44x56
+  status: done_v2
+  speaker_hints:
+  - 路人
+  scenes:
+  - '112:场景 #112 (Map 103)'
+- id: 290
+  name: 酒馆坐客·黑白袍侠客 (背影)
+  category: prop_1f
+  frames: 1
+  size_1x: 26x55
+  status: done_v2
+- id: 291
+  name: 酒馆坐客·黑白袍侠客 (右向)
+  category: prop_1f
+  frames: 1
+  size_1x: 28x51
+  status: done_v2
+- id: 292
+  name: 居民 / 父 / 女
+  category: npc_or_prop
+  frames: 1
+  size_1x: 38x57
+  status: done_v2
+  speaker_hints:
+  - 居民
+  - 父
+  - 女
+  scenes:
+  - '024:场景 #024 (Map 38)'
+  - '099:场景 #099 (Map 94)'
+  - '112:场景 #112 (Map 103)'
+- id: 293
+  name: 客人 / 酒客
+  category: npc_or_prop
+  frames: 1
+  size_1x: 30x56
+  status: done_v2
+  speaker_hints:
+  - 客人
+  - 酒客
+  scenes:
+  - '093:场景 #093 (Map 86)'
+  - '128:场景 #128 (Map 115)'
+- id: 294
+  name: 夫
+  category: npc_or_prop
+  frames: 1
+  size_1x: 32x56
+  status: legacy_track_b
+  speaker_hints:
+  - 夫
+  scenes:
+  - '024:场景 #024 (Map 38)'
+- id: 295
+  name: 观众
+  category: npc_or_prop
+  frames: 1
+  size_1x: 34x55
+  status: done_v2
+  speaker_hints:
+  - 观众
+  scenes:
+  - '112:场景 #112 (Map 103)'
+- id: 296
+  name: 酒馆坐客·红袍斗笠客 (背影)
+  category: prop_1f
+  frames: 1
+  size_1x: 24x57
+  status: done_v2
+- id: 297
+  name: 旅客 / 商人 / 伙计
+  category: npc_or_prop
+  frames: 1
+  size_1x: 36x53
+  status: done_v2
+  speaker_hints:
+  - 旅客
+  - 商人
+  - 伙计
+  scenes:
+  - '093:场景 #093 (Map 86)'
+  - '112:场景 #112 (Map 103)'
+- id: 298
+  name: 血迹符文石柱
+  category: other_multiframe
+  frames: 5
+  size_1x: 140x48
+  status: legacy_track_b
+  scenes:
+  - '059:场景 #059 (Map 76)'
+  - '156:场景 #156 (Map 156)'
+- id: 299
+  name: 白骨骷髅头
+  category: prop_1f
+  frames: 1
+  size_1x: 26x24
+  status: legacy_track_b
+  scenes:
+  - '059:场景 #059 (Map 76)'
+- id: 300
+  name: 鬼阴坛旗幡
+  category: other_multiframe
+  frames: 5
+  size_1x: 290x153
+  status: done_v2
+  scenes:
+  - '068:场景 #068 (Map 61)'
+  - '069:场景 #069 (Map 62)'
+- id: 301
+  name: 白天鹅
+  category: other_multiframe
+  frames: 4
+  size_1x: 116x27
+  status: done_v2
+  scenes:
+  - '113:场景 #113 (Map 96)'
+- id: 302
+  name: 雕花木门·纸窗 (左)
+  category: other_multiframe
+  frames: 2
+  size_1x: 72x68
+  status: done_v2
+- id: 303
+  name: 雕花木门·纸窗 (右)
+  category: other_multiframe
+  frames: 2
+  size_1x: 72x61
+  status: done_v2
+- id: 304
+  name: 雕花木门·格栅 (左)
+  category: other_multiframe
+  frames: 2
+  size_1x: 72x68
+  status: done_v2
+- id: 305
+  name: 雕花木门·格栅 (右)
+  category: other_multiframe
+  frames: 2
+  size_1x: 72x60
+  status: todo
+- id: 306
+  name: 婢　女
+  category: npc
+  frames: 12
+  size_1x: 200x100
+  status: done_v2
+  speaker_hints:
+  - 婢　女
+  scenes:
+  - '118:场景 #118 (Map 110)'
+- id: 307
+  name: 妻 / 村民 / 澡堂女客乙
+  category: npc
+  frames: 12
+  size_1x: 200x102
+  status: done_v2
+  speaker_hints:
+  - 妻
+  - 村民
+  - 澡堂女客乙
+  scenes:
+  - '024:场景 #024 (Map 38)'
+  - '050:场景 #050 (Map 58)'
+  - '129:场景 #129 (Map 116)'
+- id: 308
+  name: 小布钱袋
+  category: prop_1f
+  frames: 1
+  size_1x: 15x18
+  status: done_v2
+  scenes:
+  - '108:场景 #108 (Map 108)'
+  - '110:场景 #110 (Map 126)'
+- id: 309
+  name: 少女
+  category: npc_or_prop
+  frames: 1
+  size_1x: 30x56
+  status: done_v2
+  speaker_hints:
+  - 少女
+  scenes:
+  - '082:场景 #082 (Map 79)'
+- id: 310
+  name: 当铺老板
+  category: npc_or_prop
+  frames: 1
+  size_1x: 36x60
+  status: done_v2
+  speaker_hints:
+  - 当铺老板
+  scenes:
+  - '082:场景 #082 (Map 79)'
+- id: 311
+  name: 酒馆坐客·黄衣少女 (正坐)
+  category: prop_1f
+  frames: 1
+  size_1x: 28x59
+  status: done_v2
+  scenes:
+  - '100:场景 #100 (Map 105)'
+- id: 312
+  name: 酒馆坐客·青衣书生 (正坐)
+  category: prop_1f
+  frames: 1
+  size_1x: 30x62
+  status: done_v2
+  scenes:
+  - '100:场景 #100 (Map 105)'
+- id: 313
+  name: 少女 / 三姑 / 妻
+  category: npc
+  frames: 12
+  size_1x: 208x102
+  status: done_v2
+  speaker_hints:
+  - 少女
+  - 三姑
+  - 妻
+  scenes:
+  - 021:苏州城
+  - '024:场景 #024 (Map 38)'
+  - '084:场景 #084 (Map 80)'
+  - '209:场景 #209 (Map 169)'
+- id: 314
+  name: 老鸨
+  category: npc
+  frames: 12
+  size_1x: 216x106
+  status: done_v2
+  speaker_hints:
+  - 老鸨
+  scenes:
+  - '131:场景 #131 (Map 118)'
+  - '133:场景 #133 (Map 121)'
+- id: 315
+  name: 村民 / 居民
+  category: npc
+  frames: 4
+  size_1x: 104x53
+  status: legacy_track_b
+  speaker_hints:
+  - 村民
+  - 居民
+  scenes:
+  - '029:场景 #029 (Map 28)'
+  - '050:场景 #050 (Map 58)'
+- id: 316
+  name: 大肚汉/屠夫
+  category: other_multiframe
+  frames: 12
+  size_1x: 264x98
+  status: todo
+  name_needs_review: true
+- id: 317
+  name: 猪肉张 / 胖男
+  category: npc
+  frames: 4
+  size_1x: 120x50
+  status: legacy_track_b
+  speaker_hints:
+  - 猪肉张
+  - 胖男
+  scenes:
+  - 005:盛渔村·民居与洪大夫药铺
+  - '091:场景 #091 (Map 83)'
+- id: 318
+  name: 胖妓女
+  category: npc
+  frames: 12
+  size_1x: 264x94
+  status: done_v2
+  speaker_hints:
+  - 胖妓女
+  scenes:
+  - '132:场景 #132 (Map 121)'
+- id: 319
+  name: 煮饭婆
+  category: npc
+  frames: 4
+  size_1x: 132x46
+  status: done_v2
+  speaker_hints:
+  - 煮饭婆
+  scenes:
+  - '095:场景 #095 (Map 88)'
+- id: 320
+  name: 绿衣飘带女子
+  category: other_multiframe
+  frames: 12
+  size_1x: 200x96
+  status: todo
+  name_needs_review: true
+- id: 321
+  name: 妓女 / 民女甲 / 民女乙
+  category: npc
+  frames: 4
+  size_1x: 96x48
+  status: done_v2
+  speaker_hints:
+  - 妓女
+  - 民女甲
+  - 民女乙
+  scenes:
+  - 023:苏州城·比武招亲擂台
+  - '100:场景 #100 (Map 105)'
+  - '130:场景 #130 (Map 117)'
+  - '132:场景 #132 (Map 121)'
+- id: 322
+  name: 莺莺夫人
+  category: npc
+  frames: 12
+  size_1x: 192x108
+  status: done_v2
+  speaker_hints:
+  - 莺莺夫人
+  scenes:
+  - '131:场景 #131 (Map 118)'
+- id: 323
+  name: 妓女 / 六婆 / 员外
+  category: npc
+  frames: 4
+  size_1x: 96x54
+  status: done_v2
+  speaker_hints:
+  - 妓女
+  - 六婆
+  - 员外
+  scenes:
+  - '084:场景 #084 (Map 80)'
+  - '091:场景 #091 (Map 83)'
+  - '130:场景 #130 (Map 117)'
+  - '134:场景 #134 (Map 121)'
+- id: 324
+  name: 婢女
+  category: npc
+  frames: 12
+  size_1x: 192x96
+  status: done_v2
+  speaker_hints:
+  - 婢女
+  scenes:
+  - '089:场景 #089 (Map 82)'
+- id: 325
+  name: 妓女 / 观众 / 男子
+  category: npc
+  frames: 4
+  size_1x: 96x48
+  status: done_v2
+  speaker_hints:
+  - 妓女
+  - 观众
+  - 男子
+  scenes:
+  - '112:场景 #112 (Map 103)'
+  - '130:场景 #130 (Map 117)'
+- id: 326
+  name: 婢女
+  category: npc
+  frames: 12
+  size_1x: 192x96
+  status: done_v2
+  speaker_hints:
+  - 婢女
+  scenes:
+  - '089:场景 #089 (Map 82)'
+- id: 327
+  name: 妓女 / 小雪 / 妓　女
+  category: npc
+  frames: 4
+  size_1x: 96x48
+  status: done_v2
+  speaker_hints:
+  - 妓女
+  - 小雪
+  - 妓　女
+  scenes:
+  - '100:场景 #100 (Map 105)'
+  - '130:场景 #130 (Map 117)'
+  - '132:场景 #132 (Map 121)'
+  - '133:场景 #133 (Map 121)'
+- id: 328
+  name: 黄衣飘带女子
+  category: other_multiframe
+  frames: 12
+  size_1x: 232x96
+  status: todo
+  name_needs_review: true
+- id: 329
+  name: 嫖客 / 妓女 / 妓　女
+  category: npc
+  frames: 4
+  size_1x: 112x47
+  status: done_v2
+  speaker_hints:
+  - 嫖客
+  - 妓女
+  - 妓　女
+  scenes:
+  - '130:场景 #130 (Map 117)'
+  - '132:场景 #132 (Map 121)'
+- id: 330
+  name: 女客
+  category: npc_or_prop
+  frames: 1
+  size_1x: 36x47
+  status: todo
+  speaker_hints:
+  - 女客
+  scenes:
+  - '129:场景 #129 (Map 116)'
+- id: 331
+  name: 女客
+  category: npc_or_prop
+  frames: 1
+  size_1x: 51x53
+  status: todo
+  speaker_hints:
+  - 女客
+  scenes:
+  - '129:场景 #129 (Map 116)'
+- id: 332
+  name: 女客
+  category: npc_or_prop
+  frames: 1
+  size_1x: 33x40
+  status: todo
+  speaker_hints:
+  - 女客
+  scenes:
+  - '129:场景 #129 (Map 116)'
+- id: 333
+  name: 女客
+  category: npc_or_prop
+  frames: 1
+  size_1x: 36x53
+  status: todo
+  speaker_hints:
+  - 女客
+  scenes:
+  - '129:场景 #129 (Map 116)'
+- id: 334
+  name: 女客
+  category: npc_or_prop
+  frames: 1
+  size_1x: 34x31
+  status: todo
+  speaker_hints:
+  - 女客
+  scenes:
+  - '129:场景 #129 (Map 116)'
+- id: 335
+  name: 女客
+  category: npc_or_prop
+  frames: 1
+  size_1x: 31x50
+  status: todo
+  speaker_hints:
+  - 女客
+  scenes:
+  - '129:场景 #129 (Map 116)'
+- id: 336
+  name: 女客
+  category: npc_or_prop
+  frames: 1
+  size_1x: 38x35
+  status: todo
+  speaker_hints:
+  - 女客
+  scenes:
+  - '129:场景 #129 (Map 116)'
+- id: 337
+  name: 女客
+  category: npc_or_prop
+  frames: 1
+  size_1x: 37x36
+  status: todo
+  speaker_hints:
+  - 女客
+  scenes:
+  - '129:场景 #129 (Map 116)'
+- id: 338
+  name: 赵灵儿的衣裳 (地上)
+  category: prop_1f
+  frames: 1
+  size_1x: 36x35
+  status: legacy_track_b
+  scenes:
+  - 014:仙灵岛·荷花池迷宫
+- id: 339
+  name: 赵灵儿 - 仙灵岛沐浴
+  category: core_character
+  frames: 17
+  size_1x: 384x150
+  status: legacy_track_b
+  character_group: zhao_linger
+  anchor_mgo: 3
+  scenes:
+  - 014:仙灵岛·荷花池迷宫
+- id: 340
+  name: 绿衣头巾胡须男子
+  category: other_multiframe
+  frames: 4
+  size_1x: 96x52
+  status: todo
+  name_needs_review: true
+- id: 341
+  name: 苗人
+  category: npc
+  frames: 4
+  size_1x: 160x52
+  status: legacy_track_b
+  speaker_hints:
+  - 苗人
+  scenes:
+  - '055:场景 #055 (Map 60)'
+- id: 342
+  name: 观众 / 村民 / 李逍遥
+  category: npc
+  frames: 4
+  size_1x: 92x52
+  status: done_v2
+  speaker_hints:
+  - 观众
+  - 村民
+  - 李逍遥
+  scenes:
+  - '032:场景 #032 (Map 31)'
+  - '049:场景 #049 (Map 46)'
+  - '050:场景 #050 (Map 58)'
+  - '079:场景 #079 (Map 79)'
+- id: 343
+  name: 猎户 / 猎人 / 汉人壮士
+  category: npc
+  frames: 4
+  size_1x: 140x53
+  status: done_v2
+  speaker_hints:
+  - 猎户
+  - 猎人
+  - 汉人壮士
+  scenes:
+  - '048:场景 #048 (Map 45)'
+  - '102:场景 #102 (Map 97)'
+  - '202:场景 #202 (Map 162)'
+  - '205:场景 #205 (Map 170)'
+- id: 344
+  name: 病人
+  category: npc
+  frames: 4
+  size_1x: 100x54
+  status: legacy_track_b
+  speaker_hints:
+  - 病人
+  scenes:
+  - '053:场景 #053 (Map 49)'
+- id: 345
+  name: 病人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 25x50
+  status: legacy_track_b
+  speaker_hints:
+  - 病人
+  scenes:
+  - '053:场景 #053 (Map 49)'
+- id: 346
+  name: 病人
+  category: npc_or_prop
+  frames: 1
+  size_1x: 100x42
+  status: legacy_track_b
+  speaker_hints:
+  - 病人
+  scenes:
+  - '053:场景 #053 (Map 49)'
+- id: 347
+  name: 黑衣蒙面女刺客
+  category: other_multiframe
+  frames: 12
+  size_1x: 200x104
+  status: done_v2
+  scenes:
+  - '087:场景 #087 (Map 81)'
+  - '092:场景 #092 (Map 85)'
+- id: 348
+  name: 黑衣抱包袱妇人
+  category: other_multiframe
+  frames: 12
+  size_1x: 208x112
+  status: done_v2
+  scenes:
+  - '086:场景 #086 (Map 93)'
+  name_needs_review: true
+- id: 349
+  name: 姬三娘 / 女飞贼
+  category: npc
+  frames: 12
+  size_1x: 200x114
+  status: done_v2
+  speaker_hints:
+  - 姬三娘
+  - 女飞贼
+  scenes:
+  - '086:场景 #086 (Map 93)'
+  - '089:场景 #089 (Map 82)'
+  - '091:场景 #091 (Map 83)'
+  - '092:场景 #092 (Map 85)'
+- id: 350
+  name: 女飞贼 / 林月如
+  category: npc
+  frames: 14
+  size_1x: 272x132
+  status: done_v2
+  speaker_hints:
+  - 女飞贼
+  - 林月如
+  scenes:
+  - '086:场景 #086 (Map 93)'
+  - '092:场景 #092 (Map 85)'
+  - '093:场景 #093 (Map 86)'
+- id: 351
+  name: 石长老
+  category: npc
+  frames: 13
+  size_1x: 224x110
+  status: done_v2
+  speaker_hints:
+  - 石长老
+  scenes:
+  - '067:场景 #067 (Map 73)'
+  - '106:场景 #106 (Map 101)'
+  - '229:场景 #229 (Map 178)'
+  - '243:场景 #243 (Map 206)'
+- id: 352
+  name: 西域/波斯商人
+  category: other_multiframe
+  frames: 12
+  size_1x: 216x112
+  status: todo
+- id: 353
+  name: 米色长袍胡须文士
+  category: other_multiframe
+  frames: 12
+  size_1x: 208x108
+  status: legacy_track_b
+  scenes:
+  - '037:场景 #037 (Map 33)'
+  - '117:场景 #117 (Map 109)'
+  name_needs_review: true
+- id: 354
+  name: 居民 / 药铺老板 / 船商
+  category: npc
+  frames: 12
+  size_1x: 192x106
+  status: done_v2
+  speaker_hints:
+  - 居民
+  - 药铺老板
+  - 船商
+  scenes:
+  - '136:场景 #136 (Map 123)'
+  - '209:场景 #209 (Map 169)'
+  - '254:场景 #254 (Map 196)'
+- id: 355
+  name: 居民 / 中年人 / 药铺老板
+  category: npc
+  frames: 12
+  size_1x: 192x106
+  status: done_v2
+  speaker_hints:
+  - 居民
+  - 中年人
+  - 药铺老板
+  scenes:
+  - 009:盛渔村·当铺与酒家
+  - '096:场景 #096 (Map 89)'
+  - '175:场景 #175 (Map 158)'
+  - '183:场景 #183 (Map 158)'
+- id: 356
+  name: 棕衣佩葫芦壮汉
+  category: other_multiframe
+  frames: 12
+  size_1x: 224x104
+  status: legacy_track_b
+  scenes:
+  - '058:场景 #058 (Map 71)'
+  name_needs_review: true
+- id: 357
+  name: 智杖
+  category: npc
+  frames: 12
+  size_1x: 232x104
+  status: legacy_track_b
+  speaker_hints:
+  - 智杖
+  scenes:
+  - '056:场景 #056 (Map 69)'
+- id: 358
+  name: 剑圣
+  category: npc
+  frames: 12
+  size_1x: 240x110
+  status: done_v2
+  speaker_hints:
+  - 剑圣
+  scenes:
+  - '150:场景 #150 (Map 137)'
+  - '160:场景 #160 (Map 136)'
+  - '177:场景 #177 (Map 201)'
+- id: 359
+  name: 扫地小和尚
+  category: other_multiframe
+  frames: 2
+  size_1x: 56x54
+  status: todo
+- id: 360
+  name: 和尚
+  category: npc
+  frames: 12
+  size_1x: 376x106
+  status: legacy_track_b
+  speaker_hints:
+  - 和尚
+  scenes:
+  - '056:场景 #056 (Map 69)'
+- id: 361
+  name: 李逍遥 - 爱心表情
+  category: core_character
+  frames: 5
+  size_1x: 350x62
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 362
+  name: 天雷闪电
+  category: other_multiframe
+  frames: 4
+  size_1x: 140x159
+  status: legacy_track_b
+  scenes:
+  - 014:仙灵岛·荷花池迷宫
+- id: 363
+  name: 赵灵儿 - 蓝白装施法浮空
+  category: core_character
+  frames: 11
+  size_1x: 360x190
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  scenes:
+  - 014:仙灵岛·荷花池迷宫
+- id: 364
+  name: 赵灵儿 - 盖红被睡觉与坐起(搭被边)
+  category: core_character
+  frames: 2
+  size_1x: 196x53
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  speaker_hints:
+  - 赵灵儿
+  scenes:
+  - 020:苏州城·码头外
+  - '169:场景 #169 (Map 9)'
+  - '173:场景 #173 (Map 202)'
+  - '174:场景 #174 (Map 202)'
+- id: 365
+  name: 赵灵儿 - 蓝白装剧情动作
+  category: core_character
+  frames: 14
+  size_1x: 240x100
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  speaker_hints:
+  - 少女
+  scenes:
+  - 020:苏州城·码头外
+  - '169:场景 #169 (Map 9)'
+- id: 366
+  name: 李逍遥 - 挥手动作
+  category: core_character
+  frames: 3
+  size_1x: 114x50
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - 020:苏州城·码头外
+- id: 367
+  name: 姥姥 - 跪姿
+  category: core_character
+  frames: 1
+  size_1x: 28x41
+  status: done_v2
+  character_group: grandma_and_saintess
+  anchor_mgo: 18
+  speaker_hints:
+  - 姥姥
+  scenes:
+  - 019:仙灵岛·水月宫内殿
+- id: 368
+  name: 磨刀老头
+  category: npc
+  frames: 2
+  size_1x: 82x47
+  status: done_v2
+  speaker_hints:
+  - 磨刀老头
+  scenes:
+  - '096:场景 #096 (Map 89)'
+- id: 369
+  name: 奔跑黑猫
+  category: other_multiframe
+  frames: 17
+  size_1x: 248x72
+  status: todo
+  scenes:
+  - '085:场景 #085 (Map 92)'
+  - '093:场景 #093 (Map 86)'
+  - '206:场景 #206 (Map 163)'
+- id: 370
+  name: 醉鬼
+  category: npc
+  frames: 11
+  size_1x: 376x108
+  status: done_v2
+  speaker_hints:
+  - 醉鬼
+  scenes:
+  - '082:场景 #082 (Map 79)'
+  - '127:场景 #127 (Map 115)'
+- id: 371
+  name: 醉酒樵夫/工匠 - 持葫芦饮酒倒地
+  category: core_character
+  frames: 10
+  size_1x: 408x120
+  status: done_v2
+  character_group: woodcutter
+  anchor_mgo: 39
+  speaker_hints:
+  - 醉鬼
+  - 醉汉甲
+  - 醉汉乙
+  scenes:
+  - '082:场景 #082 (Map 79)'
+  - '127:场景 #127 (Map 115)'
+- id: 372
+  name: 小石头
+  category: npc
+  frames: 4
+  size_1x: 304x51
+  status: legacy_track_b
+  speaker_hints:
+  - 小石头
+  scenes:
+  - '059:场景 #059 (Map 76)'
+  - '152:场景 #152 (Map 74)'
+- id: 373
+  name: 小黄狗
+  category: other_multiframe
+  frames: 12
+  size_1x: 184x52
+  status: legacy_track_b
+  scenes:
+  - '024:场景 #024 (Map 38)'
+  - '049:场景 #049 (Map 46)'
+- id: 374
+  name: 吠叫小狗 (绑头带)
+  category: other_multiframe
+  frames: 12
+  size_1x: 328x50
+  status: legacy_track_b
+  scenes:
+  - 023:苏州城·比武招亲擂台
+- id: 375
+  name: 无赖
+  category: npc_or_prop
+  frames: 1
+  size_1x: 38x57
+  status: done_v2
+  speaker_hints:
+  - 无赖
+  scenes:
+  - '093:场景 #093 (Map 86)'
+- id: 376
+  name: 醉酒宾客·红脸侠客
+  category: other_multiframe
+  frames: 3
+  size_1x: 189x54
+  status: done_v2
+  scenes:
+  - '093:场景 #093 (Map 86)'
+- id: 377
+  name: 醉酒宾客·捂嘴红衣青年
+  category: other_multiframe
+  frames: 3
+  size_1x: 198x56
+  status: done_v2
+  scenes:
+  - '093:场景 #093 (Map 86)'
+- id: 378
+  name: 醉酒宾客·灰帽背影
+  category: other_multiframe
+  frames: 3
+  size_1x: 198x55
+  status: done_v2
+  scenes:
+  - '093:场景 #093 (Map 86)'
+- id: 379
+  name: 李逍遥 - 趴地
+  category: core_character
+  frames: 5
+  size_1x: 335x51
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 380
+  name: 青布包裹·酒壶与念珠
+  category: other_multiframe
+  frames: 2
+  size_1x: 74x28
+  status: done_v2
+  scenes:
+  - '086:场景 #086 (Map 93)'
+  - '097:场景 #097 (Map 90)'
+  name_needs_review: true
+- id: 381
+  name: 暗红酒葫芦
+  category: prop_1f
+  frames: 1
+  size_1x: 18x35
+  status: done_v2
+  scenes:
+  - '092:场景 #092 (Map 85)'
+- id: 382
+  name: 太守
+  category: npc_or_prop
+  frames: 1
+  size_1x: 38x44
+  status: done_v2
+  speaker_hints:
+  - 太守
+  scenes:
+  - '081:场景 #081 (Map 84)'
+- id: 383
+  name: 宴席酒桌 (伏案醉客)
+  category: other_multiframe
+  frames: 6
+  size_1x: 540x87
+  status: done_v2
+  scenes:
+  - '115:场景 #115 (Map 106)'
+- id: 384
+  name: 酒剑仙
+  category: npc
+  frames: 24
+  size_1x: 648x186
+  status: todo
+  speaker_hints:
+  - 酒剑仙
+  scenes:
+  - '115:场景 #115 (Map 106)'
+- id: 385
+  name: 林月如 - 被绑跪姿
+  category: core_character
+  frames: 2
+  size_1x: 72x40
+  status: done_v2
+  character_group: lin_yueru
+  anchor_mgo: 7
+- id: 386
+  name: 黑衣反绑男子 (背影)
+  category: prop_1f
+  frames: 1
+  size_1x: 20x35
+  status: done_v2
+  scenes:
+  - '081:场景 #081 (Map 84)'
+  name_needs_review: true
+- id: 387
+  name: 林月如
+  category: npc_or_prop
+  frames: 1
+  size_1x: 54x24
+  status: done_v2
+  speaker_hints:
+  - 林月如
+  scenes:
+  - '101:场景 #101 (Map 98)'
+- id: 388
+  name: 卧地水牛
+  category: prop_1f
+  frames: 1
+  size_1x: 66x54
+  status: done_v2
+  scenes:
+  - '107:场景 #107 (Map 102)'
+- id: 389
+  name: 木宝箱 (开关)
+  category: other_multiframe
+  frames: 2
+  size_1x: 80x38
+  status: legacy_track_b
+  scenes:
+  - '046:场景 #046 (Map 70)'
+  - '047:场景 #047 (Map 43)'
+  - '076:场景 #076 (Map 72)'
+  - '092:场景 #092 (Map 85)'
+- id: 390
+  name: 李逍遥 - 趴地
+  category: core_character
+  frames: 3
+  size_1x: 240x39
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - '081:场景 #081 (Map 84)'
+- id: 391
+  name: 持红棍衙役 (正面)
+  category: other_multiframe
+  frames: 4
+  size_1x: 360x78
+  status: done_v2
+  scenes:
+  - '081:场景 #081 (Map 84)'
+- id: 392
+  name: 持红棍衙役 (背面)
+  category: other_multiframe
+  frames: 4
+  size_1x: 324x79
+  status: done_v2
+  scenes:
+  - '081:场景 #081 (Map 84)'
+- id: 393
+  name: 韩医仙
+  category: npc_or_prop
+  frames: 1
+  size_1x: 27x44
+  status: legacy_track_b
+  speaker_hints:
+  - 韩医仙
+  scenes:
+  - '053:场景 #053 (Map 49)'
+- id: 394
+  name: 赵灵儿·蹲伏起身
+  category: other_multiframe
+  frames: 2
+  size_1x: 76x54
+  status: todo
+- id: 395
+  name: 兵器桶与布袋
+  category: prop_1f
+  frames: 1
+  size_1x: 26x39
+  status: legacy_track_b
+  scenes:
+  - '051:场景 #051 (Map 48)'
+- id: 396
+  name: 青衣弟子 / 李逍遥问道
+  category: npc_or_prop
+  frames: 1
+  size_1x: 31x22
+  status: done_v2
+  speaker_hints:
+  - 青衣弟子
+  - 李逍遥问道
+  scenes:
+  - '058:场景 #058 (Map 71)'
+  - '160:场景 #160 (Map 136)'
+- id: 397
+  name: 李逍遥 - 四方向站立
+  category: core_character
+  frames: 4
+  size_1x: 100x54
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - '058:场景 #058 (Map 71)'
+  - '066:场景 #066 (Map 57)'
+  - '119:场景 #119 (Map 111)'
+  - '120:场景 #120 (Map 127)'
+- id: 398
+  name: 赵灵儿 - 蓝白装四方向站立
+  category: core_character
+  frames: 4
+  size_1x: 104x50
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  scenes:
+  - 001:盛渔村·客栈客房与厨房
+  - '196:场景 #196 (Map 18)'
+- id: 399
+  name: 阿奴 - 四方向站立
+  category: core_character
+  frames: 4
+  size_1x: 132x50
+  status: done_v2
+  character_group: a_nu
+  anchor_mgo: 5
+  scenes:
+  - '174:场景 #174 (Map 202)'
+  - '258:场景 #258 (Map 176)'
+- id: 400
+  name: 林月如 - 四方向站立
+  category: core_character
+  frames: 4
+  size_1x: 116x52
+  status: done_v2
+  character_group: lin_yueru
+  anchor_mgo: 7
+  speaker_hints:
+  - 李逍遥
+  scenes:
+  - '058:场景 #058 (Map 71)'
+  - '066:场景 #066 (Map 57)'
+  - '091:场景 #091 (Map 83)'
+  - '100:场景 #100 (Map 105)'
+- id: 401
+  name: 婢女阿萍 / 婢女阿香
+  category: npc
+  frames: 12
+  size_1x: 216x104
+  status: done_v2
+  speaker_hints:
+  - 婢女阿萍
+  - 婢女阿香
+  scenes:
+  - '100:场景 #100 (Map 105)'
+  - '108:场景 #108 (Map 108)'
+  - '111:场景 #111 (Map 103)'
+  - '118:场景 #118 (Map 110)'
+- id: 402
+  name: 嫖客 / 刘楚香 / 路人
+  category: npc
+  frames: 2
+  size_1x: 46x56
+  status: done_v2
+  speaker_hints:
+  - 嫖客
+  - 刘楚香
+  - 路人
+  scenes:
+  - '027:场景 #027 (Map 37)'
+  - '082:场景 #082 (Map 79)'
+  - '100:场景 #100 (Map 105)'
+  - '102:场景 #102 (Map 97)'
+- id: 403
+  name: 棕衣蓝帽女子
+  category: other_multiframe
+  frames: 12
+  size_1x: 200x112
+  status: todo
+  name_needs_review: true
+- id: 404
+  name: 白衣红帽女子
+  category: other_multiframe
+  frames: 12
+  size_1x: 200x112
+  status: todo
+  name_needs_review: true
+- id: 405
+  name: 刘晋元 / 刘夫人
+  category: npc
+  frames: 12
+  size_1x: 200x112
+  status: done_v2
+  speaker_hints:
+  - 刘晋元
+  - 刘夫人
+  scenes:
+  - '026:场景 #026 (Map 36)'
+  - '032:场景 #032 (Map 31)'
+  - '034:场景 #034 (Map 32)'
+  - '108:场景 #108 (Map 108)'
+- id: 406
+  name: 米衣红带女子
+  category: other_multiframe
+  frames: 12
+  size_1x: 200x112
+  status: todo
+  name_needs_review: true
+- id: 407
+  name: 赌客 / 观众 / 男
+  category: npc
+  frames: 4
+  size_1x: 104x56
+  status: done_v2
+  speaker_hints:
+  - 赌客
+  - 观众
+  - 男
+  scenes:
+  - 021:苏州城
+  - '028:场景 #028 (Map 27)'
+  - '130:场景 #130 (Map 117)'
+- id: 408
+  name: 宋元祺 / 飞鹰帮 / 巨鲸帮
+  category: npc
+  frames: 4
+  size_1x: 96x56
+  status: done_v2
+  speaker_hints:
+  - 宋元祺
+  - 飞鹰帮
+  - 巨鲸帮
+  scenes:
+  - '026:场景 #026 (Map 36)'
+  - '128:场景 #128 (Map 115)'
+  - '132:场景 #132 (Map 121)'
+- id: 409
+  name: 男子 / 妓女
+  category: npc
+  frames: 4
+  size_1x: 96x56
+  status: done_v2
+  speaker_hints:
+  - 男子
+  - 妓女
+  scenes:
+  - '130:场景 #130 (Map 117)'
+- id: 410
+  name: 店小二 / 小二
+  category: npc
+  frames: 12
+  size_1x: 296x118
+  status: legacy_track_b
+  speaker_hints:
+  - 店小二
+  - 小二
+  scenes:
+  - '025:场景 #025 (Map 26)'
+  - '127:场景 #127 (Map 115)'
+- id: 411
+  name: 金甲持枪守卫
+  category: other_multiframe
+  frames: 12
+  size_1x: 688x120
+  status: todo
+  name_needs_review: true
+- id: 412
+  name: 唐钰
+  category: npc
+  frames: 4
+  size_1x: 108x54
+  status: done_v2
+  speaker_hints:
+  - 唐钰
+  scenes:
+  - '205:场景 #205 (Map 170)'
+  - '265:场景 #265 (Map 175)'
+- id: 413
+  name: 跪坐敲木鱼小和尚
+  category: other_multiframe
+  frames: 2
+  size_1x: 70x35
+  status: legacy_track_b
+  scenes:
+  - '058:场景 #058 (Map 71)'
+- id: 414
+  name: 官差
+  category: npc
+  frames: 12
+  size_1x: 288x128
+  status: done_v2
+  speaker_hints:
+  - 官差
+  scenes:
+  - '079:场景 #079 (Map 79)'
+  - '082:场景 #082 (Map 79)'
+- id: 415
+  name: 妓　女
+  category: npc_or_prop
+  frames: 1
+  size_1x: 36x53
+  status: todo
+  speaker_hints:
+  - 妓　女
+  scenes:
+  - '134:场景 #134 (Map 121)'
+- id: 416
+  name: 裸背人物 (未重绘)
+  category: prop_1f
+  frames: 1
+  size_1x: 21x50
+  status: todo
+  scenes:
+  - '132:场景 #132 (Map 121)'
+  name_needs_review: true
+- id: 417
+  name: 李逍遥怀抱林月如
+  category: core_character
+  frames: 8
+  size_1x: 384x55
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 418
+  name: 白苗士兵·持弯刀
+  category: prop_1f
+  frames: 1
+  size_1x: 44x48
+  status: done_v2
+  scenes:
+  - '106:场景 #106 (Map 101)'
+- id: 419
+  name: 白苗士兵·持勾棍
+  category: prop_1f
+  frames: 1
+  size_1x: 56x48
+  status: done_v2
+  scenes:
+  - '106:场景 #106 (Map 101)'
+- id: 420
+  name: 白苗士兵·城墙半身 (左向)
+  category: prop_1f
+  frames: 1
+  size_1x: 40x55
+  status: done_v2
+  scenes:
+  - '110:场景 #110 (Map 126)'
+- id: 421
+  name: 白苗士兵·城墙半身 (右向)
+  category: prop_1f
+  frames: 1
+  size_1x: 36x53
+  status: done_v2
+  scenes:
+  - '110:场景 #110 (Map 126)'
+- id: 422
+  name: 士兵
+  category: npc_or_prop
+  frames: 1
+  size_1x: 56x38
+  status: done_v2
+  speaker_hints:
+  - 士兵
+  scenes:
+  - '106:场景 #106 (Map 101)'
+  - '263:场景 #263 (Map 173)'
+- id: 423
+  name: 白苗使者 / 守卫
+  category: npc
+  frames: 12
+  size_1x: 248x106
+  status: done_v2
+  speaker_hints:
+  - 白苗使者
+  - 守卫
+  scenes:
+  - 007:罗刹洞·内殿
+  - '106:场景 #106 (Map 101)'
+  - '110:场景 #110 (Map 126)'
+  - '211:场景 #211 (Map 173)'
+- id: 424
+  name: 中箭阵亡绿甲士兵 (仰卧)
+  category: prop_1f
+  frames: 1
+  size_1x: 52x34
+  status: done_v2
+  scenes:
+  - '106:场景 #106 (Map 101)'
+  - '109:场景 #109 (Map 101)'
+  - '202:场景 #202 (Map 162)'
+- id: 425
+  name: 中箭阵亡绿甲士兵 (趴卧)
+  category: prop_1f
+  frames: 1
+  size_1x: 53x27
+  status: done_v2
+  scenes:
+  - '106:场景 #106 (Map 101)'
+  - '109:场景 #109 (Map 101)'
+  - '202:场景 #202 (Map 162)'
+- id: 426
+  name: 倒地绿甲士兵 (仰卧)
+  category: prop_1f
+  frames: 1
+  size_1x: 52x21
+  status: done_v2
+  scenes:
+  - '202:场景 #202 (Map 162)'
+- id: 427
+  name: 倒地绿甲士兵 (趴卧)
+  category: prop_1f
+  frames: 1
+  size_1x: 53x20
+  status: done_v2
+  scenes:
+  - '202:场景 #202 (Map 162)'
+- id: 428
+  name: 盖罗娇
+  category: npc_or_prop
+  frames: 1
+  size_1x: 51x23
+  status: done_v2
+  speaker_hints:
+  - 盖罗娇
+  scenes:
+  - '109:场景 #109 (Map 101)'
+- id: 429
+  name: 倒地白苗士兵 (仰卧)
+  category: prop_1f
+  frames: 1
+  size_1x: 48x22
+  status: done_v2
+  scenes:
+  - '109:场景 #109 (Map 101)'
+  - '259:场景 #259 (Map 162)'
+  - '267:场景 #267 (Map 170)'
+  - '274:场景 #274 (Map 163)'
+- id: 430
+  name: 倒地白苗士兵 (趴卧)
+  category: prop_1f
+  frames: 1
+  size_1x: 52x22
+  status: done_v2
+  scenes:
+  - '109:场景 #109 (Map 101)'
+  - '259:场景 #259 (Map 162)'
+  - '267:场景 #267 (Map 170)'
+  - '274:场景 #274 (Map 163)'
+- id: 431
+  name: 地面血泊
+  category: prop_1f
+  frames: 1
+  size_1x: 202x134
+  status: done_v2
+  scenes:
+  - '109:场景 #109 (Map 101)'
+- id: 432
+  name: 独眼怒吼壮汉
+  category: other_multiframe
+  frames: 8
+  size_1x: 264x57
+  status: done_v2
+  scenes:
+  - '106:场景 #106 (Map 101)'
+  name_needs_review: true
+- id: 433
+  name: 李逍遥 - 半身
+  category: core_character
+  frames: 3
+  size_1x: 90x53
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - '110:场景 #110 (Map 126)'
+- id: 434
+  name: 林月如 - 背影动作
+  category: core_character
+  frames: 2
+  size_1x: 76x45
+  status: done_v2
+  character_group: lin_yueru
+  anchor_mgo: 7
+  scenes:
+  - '110:场景 #110 (Map 126)'
+- id: 435
+  name: 盖罗娇 - 半身动作
+  category: core_character
+  frames: 3
+  size_1x: 90x51
+  status: done_v2
+  character_group: gai_luojiao
+  anchor_mgo: 26
+  scenes:
+  - '110:场景 #110 (Map 126)'
+- id: 436
+  name: 红帘木轿 (完好)
+  category: prop_1f
+  frames: 1
+  size_1x: 110x65
+  status: done_v2
+  scenes:
+  - '106:场景 #106 (Map 101)'
+- id: 437
+  name: 倾覆染血木轿
+  category: prop_1f
+  frames: 1
+  size_1x: 72x88
+  status: done_v2
+  scenes:
+  - '109:场景 #109 (Map 101)'
+- id: 438
+  name: 林月如 - 站姿
+  category: core_character
+  frames: 4
+  size_1x: 104x52
+  status: done_v2
+  character_group: lin_yueru
+  anchor_mgo: 7
+  speaker_hints:
+  - 林月如
+  scenes:
+  - '035:场景 #035 (Map 15)'
+- id: 439
+  name: 红紫彩带舞姬
+  category: other_multiframe
+  frames: 12
+  size_1x: 336x114
+  status: done_v2
+  scenes:
+  - '130:场景 #130 (Map 117)'
+- id: 440
+  name: 跪地乞丐
+  category: other_multiframe
+  frames: 2
+  size_1x: 80x39
+  status: todo
+  scenes:
+  - '100:场景 #100 (Map 105)'
+- id: 441
+  name: 乞丐
+  category: npc
+  frames: 2
+  size_1x: 76x41
+  status: done_v2
+  speaker_hints:
+  - 乞丐
+  scenes:
+  - '100:场景 #100 (Map 105)'
+- id: 442
+  name: 小贩
+  category: npc
+  frames: 5
+  size_1x: 205x65
+  status: legacy_track_b
+  speaker_hints:
+  - 小贩
+  scenes:
+  - 023:苏州城·比武招亲擂台
+  - '111:场景 #111 (Map 103)'
+- id: 443
+  name: 守卫 / 侍卫 / 守门士兵
+  category: npc
+  frames: 12
+  size_1x: 232x104
+  status: done_v2
+  speaker_hints:
+  - 守卫
+  - 侍卫
+  - 守门士兵
+  scenes:
+  - 007:罗刹洞·内殿
+  - '202:场景 #202 (Map 162)'
+  - '203:场景 #203 (Map 175)'
+  - '205:场景 #205 (Map 170)'
+- id: 444
+  name: 剑圣·御剑飞行
+  category: other_multiframe
+  frames: 3
+  size_1x: 177x55
+  status: done_v2
+  scenes:
+  - '102:场景 #102 (Map 97)'
+  - '150:场景 #150 (Map 137)'
+- id: 445
+  name: 彩　依
+  category: npc
+  frames: 6
+  size_1x: 426x63
+  status: done_v2
+  speaker_hints:
+  - 彩　依
+  scenes:
+  - '108:场景 #108 (Map 108)'
+  - '138:场景 #138 (Map 130)'
+  - '142:场景 #142 (Map 106)'
+- id: 446
+  name: 婢　女 / 观众 / 汉人少女
+  category: npc
+  frames: 4
+  size_1x: 100x50
+  status: done_v2
+  speaker_hints:
+  - 婢　女
+  - 观众
+  - 汉人少女
+  scenes:
+  - 021:苏州城
+  - '120:场景 #120 (Map 127)'
+  - '121:场景 #121 (Map 128)'
+  - '208:场景 #208 (Map 167)'
+- id: 447
+  name: 李逍遥
+  category: npc
+  frames: 16
+  size_1x: 368x78
+  status: done_v2
+  speaker_hints:
+  - 李逍遥
+  scenes:
+  - '185:场景 #185 (Map 152)'
+  - '192:场景 #192 (Map 151)'
+- id: 448
+  name: 阿奴 - 剧情动作/吹笛
+  category: core_character
+  frames: 30
+  size_1x: 608x532
+  status: todo
+  character_group: a_nu
+  anchor_mgo: 5
+  scenes:
+  - '185:场景 #185 (Map 152)'
+- id: 449
+  name: 病卧床榻男子 (刘晋元)
+  category: other_multiframe
+  frames: 10
+  size_1x: 800x110
+  status: done_v2
+  scenes:
+  - '119:场景 #119 (Map 111)'
+  - '124:场景 #124 (Map 114)'
+  name_needs_review: true
+- id: 450
+  name: 紫裙女子背影·剧情动画
+  category: other_multiframe
+  frames: 23
+  size_1x: 432x234
+  status: todo
+  scenes:
+  - '124:场景 #124 (Map 114)'
+  - '143:场景 #143 (Map 114)'
+  name_needs_review: true
+- id: 451
+  name: 刘晋元 / 彩　依
+  category: npc_or_prop
+  frames: 1
+  size_1x: 55x35
+  status: done_v2
+  speaker_hints:
+  - 刘晋元
+  - 彩　依
+  scenes:
+  - '108:场景 #108 (Map 108)'
+  - '124:场景 #124 (Map 114)'
+  - '138:场景 #138 (Map 130)'
+- id: 452
+  name: 八卦道士·施法动画
+  category: other_multiframe
+  frames: 36
+  size_1x: 712x370
+  status: todo
+  scenes:
+  - '126:场景 #126 (Map 114)'
+  name_needs_review: true
+- id: 453
+  name: 头顶着火道士
+  category: other_multiframe
+  frames: 4
+  size_1x: 140x70
+  status: done_v2
+  scenes:
+  - '126:场景 #126 (Map 114)'
+- id: 454
+  name: 林月如
+  category: npc_or_prop
+  frames: 1
+  size_1x: 47x29
+  status: done_v2
+  speaker_hints:
+  - 林月如
+  scenes:
+  - '119:场景 #119 (Map 111)'
+- id: 455
+  name: 坐地紫衣小女孩
+  category: prop_1f
+  frames: 1
+  size_1x: 31x34
+  status: todo
+  scenes:
+  - '121:场景 #121 (Map 128)'
+- id: 456
+  name: 跪坐红衣侍女
+  category: other_multiframe
+  frames: 6
+  size_1x: 300x39
+  status: done_v2
+  scenes:
+  - '114:场景 #114 (Map 106)'
+  - '115:场景 #115 (Map 106)'
+  - '119:场景 #119 (Map 111)'
+- id: 457
+  name: 跪坐紫衣侍女
+  category: other_multiframe
+  frames: 6
+  size_1x: 300x39
+  status: done_v2
+  scenes:
+  - '108:场景 #108 (Map 108)'
+  - '118:场景 #118 (Map 110)'
+- id: 458
+  name: 破损蜘蛛网
+  category: other_multiframe
+  frames: 2
+  size_1x: 128x77
+  status: todo
+  scenes:
+  - '117:场景 #117 (Map 109)'
+- id: 459
+  name: 林月如 - 持剑立姿
+  category: core_character
+  frames: 1
+  size_1x: 43x51
+  status: done_v2
+  character_group: lin_yueru
+  anchor_mgo: 7
+  scenes:
+  - '093:场景 #093 (Map 86)'
+  - '108:场景 #108 (Map 108)'
+- id: 460
+  name: 绿腹蝙蝠
+  category: other_multiframe
+  frames: 2
+  size_1x: 102x48
+  status: done_v2
+  scenes:
+  - '148:场景 #148 (Map 146)'
+  - '149:场景 #149 (Map 144)'
+  - '154:场景 #154 (Map 147)'
+  - '156:场景 #156 (Map 156)'
+- id: 461
+  name: 蓝顶红茎蘑菇精
+  category: other_multiframe
+  frames: 2
+  size_1x: 68x35
+  status: todo
+- id: 462
+  name: 棕色大蘑菇怪
+  category: other_multiframe
+  frames: 2
+  size_1x: 58x35
+  status: legacy_track_b
+  scenes:
+  - 006:罗刹洞·梦境
+  - '180:场景 #180 (Map 157)'
+  - '189:场景 #189 (Map 200)'
+  - '250:场景 #250 (Map 4)'
+- id: 463
+  name: 枯木树妖
+  category: other_multiframe
+  frames: 2
+  size_1x: 132x60
+  status: todo
+- id: 464
+  name: 火焰鬼面妖
+  category: other_multiframe
+  frames: 2
+  size_1x: 92x62
+  status: done_v2
+  scenes:
+  - '147:场景 #147 (Map 144)'
+  - '148:场景 #148 (Map 146)'
+  - '166:场景 #166 (Map 143)'
+- id: 465
+  name: 悬吊红灯笼
+  category: other_multiframe
+  frames: 2
+  size_1x: 64x44
+  status: todo
+- id: 466
+  name: 漂浮骷髅头怪
+  category: other_multiframe
+  frames: 2
+  size_1x: 52x51
+  status: legacy_track_b
+  scenes:
+  - 006:罗刹洞·梦境
+  - '147:场景 #147 (Map 144)'
+  - '184:场景 #184 (Map 154)'
+  - '190:场景 #190 (Map 159)'
+- id: 467
+  name: 红棕长脚蜘蛛
+  category: other_multiframe
+  frames: 2
+  size_1x: 94x42
+  status: todo
+- id: 468
+  name: 移动绿灌木怪
+  category: other_multiframe
+  frames: 2
+  size_1x: 60x21
+  status: legacy_track_b
+  scenes:
+  - 016:仙灵岛·水月宫
+  - '054:场景 #054 (Map 59)'
+  - '220:场景 #220 (Map 218)'
+  - '221:场景 #221 (Map 219)'
+- id: 469
+  name: 蓝色骷髅鬼云
+  category: other_multiframe
+  frames: 2
+  size_1x: 116x46
+  status: todo
+- id: 470
+  name: 蓝色巨眼怪
+  category: other_multiframe
+  frames: 16
+  size_1x: 312x88
+  status: done_v2
+  scenes:
+  - '147:场景 #147 (Map 144)'
+  - '154:场景 #154 (Map 147)'
+  - '156:场景 #156 (Map 156)'
+  - '165:场景 #165 (Map 142)'
+- id: 471
+  name: 绿毒史莱姆/毒泡怪
+  category: other_multiframe
+  frames: 16
+  size_1x: 392x82
+  status: done_v2
+  scenes:
+  - '200:场景 #200 (Map 187)'
+  - '212:场景 #212 (Map 186)'
+- id: 472
+  name: 棕斑眼镜蛇
+  category: other_multiframe
+  frames: 8
+  size_1x: 384x37
+  status: legacy_track_b
+  scenes:
+  - '040:场景 #040 (Map 42)'
+  - '041:场景 #041 (Map 131)'
+  - '042:场景 #042 (Map 39)'
+  - '044:场景 #044 (Map 40)'
+- id: 473
+  name: 巨型毒蜂
+  category: other_multiframe
+  frames: 8
+  size_1x: 240x48
+  status: legacy_track_b
+  scenes:
+  - 006:罗刹洞·梦境
+  - '040:场景 #040 (Map 42)'
+  - '041:场景 #041 (Map 131)'
+  - '042:场景 #042 (Map 39)'
+- id: 474
+  name: 绿衣腐尸/僵尸
+  category: other_multiframe
+  frames: 16
+  size_1x: 384x134
+  status: legacy_track_b
+  scenes:
+  - '060:场景 #060 (Map 55)'
+  - '061:场景 #061 (Map 52)'
+  - '063:场景 #063 (Map 53)'
+  - '064:场景 #064 (Map 54)'
+- id: 475
+  name: 绿色巨蜥/鳄鱼怪
+  category: other_multiframe
+  frames: 16
+  size_1x: 592x98
+  status: todo
+- id: 476
+  name: 酒剑仙 / 小童
+  category: npc
+  frames: 2
+  size_1x: 116x27
+  status: done_v2
+  speaker_hints:
+  - 酒剑仙
+  - 小童
+  scenes:
+  - '100:场景 #100 (Map 105)'
+- id: 477
+  name: 噬人枯树妖 BOSS
+  category: prop_1f
+  frames: 1
+  size_1x: 99x67
+  status: todo
+  scenes:
+  - '245:场景 #245 (Map 208)'
+- id: 478
+  name: 麒麟
+  category: npc
+  frames: 2
+  size_1x: 268x80
+  status: done_v2
+  speaker_hints:
+  - 麒麟
+  scenes:
+  - '200:场景 #200 (Map 187)'
+- id: 479
+  name: 青蛇缠身蛇妖女
+  category: prop_1f
+  frames: 1
+  size_1x: 122x83
+  status: todo
+  scenes:
+  - '245:场景 #245 (Map 208)'
+- id: 480
+  name: 人面毒蛛怪
+  category: other_multiframe
+  frames: 4
+  size_1x: 488x84
+  status: done_v2
+  scenes:
+  - '138:场景 #138 (Map 130)'
+  - '245:场景 #245 (Map 208)'
+- id: 481
+  name: 黑寡妇巨蛛
+  category: prop_1f
+  frames: 1
+  size_1x: 102x69
+  status: todo
+  scenes:
+  - '139:场景 #139 (Map 129)'
+- id: 482
+  name: 腐尸蜂群怪
+  category: prop_1f
+  frames: 1
+  size_1x: 84x87
+  status: todo
+  scenes:
+  - '245:场景 #245 (Map 208)'
+- id: 483
+  name: 红披风绿发男子
+  category: other_multiframe
+  frames: 3
+  size_1x: 147x63
+  status: todo
+  name_needs_review: true
+- id: 484
+  name: 六臂镇狱明王
+  category: prop_1f
+  frames: 1
+  size_1x: 104x91
+  status: done_v2
+  scenes:
+  - '145:场景 #145 (Map 74)'
+  - '146:场景 #146 (Map 141)'
+- id: 485
+  name: 巨型蛤蟆精
+  category: other_multiframe
+  frames: 3
+  size_1x: 396x76
+  status: todo
+  scenes:
+  - '103:场景 #103 (Map 99)'
+- id: 486
+  name: 地裂钻出恶魔
+  category: other_multiframe
+  frames: 7
+  size_1x: 1421x125
+  status: done_v2
+  scenes:
+  - '262:场景 #262 (Map 176)'
+- id: 487
+  name: 悬浮冰剑/镇妖剑
+  category: prop_1f
+  frames: 1
+  size_1x: 12x73
+  status: todo
+  scenes:
+  - '138:场景 #138 (Map 130)'
+  name_needs_review: true
+- id: 488
+  name: 条纹毒蜘蛛
+  category: other_multiframe
+  frames: 8
+  size_1x: 272x28
+  status: done_v2
+  scenes:
+  - '139:场景 #139 (Map 129)'
+  - '141:场景 #141 (Map 129)'
+  - '185:场景 #185 (Map 152)'
+  - '192:场景 #192 (Map 151)'
+- id: 489
+  name: 彩依化蝶·守候刘晋元
+  category: other_multiframe
+  frames: 10
+  size_1x: 520x116
+  status: done_v2
+  scenes:
+  - '140:场景 #140 (Map 130)'
+- id: 490
+  name: 血池伸出鬼手
+  category: other_multiframe
+  frames: 14
+  size_1x: 168x80
+  status: done_v2
+  scenes:
+  - '156:场景 #156 (Map 156)'
+  - '168:场景 #168 (Map 148)'
+- id: 491
+  name: 推开太极八卦门 (姜明)
+  category: other_multiframe
+  frames: 7
+  size_1x: 476x81
+  status: done_v2
+  scenes:
+  - '148:场景 #148 (Map 146)'
+  - '154:场景 #154 (Map 147)'
+- id: 492
+  name: 沉思鬼
+  category: npc
+  frames: 12
+  size_1x: 264x102
+  status: done_v2
+  speaker_hints:
+  - 沉思鬼
+  scenes:
+  - '149:场景 #149 (Map 144)'
+  - '151:场景 #151 (Map 102)'
+  - '153:场景 #153 (Map 74)'
+  - '154:场景 #154 (Map 147)'
+- id: 493
+  name: 紫色触手独眼怪
+  category: other_multiframe
+  frames: 12
+  size_1x: 360x90
+  status: todo
+- id: 494
+  name: 光头红裤胖妖
+  category: other_multiframe
+  frames: 12
+  size_1x: 296x94
+  status: done_v2
+  scenes:
+  - '153:场景 #153 (Map 74)'
+- id: 495
+  name: 刑天·持斧盾无头巨怪
+  category: other_multiframe
+  frames: 12
+  size_1x: 368x90
+  status: done_v2
+  scenes:
+  - '148:场景 #148 (Map 146)'
+  - '149:场景 #149 (Map 144)'
+  - '154:场景 #154 (Map 147)'
+  - '156:场景 #156 (Map 156)'
+- id: 496
+  name: 黑须赤膊壮汉妖
+  category: other_multiframe
+  frames: 12
+  size_1x: 272x112
+  status: todo
+  name_needs_review: true
+- id: 497
+  name: 倒地残尸
+  category: other_multiframe
+  frames: 12
+  size_1x: 384x70
+  status: todo
+  name_needs_review: true
+- id: 498
+  name: 赵灵儿 - 蛇身形态 (蓝衣)
+  category: core_character
+  frames: 4
+  size_1x: 208x51
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+- id: 499
+  name: 赵灵儿 - 蛇身形态 (裸肩)
+  category: core_character
+  frames: 4
+  size_1x: 208x51
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+- id: 500
+  name: 赵灵儿 - 蛇身被缚锁妖塔
+  category: core_character
+  frames: 1
+  size_1x: 66x119
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  scenes:
+  - '145:场景 #145 (Map 74)'
+- id: 501
+  name: 暗黑凤凰
+  category: other_multiframe
+  frames: 4
+  size_1x: 544x90
+  status: done_v2
+  scenes:
+  - '192:场景 #192 (Map 151)'
+- id: 502
+  name: 油纸伞三人组 (青蛇/白蛇/书生)
+  category: other_multiframe
+  frames: 5
+  size_1x: 315x64
+  status: done_v2
+  scenes:
+  - '112:场景 #112 (Map 103)'
+- id: 503
+  name: 竖立长枪/方天画戟
+  category: other_multiframe
+  frames: 22
+  size_1x: 392x366
+  status: todo
+  name_needs_review: true
+- id: 504
+  name: 书中仙
+  category: npc
+  frames: 2
+  size_1x: 100x54
+  status: done_v2
+  speaker_hints:
+  - 书中仙
+  scenes:
+  - '153:场景 #153 (Map 74)'
+  - '154:场景 #154 (Map 147)'
+- id: 505
+  name: 死灵
+  category: npc
+  frames: 2
+  size_1x: 94x45
+  status: done_v2
+  speaker_hints:
+  - 死灵
+  scenes:
+  - '147:场景 #147 (Map 144)'
+- id: 506
+  name: 坛中妖怪 / 天鬼皇
+  category: npc
+  frames: 2
+  size_1x: 54x31
+  status: done_v2
+  speaker_hints:
+  - 坛中妖怪
+  - 天鬼皇
+  scenes:
+  - '148:场景 #148 (Map 146)'
+- id: 507
+  name: 倒地蓝衣尸骸 (左向)
+  category: other_multiframe
+  frames: 2
+  size_1x: 114x21
+  status: todo
+- id: 508
+  name: 倒地蓝衣尸骸 (右向)
+  category: other_multiframe
+  frames: 2
+  size_1x: 118x27
+  status: todo
+- id: 509
+  name: 坐地白骨骷髅
+  category: other_multiframe
+  frames: 5
+  size_1x: 235x35
+  status: todo
+- id: 510
+  name: 坐地黄骨骷髅
+  category: other_multiframe
+  frames: 5
+  size_1x: 235x35
+  status: todo
+- id: 511
+  name: 李逍遥怀抱蛇身赵灵儿
+  category: core_character
+  frames: 5
+  size_1x: 240x64
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+- id: 512
+  name: 赵灵儿 - 蛇身移动
+  category: core_character
+  frames: 16
+  size_1x: 408x100
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  scenes:
+  - '153:场景 #153 (Map 74)'
+- id: 513
+  name: 苗女
+  category: npc
+  frames: 4
+  size_1x: 92x51
+  status: done_v2
+  speaker_hints:
+  - 苗女
+  scenes:
+  - '208:场景 #208 (Map 167)'
+  - '265:场景 #265 (Map 175)'
+- id: 514
+  name: 紫面猴妖
+  category: other_multiframe
+  frames: 12
+  size_1x: 320x82
+  status: done_v2
+  scenes:
+  - '185:场景 #185 (Map 152)'
+  - '192:场景 #192 (Map 151)'
+- id: 515
+  name: 白衣少女·铺床褥
+  category: other_multiframe
+  frames: 5
+  size_1x: 455x69
+  status: done_v2
+  scenes:
+  - '173:场景 #173 (Map 202)'
+  - '174:场景 #174 (Map 202)'
+- id: 516
+  name: 林月如 - 大型剧情动作
+  category: core_character
+  frames: 38
+  size_1x: 752x435
+  status: done_v2
+  character_group: lin_yueru
+  anchor_mgo: 7
+- id: 517
+  name: 凤凰蛋
+  category: prop_1f
+  frames: 1
+  size_1x: 13x14
+  status: todo
+  scenes:
+  - '185:场景 #185 (Map 152)'
+- id: 518
+  name: 巨型凤凰巢
+  category: prop_1f
+  frames: 1
+  size_1x: 98x65
+  status: todo
+  scenes:
+  - '185:场景 #185 (Map 152)'
+- id: 519
+  name: 香蕉树
+  category: other_multiframe
+  frames: 2
+  size_1x: 90x61
+  status: todo
+  scenes:
+  - '176:场景 #176 (Map 201)'
+- id: 520
+  name: 李逍遥 - 空中跳跃
+  category: core_character
+  frames: 7
+  size_1x: 497x82
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - '185:场景 #185 (Map 152)'
+- id: 521
+  name: 赵灵儿照顾倒地的李逍遥
+  category: core_character
+  frames: 24
+  size_1x: 544x147
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+- id: 522
+  name: 金翼火凤凰
+  category: other_multiframe
+  frames: 4
+  size_1x: 572x95
+  status: done_v2
+  scenes:
+  - '185:场景 #185 (Map 152)'
+  - '232:场景 #232 (Map 177)'
+  - '247:场景 #247 (Map 5)'
+- id: 523
+  name: 木格拉门
+  category: other_multiframe
+  frames: 2
+  size_1x: 72x59
+  status: done_v2
+  scenes:
+  - '173:场景 #173 (Map 202)'
+  - '175:场景 #175 (Map 158)'
+- id: 524
+  name: 盘龙红玉柱
+  category: prop_1f
+  frames: 1
+  size_1x: 63x91
+  status: todo
+  scenes:
+  - '144:场景 #144 (Map 185)'
+- id: 525
+  name: 巫后 - 行走 (锚点)
+  category: core_character
+  frames: 12
+  size_1x: 344x118
+  status: done_v2
+  character_group: wu_hou
+  anchor_mgo: 525
+- id: 526
+  name: 苗族绿披肩条纹裙女子 - 行走
+  category: core_character
+  frames: 12
+  size_1x: 192x110
+  status: done_v2
+  character_group: miao_woman_green
+  anchor_mgo: 526
+  scenes:
+  - '249:场景 #249 (Map 19)'
+  - '254:场景 #254 (Map 196)'
+- id: 527
+  name: 圣姑/绿裙白头纱女祭司 - 行走
+  category: core_character
+  frames: 12
+  size_1x: 216x114
+  status: done_v2
+  character_group: sheng_gu_green
+  anchor_mgo: 527
+  scenes:
+  - '249:场景 #249 (Map 19)'
+  - '254:场景 #254 (Map 196)'
+- id: 528
+  name: 苗族绿披肩女子抱娃 - 行走
+  category: core_character
+  frames: 12
+  size_1x: 224x110
+  status: done_v2
+  character_group: miao_woman_green
+  anchor_mgo: 526
+  scenes:
+  - '227:场景 #227 (Map 177)'
+- id: 529
+  name: 李逍遥 - 远景小人
+  category: core_character
+  frames: 16
+  size_1x: 952x166
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - '203:场景 #203 (Map 175)'
+- id: 530
+  name: 阿奴 - 剧情动作
+  category: core_character
+  frames: 7
+  size_1x: 329x50
+  status: done_v2
+  character_group: a_nu
+  anchor_mgo: 5
+  scenes:
+  - '203:场景 #203 (Map 175)'
+- id: 531
+  name: 白衣黑白格女鬼/妖女
+  category: other_multiframe
+  frames: 12
+  size_1x: 208x110
+  status: todo
+  name_needs_review: true
+- id: 532
+  name: 红影女鬼/妖女 (甲)
+  category: other_multiframe
+  frames: 12
+  size_1x: 208x110
+  status: todo
+  name_needs_review: true
+- id: 533
+  name: 红影飘带女鬼/妖女 (乙)
+  category: other_multiframe
+  frames: 12
+  size_1x: 248x106
+  status: todo
+  name_needs_review: true
+- id: 534
+  name: 赵灵儿 - 蛇身红光受创
+  category: core_character
+  frames: 16
+  size_1x: 424x98
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+- id: 535
+  name: 幼年李逍遥 (十年前)
+  category: core_character
+  frames: 12
+  size_1x: 184x92
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  speaker_hints:
+  - 小孩
+  scenes:
+  - '247:场景 #247 (Map 5)'
+  - '249:场景 #249 (Map 19)'
+- id: 536
+  name: 幼年赵灵儿 (十年前)
+  category: core_character
+  frames: 12
+  size_1x: 176x92
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  speaker_hints:
+  - 小女孩
+  scenes:
+  - '251:场景 #251 (Map 197)'
+- id: 537
+  name: 幼年李逍遥 - 变体
+  category: core_character
+  frames: 12
+  size_1x: 200x90
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  speaker_hints:
+  - 秀兰
+  scenes:
+  - '247:场景 #247 (Map 5)'
+- id: 538
+  name: 幼年李逍遥 - 变体2
+  category: core_character
+  frames: 12
+  size_1x: 208x112
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 539
+  name: 李逍遥 - 受伤倒地
+  category: core_character
+  frames: 3
+  size_1x: 162x46
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - '172:场景 #172 (Map 20)'
+  - '174:场景 #174 (Map 202)'
+- id: 540
+  name: 盛开桃花树
+  category: prop_1f
+  frames: 1
+  size_1x: 47x79
+  status: done_v2
+  scenes:
+  - '182:场景 #182 (Map 17)'
+  - '183:场景 #183 (Map 158)'
+- id: 541
+  name: 李逍遥 - 举手/托举
+  category: core_character
+  frames: 1
+  size_1x: 22x56
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+  scenes:
+  - '247:场景 #247 (Map 5)'
+- id: 542
+  name: 被捆绑跪地男子
+  category: other_multiframe
+  frames: 11
+  size_1x: 608x88
+  status: todo
+  name_needs_review: true
+- id: 543
+  name: 红头巾持刀大汉
+  category: other_multiframe
+  frames: 11
+  size_1x: 512x124
+  status: todo
+  name_needs_review: true
+- id: 544
+  name: 黑苗持刀护卫 - 行走
+  category: core_character
+  frames: 13
+  size_1x: 272x120
+  status: done_v2
+  character_group: black_miao_guard
+  anchor_mgo: 544
+  speaker_hints:
+  - 士兵
+  - 黑苗士兵
+  scenes:
+  - '227:场景 #227 (Map 177)'
+  - '229:场景 #229 (Map 178)'
+  - '234:场景 #234 (Map 184)'
+  - '236:场景 #236 (Map 179)'
+- id: 545
+  name: 士兵
+  category: npc
+  frames: 13
+  size_1x: 272x118
+  status: done_v2
+  speaker_hints:
+  - 士兵
+  scenes:
+  - '229:场景 #229 (Map 178)'
+  - '236:场景 #236 (Map 179)'
+  - '237:场景 #237 (Map 183)'
+- id: 546
+  name: 黑苗持刀护卫 - 倒地
+  category: core_character
+  frames: 2
+  size_1x: 102x20
+  status: done_v2
+  character_group: black_miao_guard
+  anchor_mgo: 544
+  scenes:
+  - '227:场景 #227 (Map 177)'
+  - '259:场景 #259 (Map 162)'
+  - '260:场景 #260 (Map 163)'
+  - '267:场景 #267 (Map 170)'
+- id: 547
+  name: 倒地红袍男子
+  category: other_multiframe
+  frames: 2
+  size_1x: 106x21
+  status: todo
+  scenes:
+  - '267:场景 #267 (Map 170)'
+  name_needs_review: true
+- id: 548
+  name: 黑苗持刀护卫 - 举刀冲锋
+  category: core_character
+  frames: 12
+  size_1x: 272x130
+  status: done_v2
+  character_group: black_miao_guard
+  anchor_mgo: 544
+  scenes:
+  - '070:场景 #070 (Map 63)'
+  - '071:场景 #071 (Map 64)'
+  - '072:场景 #072 (Map 65)'
+  - '073:场景 #073 (Map 66)'
+- id: 549
+  name: 白头巾挥刀武士
+  category: other_multiframe
+  frames: 12
+  size_1x: 296x130
+  status: done_v2
+  scenes:
+  - '070:场景 #070 (Map 63)'
+  - '071:场景 #071 (Map 64)'
+  - '072:场景 #072 (Map 65)'
+  - '076:场景 #076 (Map 72)'
+- id: 550
+  name: 李逍遥 - 怀抱婴儿李忆如
+  category: core_character
+  frames: 2
+  size_1x: 58x56
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 551
+  name: 李逍遥
+  category: npc
+  frames: 2
+  size_1x: 48x20
+  status: done_v2
+  speaker_hints:
+  - 李逍遥
+  scenes:
+  - '173:场景 #173 (Map 202)'
+  - '174:场景 #174 (Map 202)'
+- id: 552
+  name: 阿奴 - 怀抱婴儿李忆如
+  category: core_character
+  frames: 13
+  size_1x: 216x102
+  status: done_v2
+  character_group: a_nu
+  anchor_mgo: 5
+  speaker_hints:
+  - 阿奴
+  scenes:
+  - '173:场景 #173 (Map 202)'
+- id: 553
+  name: 白衣红带苗族小女孩 - 行走
+  category: core_character
+  frames: 13
+  size_1x: 224x74
+  status: done_v2
+  character_group: miao_girl_white
+  anchor_mgo: 553
+  speaker_hints:
+  - 小女孩
+  scenes:
+  - '249:场景 #249 (Map 19)'
+  - '254:场景 #254 (Map 196)'
+- id: 554
+  name: 刽子手
+  category: npc
+  frames: 12
+  size_1x: 264x112
+  status: done_v2
+  speaker_hints:
+  - 刽子手
+  scenes:
+  - '236:场景 #236 (Map 179)'
+- id: 555
+  name: 赵灵儿 - 蓝白装被绑
+  category: core_character
+  frames: 2
+  size_1x: 72x37
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  speaker_hints:
+  - 汉人俘虏
+  scenes:
+  - '236:场景 #236 (Map 179)'
+- id: 556
+  name: 汉人俘虏
+  category: npc
+  frames: 2
+  size_1x: 82x38
+  status: done_v2
+  speaker_hints:
+  - 汉人俘虏
+  scenes:
+  - '236:场景 #236 (Map 179)'
+- id: 557
+  name: 汉人俘虏
+  category: npc
+  frames: 2
+  size_1x: 82x43
+  status: done_v2
+  speaker_hints:
+  - 汉人俘虏
+  scenes:
+  - '236:场景 #236 (Map 179)'
+- id: 558
+  name: 汉人俘虏
+  category: npc
+  frames: 2
+  size_1x: 54x33
+  status: done_v2
+  speaker_hints:
+  - 汉人俘虏
+  scenes:
+  - '236:场景 #236 (Map 179)'
+- id: 559
+  name: 汉人俘虏
+  category: npc
+  frames: 2
+  size_1x: 52x34
+  status: done_v2
+  speaker_hints:
+  - 汉人俘虏
+  scenes:
+  - '236:场景 #236 (Map 179)'
+- id: 560
+  name: 汉人俘虏
+  category: npc
+  frames: 2
+  size_1x: 62x37
+  status: done_v2
+  speaker_hints:
+  - 汉人俘虏
+  scenes:
+  - '236:场景 #236 (Map 179)'
+- id: 561
+  name: 汉人俘虏
+  category: npc
+  frames: 2
+  size_1x: 66x42
+  status: done_v2
+  speaker_hints:
+  - 汉人俘虏
+  scenes:
+  - '236:场景 #236 (Map 179)'
+- id: 562
+  name: 拜月教主 - 剧情动作
+  category: core_character
+  frames: 13
+  size_1x: 368x116
+  status: done_v2
+  character_group: moon_leader
+  anchor_mgo: 12
+  scenes:
+  - '229:场景 #229 (Map 178)'
+  - '234:场景 #234 (Map 184)'
+  - '237:场景 #237 (Map 183)'
+  - '276:场景 #276 (Map 174)'
+- id: 563
+  name: 蓝头带黑衣武士
+  category: other_multiframe
+  frames: 12
+  size_1x: 200x110
+  status: todo
+  name_needs_review: true
+- id: 564
+  name: 巫王 - 行走
+  category: core_character
+  frames: 12
+  size_1x: 272x116
+  status: done_v2
+  character_group: wu_wang
+  anchor_mgo: 564
+  scenes:
+  - '234:场景 #234 (Map 184)'
+  - '278:场景 #278 (Map 183)'
+- id: 565
+  name: 巫王 - 坐姿
+  category: core_character
+  frames: 1
+  size_1x: 65x51
+  status: done_v2
+  character_group: wu_wang
+  anchor_mgo: 564
+  scenes:
+  - '237:场景 #237 (Map 183)'
+  - '278:场景 #278 (Map 183)'
+- id: 566
+  name: 士兵
+  category: npc
+  frames: 4
+  size_1x: 436x52
+  status: done_v2
+  speaker_hints:
+  - 士兵
+  scenes:
+  - '259:场景 #259 (Map 162)'
+  - '260:场景 #260 (Map 163)'
+  - '261:场景 #261 (Map 162)'
+  - '263:场景 #263 (Map 173)'
+- id: 567
+  name: 士兵
+  category: npc
+  frames: 4
+  size_1x: 436x52
+  status: done_v2
+  speaker_hints:
+  - 士兵
+  scenes:
+  - '259:场景 #259 (Map 162)'
+  - '260:场景 #260 (Map 163)'
+  - '261:场景 #261 (Map 162)'
+  - '263:场景 #263 (Map 173)'
+- id: 568
+  name: 巫后 - 蛇身跃水剧情
+  category: core_character
+  frames: 14
+  size_1x: 1048x218
+  status: done_v2
+  character_group: wu_hou
+  anchor_mgo: 525
+  scenes:
+  - '234:场景 #234 (Map 184)'
+- id: 569
+  name: 李逍遥与阿奴·乘金凤凰
+  category: other_multiframe
+  frames: 4
+  size_1x: 572x95
+  status: done_v2
+  scenes:
+  - '227:场景 #227 (Map 177)'
+- id: 570
+  name: 展翅金凤凰
+  category: other_multiframe
+  frames: 4
+  size_1x: 572x95
+  status: todo
+- id: 571
+  name: 拜月水魔兽合体 (人蛇巨怪)
+  category: other_multiframe
+  frames: 2
+  size_1x: 648x204
+  status: todo
+- id: 572
+  name: 巫后/灵儿 - 白衣持天蛇杖
+  category: core_character
+  frames: 4
+  size_1x: 176x80
+  status: done_v2
+  character_group: wu_hou
+  anchor_mgo: 525
+- id: 573
+  name: 深木格栅铁门
+  category: other_multiframe
+  frames: 2
+  size_1x: 134x78
+  status: todo
+  scenes:
+  - '228:场景 #228 (Map 184)'
+- id: 574
+  name: 巫后 - 圣女装跪拜祈雨
+  category: core_character
+  frames: 3
+  size_1x: 120x43
+  status: done_v2
+  character_group: wu_hou
+  anchor_mgo: 525
+  scenes:
+  - '228:场景 #228 (Map 184)'
+- id: 575
+  name: 巫后 - 圣女装剧情动作
+  category: core_character
+  frames: 13
+  size_1x: 288x110
+  status: done_v2
+  character_group: wu_hou
+  anchor_mgo: 525
+  scenes:
+  - '228:场景 #228 (Map 184)'
+- id: 576
+  name: 巫后 - 持蛇杖石像/灵体单色版
+  category: core_character
+  frames: 13
+  size_1x: 464x118
+  status: done_v2
+  character_group: wu_hou
+  anchor_mgo: 525
+- id: 577
+  name: 断首人头 (带血)
+  category: other_multiframe
+  frames: 6
+  size_1x: 198x23
+  status: todo
+  scenes:
+  - '267:场景 #267 (Map 170)'
+  - '269:场景 #269 (Map 167)'
+- id: 578
+  name: 断首人头 (女)
+  category: other_multiframe
+  frames: 3
+  size_1x: 72x22
+  status: todo
+  scenes:
+  - '236:场景 #236 (Map 179)'
+  name_needs_review: true
+- id: 579
+  name: 倒地无头尸 (血泊)
+  category: other_multiframe
+  frames: 6
+  size_1x: 312x23
+  status: done_v2
+  scenes:
+  - '236:场景 #236 (Map 179)'
+  - '267:场景 #267 (Map 170)'
+  - '269:场景 #269 (Map 167)'
+- id: 580
+  name: 倒地棕衣尸身
+  category: other_multiframe
+  frames: 4
+  size_1x: 164x21
+  status: done_v2
+  scenes:
+  - '236:场景 #236 (Map 179)'
+- id: 581
+  name: 倒地白帽女子 (血泊)
+  category: other_multiframe
+  frames: 6
+  size_1x: 330x23
+  status: done_v2
+  scenes:
+  - '236:场景 #236 (Map 179)'
+  - '269:场景 #269 (Map 167)'
+- id: 582
+  name: 多头水魔兽
+  category: prop_1f
+  frames: 1
+  size_1x: 167x100
+  status: done_v2
+  scenes:
+  - '231:场景 #231 (Map 188)'
+  - '233:场景 #233 (Map 189)'
+- id: 583
+  name: 黑青剪影人物
+  category: prop_1f
+  frames: 1
+  size_1x: 23x54
+  status: todo
+  scenes:
+  - '233:场景 #233 (Map 189)'
+  name_needs_review: true
+- id: 584
+  name: 灰白剪影人物
+  category: prop_1f
+  frames: 1
+  size_1x: 28x56
+  status: todo
+  scenes:
+  - '231:场景 #231 (Map 188)'
+  name_needs_review: true
+- id: 585
+  name: 通天水柱/龙卷水波
+  category: other_multiframe
+  frames: 4
+  size_1x: 200x165
+  status: done_v2
+  scenes:
+  - '231:场景 #231 (Map 188)'
+- id: 586
+  name: 水面多头水魔兽
+  category: other_multiframe
+  frames: 3
+  size_1x: 474x89
+  status: todo
+- id: 587
+  name: 天降金光柱
+  category: other_multiframe
+  frames: 11
+  size_1x: 448x310
+  status: done_v2
+  scenes:
+  - '249:场景 #249 (Map 19)'
+- id: 588
+  name: 苗族绿披肩坐姿女子
+  category: core_character
+  frames: 2
+  size_1x: 74x40
+  status: done_v2
+  character_group: miao_woman_green
+  anchor_mgo: 588
+  speaker_hints:
+  - 老妇人
+  scenes:
+  - '249:场景 #249 (Map 19)'
+- id: 589
+  name: 王婶
+  category: npc_or_prop
+  frames: 1
+  size_1x: 24x51
+  status: done_v2
+  speaker_hints:
+  - 王婶
+  scenes:
+  - '253:场景 #253 (Map 199)'
+- id: 590
+  name: 持蛇杖女祭司
+  category: other_multiframe
+  frames: 2
+  size_1x: 74x59
+  status: todo
+  name_needs_review: true
+- id: 591
+  name: 绿背青蛙
+  category: other_multiframe
+  frames: 16
+  size_1x: 400x88
+  status: done_v2
+  scenes:
+  - '101:场景 #101 (Map 98)'
+  - '102:场景 #102 (Map 97)'
+  - '104:场景 #104 (Map 100)'
+  - '113:场景 #113 (Map 96)'
+- id: 592
+  name: 灵山石碑
+  category: prop_1f
+  frames: 1
+  size_1x: 67x97
+  status: todo
+  scenes:
+  - '179:场景 #179 (Map 149)'
+- id: 593
+  name: 士兵
+  category: npc
+  frames: 3
+  size_1x: 243x56
+  status: done_v2
+  speaker_hints:
+  - 士兵
+  scenes:
+  - '259:场景 #259 (Map 162)'
+  - '260:场景 #260 (Map 163)'
+  - '263:场景 #263 (Map 173)'
+- id: 594
+  name: 士兵
+  category: npc
+  frames: 3
+  size_1x: 243x55
+  status: done_v2
+  speaker_hints:
+  - 士兵
+  scenes:
+  - '259:场景 #259 (Map 162)'
+  - '260:场景 #260 (Map 163)'
+  - '263:场景 #263 (Map 173)'
+  - '276:场景 #276 (Map 174)'
+- id: 595
+  name: 倒地红黑衣人
+  category: prop_1f
+  frames: 1
+  size_1x: 43x27
+  status: todo
+  name_needs_review: true
+- id: 596
+  name: 白衣拄杖白发老者 (背影)
+  category: other_multiframe
+  frames: 5
+  size_1x: 170x53
+  status: done_v2
+  scenes:
+  - '181:场景 #181 (Map 160)'
+  - '183:场景 #183 (Map 158)'
+  name_needs_review: true
+- id: 597
+  name: 蓝袍持盾挥刀黑苗兵 (左向)
+  category: other_multiframe
+  frames: 3
+  size_1x: 198x56
+  status: done_v2
+  scenes:
+  - '259:场景 #259 (Map 162)'
+  - '260:场景 #260 (Map 163)'
+  - '261:场景 #261 (Map 162)'
+  - '274:场景 #274 (Map 163)'
+- id: 598
+  name: 蓝袍持盾挥刀黑苗兵 (右向)
+  category: other_multiframe
+  frames: 3
+  size_1x: 219x57
+  status: done_v2
+  scenes:
+  - '259:场景 #259 (Map 162)'
+  - '260:场景 #260 (Map 163)'
+  - '261:场景 #261 (Map 162)'
+  - '274:场景 #274 (Map 163)'
+- id: 599
+  name: 蓝袍举长枪兵 (背影·左)
+  category: other_multiframe
+  frames: 4
+  size_1x: 404x55
+  status: done_v2
+  scenes:
+  - '259:场景 #259 (Map 162)'
+  - '260:场景 #260 (Map 163)'
+- id: 600
+  name: 蓝袍举长枪兵 (背影·右)
+  category: other_multiframe
+  frames: 4
+  size_1x: 404x55
+  status: done_v2
+  scenes:
+  - '259:场景 #259 (Map 162)'
+  - '260:场景 #260 (Map 163)'
+- id: 601
+  name: 杂耍艺人·顶转盘
+  category: other_multiframe
+  frames: 4
+  size_1x: 152x58
+  status: legacy_track_b
+  scenes:
+  - 021:苏州城
+- id: 602
+  name: 杂耍艺人·吞剑/举剑
+  category: other_multiframe
+  frames: 4
+  size_1x: 112x59
+  status: legacy_track_b
+  scenes:
+  - 021:苏州城
+- id: 603
+  name: 红珠六角石台/祭坛机关
+  category: other_multiframe
+  frames: 7
+  size_1x: 252x26
+  status: done_v2
+  scenes:
+  - '258:场景 #258 (Map 176)'
+  - '272:场景 #272 (Map 176)'
+- id: 604
+  name: 碑文记载
+  category: npc_or_prop
+  frames: 1
+  size_1x: 34x50
+  status: done_v2
+  speaker_hints:
+  - 碑文记载
+  scenes:
+  - '272:场景 #272 (Map 176)'
+- id: 605
+  name: 苗族祈雨舞 (正面)
+  category: other_multiframe
+  frames: 8
+  size_1x: 504x61
+  status: done_v2
+  scenes:
+  - '262:场景 #262 (Map 176)'
+- id: 606
+  name: 苗族祈雨舞 (背面)
+  category: other_multiframe
+  frames: 8
+  size_1x: 432x64
+  status: done_v2
+  scenes:
+  - '262:场景 #262 (Map 176)'
+- id: 607
+  name: 白衣男子与苗女对立
+  category: other_multiframe
+  frames: 12
+  size_1x: 408x108
+  status: todo
+  name_needs_review: true
+- id: 608
+  name: 阿奴 - 坐姿
+  category: core_character
+  frames: 1
+  size_1x: 25x36
+  status: done_v2
+  character_group: a_nu
+  anchor_mgo: 5
+  scenes:
+  - '173:场景 #173 (Map 202)'
+- id: 609
+  name: 老婆婆
+  category: npc
+  frames: 12
+  size_1x: 256x104
+  status: done_v2
+  speaker_hints:
+  - 老婆婆
+  scenes:
+  - '173:场景 #173 (Map 202)'
+  - '174:场景 #174 (Map 202)'
+- id: 610
+  name: 飘散星尘/雨点特效
+  category: other_multiframe
+  frames: 10
+  size_1x: 2592x408
+  status: todo
+  scenes:
+  - '261:场景 #261 (Map 162)'
+  - '274:场景 #274 (Map 163)'
+  - '275:场景 #275 (Map 165)'
+  - '276:场景 #276 (Map 174)'
+  name_needs_review: true
+- id: 611
+  name: 黑苗持刀护卫 - 四向站姿
+  category: core_character
+  frames: 4
+  size_1x: 136x54
+  status: done_v2
+  character_group: black_miao_guard
+  anchor_mgo: 544
+  speaker_hints:
+  - 黑苗士兵乙
+  - 黑苗士兵甲
+  scenes:
+  - '235:场景 #235 (Map 193)'
+- id: 612
+  name: 青蛇缠绕木杖 (天蛇杖)
+  category: prop_1f
+  frames: 1
+  size_1x: 31x61
+  status: todo
+  scenes:
+  - '246:场景 #246 (Map 209)'
+- id: 613
+  name: 踏板蓝衣兵 (升降台)
+  category: other_multiframe
+  frames: 18
+  size_1x: 800x210
+  status: todo
+  scenes:
+  - '230:场景 #230 (Map 203)'
+  name_needs_review: true
+- id: 614
+  name: 踏板主角三人组 (升降台)
+  category: other_multiframe
+  frames: 18
+  size_1x: 800x234
+  status: todo
+  scenes:
+  - '285:场景 #285 (Map 203)'
+  name_needs_review: true
+- id: 615
+  name: 铁栅牢门
+  category: other_multiframe
+  frames: 2
+  size_1x: 126x66
+  status: todo
+  scenes:
+  - '245:场景 #245 (Map 208)'
+- id: 616
+  name: 酒剑仙
+  category: npc
+  frames: 4
+  size_1x: 92x57
+  status: done_v2
+  speaker_hints:
+  - 酒剑仙
+  scenes:
+  - '100:场景 #100 (Map 105)'
+- id: 617
+  name: 壁挂火把 (右向)
+  category: other_multiframe
+  frames: 11
+  size_1x: 176x60
+  status: done_v2
+  scenes:
+  - '076:场景 #076 (Map 72)'
+  - '091:场景 #091 (Map 83)'
+  - '092:场景 #092 (Map 85)'
+- id: 618
+  name: 壁挂火把 (左向)
+  category: other_multiframe
+  frames: 11
+  size_1x: 176x58
+  status: done_v2
+  scenes:
+  - '067:场景 #067 (Map 73)'
+  - '076:场景 #076 (Map 72)'
+  - '077:场景 #077 (Map 24)'
+  - '091:场景 #091 (Map 83)'
+- id: 619
+  name: 熊熊火焰
+  category: other_multiframe
+  frames: 8
+  size_1x: 216x29
+  status: done_v2
+  scenes:
+  - '067:场景 #067 (Map 73)'
+  - '091:场景 #091 (Map 83)'
+  - '230:场景 #230 (Map 203)'
+  - '241:场景 #241 (Map 204)'
+- id: 620
+  name: 持刀黑须壮汉
+  category: other_multiframe
+  frames: 12
+  size_1x: 480x114
+  status: done_v2
+  scenes:
+  - '151:场景 #151 (Map 102)'
+  - '153:场景 #153 (Map 74)'
+- id: 621
+  name: 持铜盾光头胖妖
+  category: other_multiframe
+  frames: 12
+  size_1x: 424x94
+  status: done_v2
+  scenes:
+  - '151:场景 #151 (Map 102)'
+  - '165:场景 #165 (Map 142)'
+  - '166:场景 #166 (Map 143)'
+  - '167:场景 #167 (Map 145)'
+- id: 622
+  name: 酒馆坐客·蓝袍金冠男子
+  category: prop_1f
+  frames: 1
+  size_1x: 36x60
+  status: todo
+  scenes:
+  - '100:场景 #100 (Map 105)'
+- id: 623
+  name: 腾云金甲天兵
+  category: other_multiframe
+  frames: 4
+  size_1x: 340x77
+  status: done_v2
+  scenes:
+  - '161:场景 #161 (Map 137)'
+  - '162:场景 #162 (Map 138)'
+  - '163:场景 #163 (Map 139)'
+- id: 624
+  name: 腾云绿衣羽翼仙将 (背影)
+  category: other_multiframe
+  frames: 8
+  size_1x: 384x67
+  status: done_v2
+  scenes:
+  - '161:场景 #161 (Map 137)'
+  - '162:场景 #162 (Map 138)'
+  - '163:场景 #163 (Map 139)'
+- id: 625
+  name: 黑棕毒蝎
+  category: other_multiframe
+  frames: 8
+  size_1x: 304x34
+  status: done_v2
+  scenes:
+  - '101:场景 #101 (Map 98)'
+  - '102:场景 #102 (Map 97)'
+  - '104:场景 #104 (Map 100)'
+  - '215:场景 #215 (Map 213)'
+- id: 626
+  name: 红棕大蜈蚣
+  category: other_multiframe
+  frames: 8
+  size_1x: 456x27
+  status: done_v2
+  scenes:
+  - '101:场景 #101 (Map 98)'
+  - '102:场景 #102 (Map 97)'
+  - '104:场景 #104 (Map 100)'
+  - '113:场景 #113 (Map 96)'
+- id: 627
+  name: 李逍遥 - 站姿
+  category: core_character
+  frames: 4
+  size_1x: 256x57
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 628
+  name: 李大娘 - 持锅铲动作
+  category: core_character
+  frames: 4
+  size_1x: 272x65
+  status: done_v2
+  character_group: auntie_li
+  anchor_mgo: 21
+  scenes:
+  - 001:盛渔村·客栈客房与厨房
+- id: 629
+  name: 阿奴与赵灵儿并坐
+  category: core_character
+  frames: 1
+  size_1x: 41x42
+  status: done_v2
+  character_group: zhao_linger
+  anchor_mgo: 3
+  scenes:
+  - '278:场景 #278 (Map 183)'
+- id: 630
+  name: 李逍遥 - 梦境御剑
+  category: core_character
+  frames: 4
+  size_1x: 656x123
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 631
+  name: 李逍遥 - 梦境动作1
+  category: core_character
+  frames: 7
+  size_1x: 1148x123
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 632
+  name: 李逍遥 - 梦境动作2
+  category: core_character
+  frames: 7
+  size_1x: 1414x123
+  status: done_v2
+  character_group: li_xiaoyao
+  anchor_mgo: 2
+- id: 633
+  name: 巨型金蝎 BOSS
+  category: prop_1f
+  frames: 1
+  size_1x: 93x74
+  status: done_v2
+  scenes:
+  - '214:场景 #214 (Map 212)'
+  - '215:场景 #215 (Map 213)'
+- id: 634
+  name: 婢　女 / 婢女
+  category: npc
+  frames: 4
+  size_1x: 100x53
+  status: done_v2
+  speaker_hints:
+  - 婢　女
+  - 婢女
+  scenes:
+  - '108:场景 #108 (Map 108)'
+- id: 635
+  name: 满天星光/微尘特效
+  category: other_multiframe
+  frames: 21
+  size_1x: 2592x612
+  status: todo
+  name_needs_review: true
+- id: 636
+  name: 红袍白羽大祭司
+  category: other_multiframe
+  frames: 4
+  size_1x: 136x58
+  status: done_v2
+  scenes:
+  - '200:场景 #200 (Map 187)'

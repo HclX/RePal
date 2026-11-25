@@ -1,0 +1,16 @@
+{
+  "name": "palremake",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PalRemake Node.js headless test suites for the Rust-core browser host",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "test": "npm run test:host && npm run test:core-host && npm run test:harness",
+    "test:host": "node tools/tests/test_host.mjs",
+    "test:core-host": "node tools/test_rust_core_host.mjs",
+    "test:harness": "node tools/tests/test_headless_harness.mjs"
+  }
+}

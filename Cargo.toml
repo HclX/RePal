@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/pal-core",
+    "crates/pal-cli",
+    "crates/pal-render",
+    "crates/pal-ui",
+    "crates/pal-runtime",
+    "crates/pal-wasm",
+    "crates/pal-headless",
+    "crates/pal-desktop",
+]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

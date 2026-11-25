@@ -1,0 +1,172 @@
+{
+ "description": "Chapter 1 inn: intro, bedroom door, lobby, Aunt Li (Ev#57) unlocks the drunken Daoist (Ev#63), kitchen errand (Ev#20/#21), serve the Miao guests (Ev#16) for 桂花酒, then give the wine to the Daoist (s_13ca).",
+ "steps": [
+  {
+   "new_game": 9771413
+  },
+  {
+   "walk_to_event": 10
+  },
+  {
+   "face_interact": 10
+  },
+  {
+   "walk_to_event": 4
+  },
+  {
+   "checkpoint": "lobby",
+   "show": [
+    57,
+    61,
+    62,
+    63
+   ]
+  },
+  {
+   "walk_to_event": 57
+  },
+  {
+   "auto_ticks": 140
+  },
+  {
+   "checkpoint": "after_aunt_li_walk",
+   "show": [
+    57,
+    61,
+    62,
+    63
+   ]
+  },
+  {
+   "walk_to_event": 48
+  },
+  {
+   "walk_to_event": 57
+  },
+  {
+   "face_interact": 57
+  },
+  {
+   "checkpoint": "after_aunt_li_talk",
+   "show": [
+    57,
+    63,
+    20,
+    21
+   ]
+  },
+  {
+   "walk_to": [
+    1040,
+    1672
+   ]
+  },
+  {
+   "face_interact": 63
+  },
+  {
+   "checkpoint": "after_daoist",
+   "show": [
+    57,
+    63,
+    20,
+    21
+   ]
+  },
+  {
+   "auto_ticks": 80
+  },
+  {
+   "checkpoint": "after_aunt_li_kitchen",
+   "show": [
+    20,
+    21,
+    54
+   ]
+  },
+  {
+   "walk_to_event": 54
+  },
+  {
+   "checkpoint": "kitchen",
+   "show": [
+    20,
+    21,
+    16
+   ]
+  },
+  {
+   "walk_to_event": 20
+  },
+  {
+   "face_interact": 20
+  },
+  {
+   "walk_to_event": 21
+  },
+  {
+   "face_interact": 21
+  },
+  {
+   "checkpoint": "after_kitchen_table",
+   "show": [
+    20,
+    21,
+    16,
+    19
+   ]
+  },
+  {
+   "walk_to_event": 19
+  },
+  {
+   "walk_to_event": 47
+  },
+  {
+   "walk_to_event": 52
+  },
+  {
+   "checkpoint": "miao_room",
+   "show": [
+    16,
+    13
+   ]
+  },
+  {
+   "walk_to_event": 16
+  },
+  {
+   "checkpoint": "after_serve_miao_guests",
+   "show": [
+    16,
+    13
+   ]
+  },
+  {
+   "walk_to_event": 13
+  },
+  {
+   "walk_to_event": 48
+  },
+  {
+   "walk_to": [
+    1040,
+    1672
+   ]
+  },
+  {
+   "face_event": 63
+  },
+  {
+   "use_item": 272,
+   "target": 0
+  },
+  {
+   "checkpoint": "after_drunken_daoist_s13ca",
+   "show": [
+    63,
+    20
+   ]
+  }
+ ]
+}

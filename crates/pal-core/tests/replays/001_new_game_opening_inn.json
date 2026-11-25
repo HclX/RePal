@@ -1,0 +1,19 @@
+{
+  "issue": "#104",
+  "title": "New Game opening intro settles cleanly in Shengyu Village Inn (scene 1)",
+  "replay": {
+    "kind": "PalRemake_CoreReplay_v1",
+    "seed": 9771413,
+    "anchor": {
+      "type": "new_game",
+      "seed": 9771413
+    },
+    "log": [
+      { "t": 10, "i": [-1, 0, 0, 0, 0, 0] }
+    ]
+  },
+  "settle_after": true,
+  "expect": [
+    { "at_end": true, "scene": 1, "busy": false, "min_ticks": 10 }
+  ]
+}

@@ -1,0 +1,8 @@
+[package]
+name = "pal-render"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pal-core = { path = "../pal-core" }
+fontdue = "0.9"

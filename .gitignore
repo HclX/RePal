@@ -1,0 +1,16 @@
+# Unpacked raw cache & local python/node test tools
+/raw_data/
+/.pylibs/
+/.tools/
+/.tmp/
+/.pytest_cache/
+__pycache__/
+*.pyc
+
+# Rust & WASM build artifacts (built locally via `make build-wasm` and in CI/Pages workflows)
+/target/
+/site/wasm/pal.wasm
+
+# Static game assets (hosted separately in HclX/RePal_Assets and pinned via assets-lock.json)
+/site/assets
+/DoSPal.zip

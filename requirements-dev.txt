@@ -1,0 +1,7 @@
+# Python pipeline & verification dependencies for PalRemake tools/
+numpy>=1.26
+scipy>=1.11
+pillow>=10.0
+pyyaml>=6.0
+opencc-python-reimplemented>=0.1.7
+pytest>=8.0

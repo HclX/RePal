@@ -1,0 +1,34 @@
+# PalRemake Headless Regression Recording: Scene 1 Walk + Menus + Retro/HD Toggle
+# Run via:
+#   cargo run --release -p pal-headless -- --replay crates/pal-headless/recordings/smoke_walk_and_menus.rec --out-dir target/headless_shots/replay
+
+save:0.rpg
+hd
+shot:rec_01_scene1_start.png
+
+# Walk 3 steps southwest across Li Xiaoyao's bedroom
+walk:sw
+walk:sw
+walk:sw
+shot:rec_02_after_walk.png
+
+# Open Root Menu -> Status (FBP_000) -> Back -> Items -> Equip (FBP_001)
+menu
+shot:rec_03_root_menu.png
+confirm
+shot:rec_04_status_fbp000.png
+cancel
+down
+down
+confirm
+down
+confirm
+shot:rec_05_equip_fbp001.png
+
+# Switch to 1995 Retro (320x200) and capture Equip & Field
+retro
+shot:rec_06_equip_retro.png
+cancel
+cancel
+cancel
+shot:rec_07_field_retro.png

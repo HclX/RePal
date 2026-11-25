@@ -1,0 +1,18 @@
+[package]
+name = "pal-runtime"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+disk = ["dep:image", "dep:serde_yaml"]
+
+[dependencies]
+pal-core = { path = "../pal-core" }
+pal-render = { path = "../pal-render" }
+pal-ui = { path = "../pal-ui" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+image = { version = "0.25", default-features = false, features = ["png", "webp"], optional = true }
+serde_yaml = { version = "0.9", optional = true }

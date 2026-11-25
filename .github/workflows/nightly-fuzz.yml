@@ -1,0 +1,83 @@
+name: Nightly Fuzz & Coverage Suite
+
+on:
+  schedule:
+    # Run daily at 09:00 UTC
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+    inputs:
+      ticks:
+        description: "Ticks per save (PAL_FUZZ_TICKS)"
+        required: false
+        default: "3000"
+      seeds:
+        description: "Seeds per save (PAL_FUZZ_SEEDS)"
+        required: false
+        default: "4"
+
+permissions:
+  contents: read
+
+jobs:
+  nightly-fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch pinned assets from RePal_Assets
+        env:
+          GH_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "ASSETS_REPO_TOKEN not set; cannot run 51-save fuzz suite."
+            exit 0
+          fi
+          python3 -c '
+          import json, subprocess, hashlib, pathlib
+          lock = json.load(open("assets-lock.json"))
+          subprocess.check_call([
+              "gh", "release", "download", lock["tag"],
+              "--repo", lock["repo"],
+              "--pattern", lock["filename"],
+              "--output", "pal-assets.tar.gz",
+          ])
+          actual = hashlib.sha256(pathlib.Path("pal-assets.tar.gz").read_bytes()).hexdigest()
+          assert actual == lock["sha256"], f"SHA-256 mismatch: {actual}"
+          subprocess.check_call(["tar", "-xzf", "pal-assets.tar.gz", "-C", "site"])
+          pathlib.Path("pal-assets.tar.gz").unlink()
+          '
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry & target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run extended 51-save + New Game invariant, replay, text-mode & parser fuzzing
+        env:
+          PAL_FUZZ_TICKS: ${{ github.event.inputs.ticks || '3000' }}
+          PAL_FUZZ_SEEDS: ${{ github.event.inputs.seeds || '4' }}
+          PAL_CONT_WARMUP: "400"
+          PAL_CONT_FOLLOW: "600"
+          PAL_PARSER_FUZZ_ITERS: "3000"
+        run: |
+          if [ ! -f site/assets/data/scenes.yaml ]; then
+            echo "Assets not present; skipping fuzz suite."
+            exit 0
+          fi
+          cargo test -p pal-core --test fuzz_invariants --test fuzz_parsers --release -- --nocapture
+          cargo test -p pal-runtime --features disk --test fuzz_runtime --release -- --nocapture
+          cargo test -p pal-headless --test fuzz_text_mode --release -- --nocapture
+
+      - name: Upload minimized failure replays & parser crash inputs (if any)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-failure-artifacts
+          path: |
+            .tmp/fuzz_failure_*.json
+            .tmp/fuzz_parser_*.bin
+          if-no-files-found: ignore
+          retention-days: 3

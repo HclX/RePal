@@ -1,0 +1,123 @@
+name: Release Native Binaries
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure GitHub Release exists for tag
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+
+  build:
+    needs: prepare-release
+    if: always() && (needs.prepare-release.result == 'success' || needs.prepare-release.result == 'skipped')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: repal-windows-x86_64
+            bin_repal: repal.exe
+            features: ""
+            archive: zip
+          - os: macos-latest
+            artifact: repal-macos-aarch64
+            bin_repal: repal
+            features: ""
+            archive: tar.gz
+          - os: ubuntu-22.04
+            artifact: repal-linux-x86_64
+            bin_repal: repal
+            features: "--features audio"
+            archive: tar.gz
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux ALSA headers (for cpal audio)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry & target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Test & build unified repal release binary
+        env:
+          REPAL_RELEASE_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+        run: |
+          cargo test -p pal-desktop ${{ matrix.features }}
+          cargo build -p pal-desktop --bin repal --release ${{ matrix.features }}
+
+      - name: Package release archive (Windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/${{ matrix.artifact }}/agent-skill
+          New-Item -ItemType Directory -Force -Path dist/${{ matrix.artifact }}/replay
+          Copy-Item target/release/${{ matrix.bin_repal }} dist/${{ matrix.artifact }}/
+          Copy-Item assets-lock.json dist/${{ matrix.artifact }}/
+          Copy-Item docs/USER_MANUAL.md dist/${{ matrix.artifact }}/
+          Copy-Item .agent/skills/play-pal-mud/SKILL.md dist/${{ matrix.artifact }}/agent-skill/
+          Copy-Item -Recurse test_data/replays/* dist/${{ matrix.artifact }}/replay/
+          7z a -tzip -mx=5 dist/${{ matrix.artifact }}.zip ./dist/${{ matrix.artifact }}
+
+      - name: Package release archive (Unix)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          mkdir -p dist/${{ matrix.artifact }}/agent-skill
+          mkdir -p dist/${{ matrix.artifact }}/replay
+          cp target/release/${{ matrix.bin_repal }} dist/${{ matrix.artifact }}/
+          cp assets-lock.json dist/${{ matrix.artifact }}/
+          cp docs/USER_MANUAL.md dist/${{ matrix.artifact }}/
+          cp .agent/skills/play-pal-mud/SKILL.md dist/${{ matrix.artifact }}/agent-skill/
+          cp -r test_data/replays/* dist/${{ matrix.artifact }}/replay/
+          cp site/icons/repal_icon.png dist/${{ matrix.artifact }}/
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            cp scripts/install-desktop-icon.sh dist/${{ matrix.artifact }}/
+            chmod +x dist/${{ matrix.artifact }}/install-desktop-icon.sh
+          fi
+          tar -C dist -czf dist/${{ matrix.artifact }}.tar.gz ${{ matrix.artifact }}
+
+      - name: Generate SHA-256 checksum sidecar (Windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $f = "dist/${{ matrix.artifact }}.zip"
+          $h = (Get-FileHash $f -Algorithm SHA256).Hash.ToLower()
+          "$h  ${{ matrix.artifact }}.zip" | Out-File -Encoding ascii -NoNewline "$f.sha256"
+
+      - name: Generate SHA-256 checksum sidecar (Unix)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          (cd dist && shasum -a 256 "${{ matrix.artifact }}.tar.gz" > "${{ matrix.artifact }}.tar.gz.sha256")
+
+      - name: Upload archive directly to GitHub Release (bypasses Actions artifact quota)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" "dist/${{ matrix.artifact }}.${{ matrix.archive }}" "dist/${{ matrix.artifact }}.${{ matrix.archive }}.sha256" --clobber
+
+      - name: Upload workflow artifact (manual dispatch only)
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}.${{ matrix.archive }}
+          retention-days: 1

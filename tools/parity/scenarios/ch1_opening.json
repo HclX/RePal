@@ -1,0 +1,12 @@
+{
+  "description": "New game intro, open the bedroom door (Ev#10), leave through Ev#4 into the inn hall (scene 3).",
+  "steps": [
+    { "new_game": 9771413 },
+    { "checkpoint": "after_intro" },
+    { "walk_to_event": 10 },
+    { "face_interact": 10 },
+    { "checkpoint": "after_bedroom_door" },
+    { "walk_to_event": 4 },
+    { "checkpoint": "after_bedroom_exit" }
+  ]
+}

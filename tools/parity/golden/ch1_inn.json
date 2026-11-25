@@ -1,0 +1,3415 @@
+{
+ "scenario": "ch1_inn.json",
+ "checkpoints": [
+  {
+   "checkpoint": "lobby",
+   "state": {
+    "sceneId": 3,
+    "mapId": 10,
+    "cash": 0,
+    "party": [
+     {
+      "roleId": 0,
+      "x": 1568,
+      "y": 1504,
+      "dir": 0
+     }
+    ],
+    "inventory": [],
+    "roles": [
+     {
+      "roleId": 0,
+      "level": 1,
+      "exp": 0,
+      "hp": 150,
+      "mp": 100,
+      "maxHp": 150,
+      "maxMp": 100,
+      "equipment": {
+       "hat": 196,
+       "cloak": 225,
+       "armor": 208,
+       "weapon": 166,
+       "boots": 235,
+       "ornament": 249
+      },
+      "magics": [
+       296
+      ]
+     },
+     {
+      "roleId": 1,
+      "level": 5,
+      "exp": 0,
+      "hp": 28,
+      "mp": 10,
+      "maxHp": 240,
+      "maxMp": 240,
+      "equipment": {
+       "hat": 197,
+       "cloak": 0,
+       "armor": 210,
+       "weapon": 170,
+       "boots": 237,
+       "ornament": 248
+      },
+      "magics": [
+       297,
+       303,
+       306,
+       307,
+       309,
+       312,
+       316,
+       321,
+       327,
+       332
+      ]
+     },
+     {
+      "roleId": 2,
+      "level": 3,
+      "exp": 0,
+      "hp": 220,
+      "mp": 80,
+      "maxHp": 220,
+      "maxMp": 80,
+      "equipment": {
+       "hat": 199,
+       "cloak": 228,
+       "armor": 210,
+       "weapon": 163,
+       "boots": 238,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       337
+      ]
+     },
+     {
+      "roleId": 3,
+      "level": 48,
+      "exp": 0,
+      "hp": 810,
+      "mp": 790,
+      "maxHp": 810,
+      "maxMp": 790,
+      "equipment": {
+       "hat": 202,
+       "cloak": 234,
+       "armor": 210,
+       "weapon": 195,
+       "boots": 243,
+       "ornament": 260
+      },
+      "magics": [
+       295,
+       299,
+       302,
+       304,
+       308,
+       315,
+       320,
+       325,
+       336,
+       389
+      ]
+     },
+     {
+      "roleId": 4,
+      "level": 28,
+      "exp": 0,
+      "hp": 480,
+      "mp": 410,
+      "maxHp": 480,
+      "maxMp": 410,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 209,
+       "weapon": 192,
+       "boots": 0,
+       "ornament": 251
+      },
+      "magics": [
+       299,
+       302,
+       304,
+       305,
+       308,
+       318,
+       329,
+       352,
+       353,
+       394
+      ]
+     },
+     {
+      "roleId": 5,
+      "level": 40,
+      "exp": 0,
+      "hp": 3600,
+      "mp": 720,
+      "maxHp": 3600,
+      "maxMp": 720,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 215,
+       "weapon": 193,
+       "boots": 244,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       304,
+       308,
+       323,
+       329,
+       353,
+       374
+      ]
+     }
+    ],
+    "dirtyEvents": [
+     {
+      "id": 4,
+      "x": 1152,
+      "y": 384,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_117b",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 11,
+      "x": 1168,
+      "y": 376,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "s_1167",
+      "vanish": 0
+     },
+     {
+      "id": 12,
+      "x": 1328,
+      "y": 296,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     }
+    ],
+    "dirtyScenes": []
+   }
+  },
+  {
+   "checkpoint": "after_aunt_li_walk",
+   "state": {
+    "sceneId": 3,
+    "mapId": 10,
+    "cash": 500,
+    "party": [
+     {
+      "roleId": 0,
+      "x": 1296,
+      "y": 1368,
+      "dir": 0
+     }
+    ],
+    "inventory": [],
+    "roles": [
+     {
+      "roleId": 0,
+      "level": 1,
+      "exp": 0,
+      "hp": 150,
+      "mp": 100,
+      "maxHp": 150,
+      "maxMp": 100,
+      "equipment": {
+       "hat": 196,
+       "cloak": 225,
+       "armor": 208,
+       "weapon": 166,
+       "boots": 235,
+       "ornament": 249
+      },
+      "magics": [
+       296
+      ]
+     },
+     {
+      "roleId": 1,
+      "level": 5,
+      "exp": 0,
+      "hp": 28,
+      "mp": 10,
+      "maxHp": 240,
+      "maxMp": 240,
+      "equipment": {
+       "hat": 197,
+       "cloak": 0,
+       "armor": 210,
+       "weapon": 170,
+       "boots": 237,
+       "ornament": 248
+      },
+      "magics": [
+       297,
+       303,
+       306,
+       307,
+       309,
+       312,
+       316,
+       321,
+       327,
+       332
+      ]
+     },
+     {
+      "roleId": 2,
+      "level": 3,
+      "exp": 0,
+      "hp": 220,
+      "mp": 80,
+      "maxHp": 220,
+      "maxMp": 80,
+      "equipment": {
+       "hat": 199,
+       "cloak": 228,
+       "armor": 210,
+       "weapon": 163,
+       "boots": 238,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       337
+      ]
+     },
+     {
+      "roleId": 3,
+      "level": 48,
+      "exp": 0,
+      "hp": 810,
+      "mp": 790,
+      "maxHp": 810,
+      "maxMp": 790,
+      "equipment": {
+       "hat": 202,
+       "cloak": 234,
+       "armor": 210,
+       "weapon": 195,
+       "boots": 243,
+       "ornament": 260
+      },
+      "magics": [
+       295,
+       299,
+       302,
+       304,
+       308,
+       315,
+       320,
+       325,
+       336,
+       389
+      ]
+     },
+     {
+      "roleId": 4,
+      "level": 28,
+      "exp": 0,
+      "hp": 480,
+      "mp": 410,
+      "maxHp": 480,
+      "maxMp": 410,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 209,
+       "weapon": 192,
+       "boots": 0,
+       "ornament": 251
+      },
+      "magics": [
+       299,
+       302,
+       304,
+       305,
+       308,
+       318,
+       329,
+       352,
+       353,
+       394
+      ]
+     },
+     {
+      "roleId": 5,
+      "level": 40,
+      "exp": 0,
+      "hp": 3600,
+      "mp": 720,
+      "maxHp": 3600,
+      "maxMp": 720,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 215,
+       "weapon": 193,
+       "boots": 244,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       304,
+       308,
+       323,
+       329,
+       353,
+       374
+      ]
+     }
+    ],
+    "dirtyEvents": [
+     {
+      "id": 4,
+      "x": 1152,
+      "y": 384,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_117b",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 10,
+      "x": 1376,
+      "y": 272,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_119e",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 11,
+      "x": 1168,
+      "y": 376,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "s_1167",
+      "vanish": 0
+     },
+     {
+      "id": 12,
+      "x": 1328,
+      "y": 296,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 25,
+      "x": 544,
+      "y": 288,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12ee",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 26,
+      "x": 1360,
+      "y": 1112,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12f1",
+      "auto": "s_000e",
+      "vanish": 0
+     },
+     {
+      "id": 27,
+      "x": 1312,
+      "y": 1040,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_12f5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 55,
+      "x": 1264,
+      "y": 1336,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 56,
+      "x": 1280,
+      "y": 1344,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 57,
+      "x": 1136,
+      "y": 1624,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_12a3",
+      "auto": "s_12b9",
+      "vanish": 0
+     },
+     {
+      "id": 60,
+      "x": 1312,
+      "y": 1328,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12c8",
+      "auto": "s_12d6",
+      "vanish": 0
+     },
+     {
+      "id": 61,
+      "x": 1456,
+      "y": 1416,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cc",
+      "auto": "s_12db",
+      "vanish": 0
+     },
+     {
+      "id": 62,
+      "x": 1440,
+      "y": 1408,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cf",
+      "auto": "s_12e4",
+      "vanish": 0
+     },
+     {
+      "id": 74,
+      "x": 1424,
+      "y": 1416,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 75,
+      "x": 1440,
+      "y": 1424,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     }
+    ],
+    "dirtyScenes": []
+   }
+  },
+  {
+   "checkpoint": "after_aunt_li_talk",
+   "state": {
+    "sceneId": 3,
+    "mapId": 10,
+    "cash": 500,
+    "party": [
+     {
+      "roleId": 0,
+      "x": 1104,
+      "y": 1608,
+      "dir": 1
+     }
+    ],
+    "inventory": [],
+    "roles": [
+     {
+      "roleId": 0,
+      "level": 1,
+      "exp": 0,
+      "hp": 150,
+      "mp": 100,
+      "maxHp": 150,
+      "maxMp": 100,
+      "equipment": {
+       "hat": 196,
+       "cloak": 225,
+       "armor": 208,
+       "weapon": 166,
+       "boots": 235,
+       "ornament": 249
+      },
+      "magics": [
+       296
+      ]
+     },
+     {
+      "roleId": 1,
+      "level": 5,
+      "exp": 0,
+      "hp": 28,
+      "mp": 10,
+      "maxHp": 240,
+      "maxMp": 240,
+      "equipment": {
+       "hat": 197,
+       "cloak": 0,
+       "armor": 210,
+       "weapon": 170,
+       "boots": 237,
+       "ornament": 248
+      },
+      "magics": [
+       297,
+       303,
+       306,
+       307,
+       309,
+       312,
+       316,
+       321,
+       327,
+       332
+      ]
+     },
+     {
+      "roleId": 2,
+      "level": 3,
+      "exp": 0,
+      "hp": 220,
+      "mp": 80,
+      "maxHp": 220,
+      "maxMp": 80,
+      "equipment": {
+       "hat": 199,
+       "cloak": 228,
+       "armor": 210,
+       "weapon": 163,
+       "boots": 238,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       337
+      ]
+     },
+     {
+      "roleId": 3,
+      "level": 48,
+      "exp": 0,
+      "hp": 810,
+      "mp": 790,
+      "maxHp": 810,
+      "maxMp": 790,
+      "equipment": {
+       "hat": 202,
+       "cloak": 234,
+       "armor": 210,
+       "weapon": 195,
+       "boots": 243,
+       "ornament": 260
+      },
+      "magics": [
+       295,
+       299,
+       302,
+       304,
+       308,
+       315,
+       320,
+       325,
+       336,
+       389
+      ]
+     },
+     {
+      "roleId": 4,
+      "level": 28,
+      "exp": 0,
+      "hp": 480,
+      "mp": 410,
+      "maxHp": 480,
+      "maxMp": 410,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 209,
+       "weapon": 192,
+       "boots": 0,
+       "ornament": 251
+      },
+      "magics": [
+       299,
+       302,
+       304,
+       305,
+       308,
+       318,
+       329,
+       352,
+       353,
+       394
+      ]
+     },
+     {
+      "roleId": 5,
+      "level": 40,
+      "exp": 0,
+      "hp": 3600,
+      "mp": 720,
+      "maxHp": 3600,
+      "maxMp": 720,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 215,
+       "weapon": 193,
+       "boots": 244,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       304,
+       308,
+       323,
+       329,
+       353,
+       374
+      ]
+     }
+    ],
+    "dirtyEvents": [
+     {
+      "id": 4,
+      "x": 1152,
+      "y": 384,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_117b",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 10,
+      "x": 1376,
+      "y": 272,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_119e",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 11,
+      "x": 1168,
+      "y": 376,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "s_1167",
+      "vanish": 0
+     },
+     {
+      "id": 12,
+      "x": 1328,
+      "y": 296,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 25,
+      "x": 544,
+      "y": 288,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12ee",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 26,
+      "x": 1360,
+      "y": 1112,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12f1",
+      "auto": "s_000e",
+      "vanish": 0
+     },
+     {
+      "id": 27,
+      "x": 1312,
+      "y": 1040,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_12f5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 55,
+      "x": 1264,
+      "y": 1336,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 56,
+      "x": 1280,
+      "y": 1344,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 57,
+      "x": 1016,
+      "y": 1564,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12a3",
+      "auto": "s_12c2",
+      "vanish": 0
+     },
+     {
+      "id": 60,
+      "x": 1312,
+      "y": 1328,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12c8",
+      "auto": "s_12d6",
+      "vanish": 0
+     },
+     {
+      "id": 61,
+      "x": 1456,
+      "y": 1416,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cc",
+      "auto": "s_12db",
+      "vanish": 0
+     },
+     {
+      "id": 62,
+      "x": 1440,
+      "y": 1408,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cf",
+      "auto": "s_12e4",
+      "vanish": 0
+     },
+     {
+      "id": 63,
+      "x": 1024,
+      "y": 1680,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_139c",
+      "auto": "s_141e",
+      "vanish": 0
+     },
+     {
+      "id": 74,
+      "x": 1424,
+      "y": 1416,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 75,
+      "x": 1440,
+      "y": 1424,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     }
+    ],
+    "dirtyScenes": []
+   }
+  },
+  {
+   "checkpoint": "after_daoist",
+   "state": {
+    "sceneId": 3,
+    "mapId": 10,
+    "cash": 500,
+    "party": [
+     {
+      "roleId": 0,
+      "x": 1040,
+      "y": 1672,
+      "dir": 0
+     }
+    ],
+    "inventory": [],
+    "roles": [
+     {
+      "roleId": 0,
+      "level": 1,
+      "exp": 0,
+      "hp": 150,
+      "mp": 100,
+      "maxHp": 150,
+      "maxMp": 100,
+      "equipment": {
+       "hat": 196,
+       "cloak": 225,
+       "armor": 208,
+       "weapon": 166,
+       "boots": 235,
+       "ornament": 249
+      },
+      "magics": [
+       296
+      ]
+     },
+     {
+      "roleId": 1,
+      "level": 5,
+      "exp": 0,
+      "hp": 28,
+      "mp": 10,
+      "maxHp": 240,
+      "maxMp": 240,
+      "equipment": {
+       "hat": 197,
+       "cloak": 0,
+       "armor": 210,
+       "weapon": 170,
+       "boots": 237,
+       "ornament": 248
+      },
+      "magics": [
+       297,
+       303,
+       306,
+       307,
+       309,
+       312,
+       316,
+       321,
+       327,
+       332
+      ]
+     },
+     {
+      "roleId": 2,
+      "level": 3,
+      "exp": 0,
+      "hp": 220,
+      "mp": 80,
+      "maxHp": 220,
+      "maxMp": 80,
+      "equipment": {
+       "hat": 199,
+       "cloak": 228,
+       "armor": 210,
+       "weapon": 163,
+       "boots": 238,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       337
+      ]
+     },
+     {
+      "roleId": 3,
+      "level": 48,
+      "exp": 0,
+      "hp": 810,
+      "mp": 790,
+      "maxHp": 810,
+      "maxMp": 790,
+      "equipment": {
+       "hat": 202,
+       "cloak": 234,
+       "armor": 210,
+       "weapon": 195,
+       "boots": 243,
+       "ornament": 260
+      },
+      "magics": [
+       295,
+       299,
+       302,
+       304,
+       308,
+       315,
+       320,
+       325,
+       336,
+       389
+      ]
+     },
+     {
+      "roleId": 4,
+      "level": 28,
+      "exp": 0,
+      "hp": 480,
+      "mp": 410,
+      "maxHp": 480,
+      "maxMp": 410,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 209,
+       "weapon": 192,
+       "boots": 0,
+       "ornament": 251
+      },
+      "magics": [
+       299,
+       302,
+       304,
+       305,
+       308,
+       318,
+       329,
+       352,
+       353,
+       394
+      ]
+     },
+     {
+      "roleId": 5,
+      "level": 40,
+      "exp": 0,
+      "hp": 3600,
+      "mp": 720,
+      "maxHp": 3600,
+      "maxMp": 720,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 215,
+       "weapon": 193,
+       "boots": 244,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       304,
+       308,
+       323,
+       329,
+       353,
+       374
+      ]
+     }
+    ],
+    "dirtyEvents": [
+     {
+      "id": 4,
+      "x": 1152,
+      "y": 384,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_117b",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 10,
+      "x": 1376,
+      "y": 272,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_119e",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 11,
+      "x": 1168,
+      "y": 376,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "s_1167",
+      "vanish": 0
+     },
+     {
+      "id": 12,
+      "x": 1328,
+      "y": 296,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 20,
+      "x": 704,
+      "y": 1072,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_1370",
+      "auto": "s_0008",
+      "vanish": 0
+     },
+     {
+      "id": 21,
+      "x": 656,
+      "y": 1144,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1383",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 25,
+      "x": 544,
+      "y": 288,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12ee",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 26,
+      "x": 1360,
+      "y": 1112,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12f1",
+      "auto": "s_000e",
+      "vanish": 0
+     },
+     {
+      "id": 27,
+      "x": 1312,
+      "y": 1040,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_12f5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 55,
+      "x": 1264,
+      "y": 1336,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 56,
+      "x": 1280,
+      "y": 1344,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 57,
+      "x": 1016,
+      "y": 1564,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12a3",
+      "auto": "s_12c2",
+      "vanish": 0
+     },
+     {
+      "id": 60,
+      "x": 1312,
+      "y": 1328,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12c8",
+      "auto": "s_12d6",
+      "vanish": 0
+     },
+     {
+      "id": 61,
+      "x": 1456,
+      "y": 1416,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cc",
+      "auto": "s_12db",
+      "vanish": 0
+     },
+     {
+      "id": 62,
+      "x": 1440,
+      "y": 1408,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cf",
+      "auto": "s_12e4",
+      "vanish": 0
+     },
+     {
+      "id": 63,
+      "x": 1024,
+      "y": 1680,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_139c",
+      "auto": "s_141e",
+      "vanish": 0
+     },
+     {
+      "id": 74,
+      "x": 1424,
+      "y": 1416,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 75,
+      "x": 1440,
+      "y": 1424,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     }
+    ],
+    "dirtyScenes": []
+   }
+  },
+  {
+   "checkpoint": "after_aunt_li_kitchen",
+   "state": {
+    "sceneId": 3,
+    "mapId": 10,
+    "cash": 500,
+    "party": [
+     {
+      "roleId": 0,
+      "x": 1040,
+      "y": 1672,
+      "dir": 0
+     }
+    ],
+    "inventory": [],
+    "roles": [
+     {
+      "roleId": 0,
+      "level": 1,
+      "exp": 0,
+      "hp": 150,
+      "mp": 100,
+      "maxHp": 150,
+      "maxMp": 100,
+      "equipment": {
+       "hat": 196,
+       "cloak": 225,
+       "armor": 208,
+       "weapon": 166,
+       "boots": 235,
+       "ornament": 249
+      },
+      "magics": [
+       296
+      ]
+     },
+     {
+      "roleId": 1,
+      "level": 5,
+      "exp": 0,
+      "hp": 28,
+      "mp": 10,
+      "maxHp": 240,
+      "maxMp": 240,
+      "equipment": {
+       "hat": 197,
+       "cloak": 0,
+       "armor": 210,
+       "weapon": 170,
+       "boots": 237,
+       "ornament": 248
+      },
+      "magics": [
+       297,
+       303,
+       306,
+       307,
+       309,
+       312,
+       316,
+       321,
+       327,
+       332
+      ]
+     },
+     {
+      "roleId": 2,
+      "level": 3,
+      "exp": 0,
+      "hp": 220,
+      "mp": 80,
+      "maxHp": 220,
+      "maxMp": 80,
+      "equipment": {
+       "hat": 199,
+       "cloak": 228,
+       "armor": 210,
+       "weapon": 163,
+       "boots": 238,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       337
+      ]
+     },
+     {
+      "roleId": 3,
+      "level": 48,
+      "exp": 0,
+      "hp": 810,
+      "mp": 790,
+      "maxHp": 810,
+      "maxMp": 790,
+      "equipment": {
+       "hat": 202,
+       "cloak": 234,
+       "armor": 210,
+       "weapon": 195,
+       "boots": 243,
+       "ornament": 260
+      },
+      "magics": [
+       295,
+       299,
+       302,
+       304,
+       308,
+       315,
+       320,
+       325,
+       336,
+       389
+      ]
+     },
+     {
+      "roleId": 4,
+      "level": 28,
+      "exp": 0,
+      "hp": 480,
+      "mp": 410,
+      "maxHp": 480,
+      "maxMp": 410,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 209,
+       "weapon": 192,
+       "boots": 0,
+       "ornament": 251
+      },
+      "magics": [
+       299,
+       302,
+       304,
+       305,
+       308,
+       318,
+       329,
+       352,
+       353,
+       394
+      ]
+     },
+     {
+      "roleId": 5,
+      "level": 40,
+      "exp": 0,
+      "hp": 3600,
+      "mp": 720,
+      "maxHp": 3600,
+      "maxMp": 720,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 215,
+       "weapon": 193,
+       "boots": 244,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       304,
+       308,
+       323,
+       329,
+       353,
+       374
+      ]
+     }
+    ],
+    "dirtyEvents": [
+     {
+      "id": 4,
+      "x": 1152,
+      "y": 384,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_117b",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 10,
+      "x": 1376,
+      "y": 272,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_119e",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 11,
+      "x": 1168,
+      "y": 376,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "s_1167",
+      "vanish": 0
+     },
+     {
+      "id": 12,
+      "x": 1328,
+      "y": 296,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 20,
+      "x": 704,
+      "y": 1072,
+      "state": 2,
+      "dir": 2,
+      "trig": "s_1370",
+      "auto": "s_0008",
+      "vanish": 0
+     },
+     {
+      "id": 21,
+      "x": 656,
+      "y": 1144,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1383",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 25,
+      "x": 544,
+      "y": 288,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12ee",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 26,
+      "x": 1360,
+      "y": 1112,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12f1",
+      "auto": "s_000e",
+      "vanish": 0
+     },
+     {
+      "id": 27,
+      "x": 1312,
+      "y": 1040,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_12f5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 55,
+      "x": 1264,
+      "y": 1336,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 56,
+      "x": 1280,
+      "y": 1344,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 57,
+      "x": 1008,
+      "y": 1480,
+      "state": 0,
+      "dir": 1,
+      "trig": "s_12a3",
+      "auto": "s_12c2",
+      "vanish": 0
+     },
+     {
+      "id": 60,
+      "x": 1312,
+      "y": 1328,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12c8",
+      "auto": "s_12d6",
+      "vanish": 0
+     },
+     {
+      "id": 61,
+      "x": 1456,
+      "y": 1416,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cc",
+      "auto": "s_12db",
+      "vanish": 0
+     },
+     {
+      "id": 62,
+      "x": 1440,
+      "y": 1408,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cf",
+      "auto": "s_12e4",
+      "vanish": 0
+     },
+     {
+      "id": 63,
+      "x": 1024,
+      "y": 1680,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_139c",
+      "auto": "s_141e",
+      "vanish": 0
+     },
+     {
+      "id": 74,
+      "x": 1424,
+      "y": 1416,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 75,
+      "x": 1440,
+      "y": 1424,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     }
+    ],
+    "dirtyScenes": []
+   }
+  },
+  {
+   "checkpoint": "kitchen",
+   "state": {
+    "sceneId": 1,
+    "mapId": 12,
+    "cash": 500,
+    "party": [
+     {
+      "roleId": 0,
+      "x": 640,
+      "y": 1264,
+      "dir": 1
+     }
+    ],
+    "inventory": [],
+    "roles": [
+     {
+      "roleId": 0,
+      "level": 1,
+      "exp": 0,
+      "hp": 150,
+      "mp": 100,
+      "maxHp": 150,
+      "maxMp": 100,
+      "equipment": {
+       "hat": 196,
+       "cloak": 225,
+       "armor": 208,
+       "weapon": 166,
+       "boots": 235,
+       "ornament": 249
+      },
+      "magics": [
+       296
+      ]
+     },
+     {
+      "roleId": 1,
+      "level": 5,
+      "exp": 0,
+      "hp": 28,
+      "mp": 10,
+      "maxHp": 240,
+      "maxMp": 240,
+      "equipment": {
+       "hat": 197,
+       "cloak": 0,
+       "armor": 210,
+       "weapon": 170,
+       "boots": 237,
+       "ornament": 248
+      },
+      "magics": [
+       297,
+       303,
+       306,
+       307,
+       309,
+       312,
+       316,
+       321,
+       327,
+       332
+      ]
+     },
+     {
+      "roleId": 2,
+      "level": 3,
+      "exp": 0,
+      "hp": 220,
+      "mp": 80,
+      "maxHp": 220,
+      "maxMp": 80,
+      "equipment": {
+       "hat": 199,
+       "cloak": 228,
+       "armor": 210,
+       "weapon": 163,
+       "boots": 238,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       337
+      ]
+     },
+     {
+      "roleId": 3,
+      "level": 48,
+      "exp": 0,
+      "hp": 810,
+      "mp": 790,
+      "maxHp": 810,
+      "maxMp": 790,
+      "equipment": {
+       "hat": 202,
+       "cloak": 234,
+       "armor": 210,
+       "weapon": 195,
+       "boots": 243,
+       "ornament": 260
+      },
+      "magics": [
+       295,
+       299,
+       302,
+       304,
+       308,
+       315,
+       320,
+       325,
+       336,
+       389
+      ]
+     },
+     {
+      "roleId": 4,
+      "level": 28,
+      "exp": 0,
+      "hp": 480,
+      "mp": 410,
+      "maxHp": 480,
+      "maxMp": 410,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 209,
+       "weapon": 192,
+       "boots": 0,
+       "ornament": 251
+      },
+      "magics": [
+       299,
+       302,
+       304,
+       305,
+       308,
+       318,
+       329,
+       352,
+       353,
+       394
+      ]
+     },
+     {
+      "roleId": 5,
+      "level": 40,
+      "exp": 0,
+      "hp": 3600,
+      "mp": 720,
+      "maxHp": 3600,
+      "maxMp": 720,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 215,
+       "weapon": 193,
+       "boots": 244,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       304,
+       308,
+       323,
+       329,
+       353,
+       374
+      ]
+     }
+    ],
+    "dirtyEvents": [
+     {
+      "id": 4,
+      "x": 1152,
+      "y": 384,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_117b",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 10,
+      "x": 1376,
+      "y": 272,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_119e",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 11,
+      "x": 1168,
+      "y": 376,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "s_1167",
+      "vanish": 0
+     },
+     {
+      "id": 12,
+      "x": 1328,
+      "y": 296,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 20,
+      "x": 704,
+      "y": 1072,
+      "state": 2,
+      "dir": 2,
+      "trig": "s_1370",
+      "auto": "s_0008",
+      "vanish": 0
+     },
+     {
+      "id": 21,
+      "x": 656,
+      "y": 1144,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1383",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 25,
+      "x": 544,
+      "y": 288,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12ee",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 26,
+      "x": 1360,
+      "y": 1112,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12f1",
+      "auto": "s_000e",
+      "vanish": 0
+     },
+     {
+      "id": 27,
+      "x": 1312,
+      "y": 1040,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_12f5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 55,
+      "x": 1264,
+      "y": 1336,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 56,
+      "x": 1280,
+      "y": 1344,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 57,
+      "x": 1008,
+      "y": 1480,
+      "state": 0,
+      "dir": 1,
+      "trig": "s_12a3",
+      "auto": "s_12c2",
+      "vanish": 0
+     },
+     {
+      "id": 60,
+      "x": 1312,
+      "y": 1328,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12c8",
+      "auto": "s_12d6",
+      "vanish": 0
+     },
+     {
+      "id": 61,
+      "x": 1456,
+      "y": 1416,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cc",
+      "auto": "s_12db",
+      "vanish": 0
+     },
+     {
+      "id": 62,
+      "x": 1440,
+      "y": 1408,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cf",
+      "auto": "s_12e4",
+      "vanish": 0
+     },
+     {
+      "id": 63,
+      "x": 1024,
+      "y": 1680,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_139c",
+      "auto": "s_141e",
+      "vanish": 0
+     },
+     {
+      "id": 74,
+      "x": 1424,
+      "y": 1416,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 75,
+      "x": 1440,
+      "y": 1424,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     }
+    ],
+    "dirtyScenes": []
+   }
+  },
+  {
+   "checkpoint": "after_kitchen_table",
+   "state": {
+    "sceneId": 1,
+    "mapId": 12,
+    "cash": 500,
+    "party": [
+     {
+      "roleId": 0,
+      "x": 640,
+      "y": 1136,
+      "dir": 3
+     }
+    ],
+    "inventory": [],
+    "roles": [
+     {
+      "roleId": 0,
+      "level": 1,
+      "exp": 0,
+      "hp": 150,
+      "mp": 100,
+      "maxHp": 150,
+      "maxMp": 100,
+      "equipment": {
+       "hat": 196,
+       "cloak": 225,
+       "armor": 208,
+       "weapon": 166,
+       "boots": 235,
+       "ornament": 249
+      },
+      "magics": [
+       296
+      ]
+     },
+     {
+      "roleId": 1,
+      "level": 5,
+      "exp": 0,
+      "hp": 28,
+      "mp": 10,
+      "maxHp": 240,
+      "maxMp": 240,
+      "equipment": {
+       "hat": 197,
+       "cloak": 0,
+       "armor": 210,
+       "weapon": 170,
+       "boots": 237,
+       "ornament": 248
+      },
+      "magics": [
+       297,
+       303,
+       306,
+       307,
+       309,
+       312,
+       316,
+       321,
+       327,
+       332
+      ]
+     },
+     {
+      "roleId": 2,
+      "level": 3,
+      "exp": 0,
+      "hp": 220,
+      "mp": 80,
+      "maxHp": 220,
+      "maxMp": 80,
+      "equipment": {
+       "hat": 199,
+       "cloak": 228,
+       "armor": 210,
+       "weapon": 163,
+       "boots": 238,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       337
+      ]
+     },
+     {
+      "roleId": 3,
+      "level": 48,
+      "exp": 0,
+      "hp": 810,
+      "mp": 790,
+      "maxHp": 810,
+      "maxMp": 790,
+      "equipment": {
+       "hat": 202,
+       "cloak": 234,
+       "armor": 210,
+       "weapon": 195,
+       "boots": 243,
+       "ornament": 260
+      },
+      "magics": [
+       295,
+       299,
+       302,
+       304,
+       308,
+       315,
+       320,
+       325,
+       336,
+       389
+      ]
+     },
+     {
+      "roleId": 4,
+      "level": 28,
+      "exp": 0,
+      "hp": 480,
+      "mp": 410,
+      "maxHp": 480,
+      "maxMp": 410,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 209,
+       "weapon": 192,
+       "boots": 0,
+       "ornament": 251
+      },
+      "magics": [
+       299,
+       302,
+       304,
+       305,
+       308,
+       318,
+       329,
+       352,
+       353,
+       394
+      ]
+     },
+     {
+      "roleId": 5,
+      "level": 40,
+      "exp": 0,
+      "hp": 3600,
+      "mp": 720,
+      "maxHp": 3600,
+      "maxMp": 720,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 215,
+       "weapon": 193,
+       "boots": 244,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       304,
+       308,
+       323,
+       329,
+       353,
+       374
+      ]
+     }
+    ],
+    "dirtyEvents": [
+     {
+      "id": 4,
+      "x": 1152,
+      "y": 384,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_117b",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 8,
+      "x": 640,
+      "y": 608,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_11fc",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 10,
+      "x": 1376,
+      "y": 272,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_11f9",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 11,
+      "x": 1168,
+      "y": 376,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "s_1167",
+      "vanish": 0
+     },
+     {
+      "id": 12,
+      "x": 1328,
+      "y": 296,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 16,
+      "x": 1264,
+      "y": 1096,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1315",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 20,
+      "x": 704,
+      "y": 1072,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_1375",
+      "auto": "s_0008",
+      "vanish": 0
+     },
+     {
+      "id": 21,
+      "x": 656,
+      "y": 1144,
+      "state": 0,
+      "dir": 0,
+      "trig": "s_1387",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 25,
+      "x": 544,
+      "y": 288,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12f9",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 26,
+      "x": 1360,
+      "y": 1112,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_12f1",
+      "auto": "s_000e",
+      "vanish": 0
+     },
+     {
+      "id": 27,
+      "x": 1312,
+      "y": 1040,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_12f5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 55,
+      "x": 1264,
+      "y": 1336,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 56,
+      "x": 1280,
+      "y": 1344,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 57,
+      "x": 1008,
+      "y": 1480,
+      "state": 0,
+      "dir": 1,
+      "trig": "s_12a3",
+      "auto": "s_12c2",
+      "vanish": 0
+     },
+     {
+      "id": 60,
+      "x": 1312,
+      "y": 1328,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12c8",
+      "auto": "s_12d6",
+      "vanish": 0
+     },
+     {
+      "id": 61,
+      "x": 1456,
+      "y": 1416,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cc",
+      "auto": "s_12db",
+      "vanish": 0
+     },
+     {
+      "id": 62,
+      "x": 1440,
+      "y": 1408,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cf",
+      "auto": "s_12e4",
+      "vanish": 0
+     },
+     {
+      "id": 63,
+      "x": 1024,
+      "y": 1680,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_13be",
+      "auto": "s_141e",
+      "vanish": 0
+     },
+     {
+      "id": 74,
+      "x": 1424,
+      "y": 1416,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 75,
+      "x": 1440,
+      "y": 1424,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     }
+    ],
+    "dirtyScenes": []
+   }
+  },
+  {
+   "checkpoint": "miao_room",
+   "state": {
+    "sceneId": 1,
+    "mapId": 12,
+    "cash": 500,
+    "party": [
+     {
+      "roleId": 0,
+      "x": 1312,
+      "y": 1072,
+      "dir": 0
+     }
+    ],
+    "inventory": [
+     [
+      272,
+      1
+     ]
+    ],
+    "roles": [
+     {
+      "roleId": 0,
+      "level": 1,
+      "exp": 0,
+      "hp": 150,
+      "mp": 100,
+      "maxHp": 150,
+      "maxMp": 100,
+      "equipment": {
+       "hat": 196,
+       "cloak": 225,
+       "armor": 208,
+       "weapon": 166,
+       "boots": 235,
+       "ornament": 249
+      },
+      "magics": [
+       296
+      ]
+     },
+     {
+      "roleId": 1,
+      "level": 5,
+      "exp": 0,
+      "hp": 28,
+      "mp": 10,
+      "maxHp": 240,
+      "maxMp": 240,
+      "equipment": {
+       "hat": 197,
+       "cloak": 0,
+       "armor": 210,
+       "weapon": 170,
+       "boots": 237,
+       "ornament": 248
+      },
+      "magics": [
+       297,
+       303,
+       306,
+       307,
+       309,
+       312,
+       316,
+       321,
+       327,
+       332
+      ]
+     },
+     {
+      "roleId": 2,
+      "level": 3,
+      "exp": 0,
+      "hp": 220,
+      "mp": 80,
+      "maxHp": 220,
+      "maxMp": 80,
+      "equipment": {
+       "hat": 199,
+       "cloak": 228,
+       "armor": 210,
+       "weapon": 163,
+       "boots": 238,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       337
+      ]
+     },
+     {
+      "roleId": 3,
+      "level": 48,
+      "exp": 0,
+      "hp": 810,
+      "mp": 790,
+      "maxHp": 810,
+      "maxMp": 790,
+      "equipment": {
+       "hat": 202,
+       "cloak": 234,
+       "armor": 210,
+       "weapon": 195,
+       "boots": 243,
+       "ornament": 260
+      },
+      "magics": [
+       295,
+       299,
+       302,
+       304,
+       308,
+       315,
+       320,
+       325,
+       336,
+       389
+      ]
+     },
+     {
+      "roleId": 4,
+      "level": 28,
+      "exp": 0,
+      "hp": 480,
+      "mp": 410,
+      "maxHp": 480,
+      "maxMp": 410,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 209,
+       "weapon": 192,
+       "boots": 0,
+       "ornament": 251
+      },
+      "magics": [
+       299,
+       302,
+       304,
+       305,
+       308,
+       318,
+       329,
+       352,
+       353,
+       394
+      ]
+     },
+     {
+      "roleId": 5,
+      "level": 40,
+      "exp": 0,
+      "hp": 3600,
+      "mp": 720,
+      "maxHp": 3600,
+      "maxMp": 720,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 215,
+       "weapon": 193,
+       "boots": 244,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       304,
+       308,
+       323,
+       329,
+       353,
+       374
+      ]
+     }
+    ],
+    "dirtyEvents": [
+     {
+      "id": 4,
+      "x": 1152,
+      "y": 384,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_117b",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 10,
+      "x": 1376,
+      "y": 272,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_119e",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 11,
+      "x": 1168,
+      "y": 376,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "s_1167",
+      "vanish": 0
+     },
+     {
+      "id": 12,
+      "x": 1328,
+      "y": 296,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 17,
+      "x": 1328,
+      "y": 1080,
+      "state": 1,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 20,
+      "x": 704,
+      "y": 1072,
+      "state": 2,
+      "dir": 2,
+      "trig": "s_1375",
+      "auto": "s_0008",
+      "vanish": 0
+     },
+     {
+      "id": 21,
+      "x": 656,
+      "y": 1144,
+      "state": 0,
+      "dir": 0,
+      "trig": "s_1387",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 25,
+      "x": 544,
+      "y": 288,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_1303",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 26,
+      "x": 1360,
+      "y": 1112,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_1308",
+      "auto": "s_000e",
+      "vanish": 0
+     },
+     {
+      "id": 27,
+      "x": 1360,
+      "y": 1064,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_130f",
+      "auto": "s_135d",
+      "vanish": 0
+     },
+     {
+      "id": 55,
+      "x": 1264,
+      "y": 1336,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 56,
+      "x": 1280,
+      "y": 1344,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 57,
+      "x": 1008,
+      "y": 1480,
+      "state": 0,
+      "dir": 1,
+      "trig": "s_12a3",
+      "auto": "s_12c2",
+      "vanish": 0
+     },
+     {
+      "id": 60,
+      "x": 1312,
+      "y": 1328,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12c8",
+      "auto": "s_12d6",
+      "vanish": 0
+     },
+     {
+      "id": 61,
+      "x": 1456,
+      "y": 1416,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cc",
+      "auto": "s_12db",
+      "vanish": 0
+     },
+     {
+      "id": 62,
+      "x": 1440,
+      "y": 1408,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cf",
+      "auto": "s_12e4",
+      "vanish": 0
+     },
+     {
+      "id": 63,
+      "x": 1024,
+      "y": 1680,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_13c5",
+      "auto": "s_141e",
+      "vanish": 0
+     },
+     {
+      "id": 74,
+      "x": 1424,
+      "y": 1416,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 75,
+      "x": 1440,
+      "y": 1424,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     }
+    ],
+    "dirtyScenes": []
+   }
+  },
+  {
+   "checkpoint": "after_serve_miao_guests",
+   "state": {
+    "sceneId": 1,
+    "mapId": 12,
+    "cash": 500,
+    "party": [
+     {
+      "roleId": 0,
+      "x": 1264,
+      "y": 1096,
+      "dir": 0
+     }
+    ],
+    "inventory": [
+     [
+      272,
+      1
+     ]
+    ],
+    "roles": [
+     {
+      "roleId": 0,
+      "level": 1,
+      "exp": 0,
+      "hp": 150,
+      "mp": 100,
+      "maxHp": 150,
+      "maxMp": 100,
+      "equipment": {
+       "hat": 196,
+       "cloak": 225,
+       "armor": 208,
+       "weapon": 166,
+       "boots": 235,
+       "ornament": 249
+      },
+      "magics": [
+       296
+      ]
+     },
+     {
+      "roleId": 1,
+      "level": 5,
+      "exp": 0,
+      "hp": 28,
+      "mp": 10,
+      "maxHp": 240,
+      "maxMp": 240,
+      "equipment": {
+       "hat": 197,
+       "cloak": 0,
+       "armor": 210,
+       "weapon": 170,
+       "boots": 237,
+       "ornament": 248
+      },
+      "magics": [
+       297,
+       303,
+       306,
+       307,
+       309,
+       312,
+       316,
+       321,
+       327,
+       332
+      ]
+     },
+     {
+      "roleId": 2,
+      "level": 3,
+      "exp": 0,
+      "hp": 220,
+      "mp": 80,
+      "maxHp": 220,
+      "maxMp": 80,
+      "equipment": {
+       "hat": 199,
+       "cloak": 228,
+       "armor": 210,
+       "weapon": 163,
+       "boots": 238,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       337
+      ]
+     },
+     {
+      "roleId": 3,
+      "level": 48,
+      "exp": 0,
+      "hp": 810,
+      "mp": 790,
+      "maxHp": 810,
+      "maxMp": 790,
+      "equipment": {
+       "hat": 202,
+       "cloak": 234,
+       "armor": 210,
+       "weapon": 195,
+       "boots": 243,
+       "ornament": 260
+      },
+      "magics": [
+       295,
+       299,
+       302,
+       304,
+       308,
+       315,
+       320,
+       325,
+       336,
+       389
+      ]
+     },
+     {
+      "roleId": 4,
+      "level": 28,
+      "exp": 0,
+      "hp": 480,
+      "mp": 410,
+      "maxHp": 480,
+      "maxMp": 410,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 209,
+       "weapon": 192,
+       "boots": 0,
+       "ornament": 251
+      },
+      "magics": [
+       299,
+       302,
+       304,
+       305,
+       308,
+       318,
+       329,
+       352,
+       353,
+       394
+      ]
+     },
+     {
+      "roleId": 5,
+      "level": 40,
+      "exp": 0,
+      "hp": 3600,
+      "mp": 720,
+      "maxHp": 3600,
+      "maxMp": 720,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 215,
+       "weapon": 193,
+       "boots": 244,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       304,
+       308,
+       323,
+       329,
+       353,
+       374
+      ]
+     }
+    ],
+    "dirtyEvents": [
+     {
+      "id": 4,
+      "x": 1152,
+      "y": 384,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_117b",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 10,
+      "x": 1376,
+      "y": 272,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_119e",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 11,
+      "x": 1168,
+      "y": 376,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "s_1167",
+      "vanish": 0
+     },
+     {
+      "id": 12,
+      "x": 1328,
+      "y": 296,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 17,
+      "x": 1328,
+      "y": 1080,
+      "state": 1,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 20,
+      "x": 704,
+      "y": 1072,
+      "state": 2,
+      "dir": 2,
+      "trig": "s_1375",
+      "auto": "s_0008",
+      "vanish": 0
+     },
+     {
+      "id": 21,
+      "x": 656,
+      "y": 1144,
+      "state": 0,
+      "dir": 0,
+      "trig": "s_1387",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 25,
+      "x": 544,
+      "y": 288,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_1303",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 26,
+      "x": 1360,
+      "y": 1112,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_1308",
+      "auto": "s_000e",
+      "vanish": 0
+     },
+     {
+      "id": 27,
+      "x": 1360,
+      "y": 1064,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_130f",
+      "auto": "s_135d",
+      "vanish": 0
+     },
+     {
+      "id": 55,
+      "x": 1264,
+      "y": 1336,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 56,
+      "x": 1280,
+      "y": 1344,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 57,
+      "x": 1008,
+      "y": 1480,
+      "state": 0,
+      "dir": 1,
+      "trig": "s_12a3",
+      "auto": "s_12c2",
+      "vanish": 0
+     },
+     {
+      "id": 60,
+      "x": 1312,
+      "y": 1328,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12c8",
+      "auto": "s_12d6",
+      "vanish": 0
+     },
+     {
+      "id": 61,
+      "x": 1456,
+      "y": 1416,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cc",
+      "auto": "s_12db",
+      "vanish": 0
+     },
+     {
+      "id": 62,
+      "x": 1440,
+      "y": 1408,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cf",
+      "auto": "s_12e4",
+      "vanish": 0
+     },
+     {
+      "id": 63,
+      "x": 1024,
+      "y": 1680,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_13c5",
+      "auto": "s_141e",
+      "vanish": 0
+     },
+     {
+      "id": 74,
+      "x": 1424,
+      "y": 1416,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 75,
+      "x": 1440,
+      "y": 1424,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     }
+    ],
+    "dirtyScenes": []
+   }
+  },
+  {
+   "checkpoint": "after_drunken_daoist_s13ca",
+   "state": {
+    "sceneId": 3,
+    "mapId": 10,
+    "cash": 500,
+    "party": [
+     {
+      "roleId": 0,
+      "x": 1040,
+      "y": 1672,
+      "dir": 1
+     }
+    ],
+    "inventory": [],
+    "roles": [
+     {
+      "roleId": 0,
+      "level": 1,
+      "exp": 0,
+      "hp": 150,
+      "mp": 100,
+      "maxHp": 150,
+      "maxMp": 100,
+      "equipment": {
+       "hat": 196,
+       "cloak": 225,
+       "armor": 208,
+       "weapon": 166,
+       "boots": 235,
+       "ornament": 249
+      },
+      "magics": [
+       296
+      ]
+     },
+     {
+      "roleId": 1,
+      "level": 5,
+      "exp": 0,
+      "hp": 28,
+      "mp": 10,
+      "maxHp": 240,
+      "maxMp": 240,
+      "equipment": {
+       "hat": 197,
+       "cloak": 0,
+       "armor": 210,
+       "weapon": 170,
+       "boots": 237,
+       "ornament": 248
+      },
+      "magics": [
+       297,
+       303,
+       306,
+       307,
+       309,
+       312,
+       316,
+       321,
+       327,
+       332
+      ]
+     },
+     {
+      "roleId": 2,
+      "level": 3,
+      "exp": 0,
+      "hp": 220,
+      "mp": 80,
+      "maxHp": 220,
+      "maxMp": 80,
+      "equipment": {
+       "hat": 199,
+       "cloak": 228,
+       "armor": 210,
+       "weapon": 163,
+       "boots": 238,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       337
+      ]
+     },
+     {
+      "roleId": 3,
+      "level": 48,
+      "exp": 0,
+      "hp": 810,
+      "mp": 790,
+      "maxHp": 810,
+      "maxMp": 790,
+      "equipment": {
+       "hat": 202,
+       "cloak": 234,
+       "armor": 210,
+       "weapon": 195,
+       "boots": 243,
+       "ornament": 260
+      },
+      "magics": [
+       295,
+       299,
+       302,
+       304,
+       308,
+       315,
+       320,
+       325,
+       336,
+       389
+      ]
+     },
+     {
+      "roleId": 4,
+      "level": 28,
+      "exp": 0,
+      "hp": 480,
+      "mp": 410,
+      "maxHp": 480,
+      "maxMp": 410,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 209,
+       "weapon": 192,
+       "boots": 0,
+       "ornament": 251
+      },
+      "magics": [
+       299,
+       302,
+       304,
+       305,
+       308,
+       318,
+       329,
+       352,
+       353,
+       394
+      ]
+     },
+     {
+      "roleId": 5,
+      "level": 40,
+      "exp": 0,
+      "hp": 3600,
+      "mp": 720,
+      "maxHp": 3600,
+      "maxMp": 720,
+      "equipment": {
+       "hat": 202,
+       "cloak": 231,
+       "armor": 215,
+       "weapon": 193,
+       "boots": 244,
+       "ornament": 253
+      },
+      "magics": [
+       298,
+       304,
+       308,
+       323,
+       329,
+       353,
+       374
+      ]
+     }
+    ],
+    "dirtyEvents": [
+     {
+      "id": 4,
+      "x": 1152,
+      "y": 384,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_117b",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 10,
+      "x": 1376,
+      "y": 272,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_119e",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 11,
+      "x": 1168,
+      "y": 376,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "s_1167",
+      "vanish": 0
+     },
+     {
+      "id": 12,
+      "x": 1328,
+      "y": 296,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 20,
+      "x": 704,
+      "y": 1072,
+      "state": 2,
+      "dir": 2,
+      "trig": "s_1425",
+      "auto": "s_0008",
+      "vanish": 0
+     },
+     {
+      "id": 21,
+      "x": 656,
+      "y": 1144,
+      "state": 0,
+      "dir": 0,
+      "trig": "s_1387",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 25,
+      "x": 544,
+      "y": 288,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_1303",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 26,
+      "x": 1360,
+      "y": 1112,
+      "state": 2,
+      "dir": 1,
+      "trig": "s_1308",
+      "auto": "s_000e",
+      "vanish": 0
+     },
+     {
+      "id": 27,
+      "x": 1360,
+      "y": 1064,
+      "state": 2,
+      "dir": 0,
+      "trig": "s_130f",
+      "auto": "s_135d",
+      "vanish": 0
+     },
+     {
+      "id": 55,
+      "x": 1264,
+      "y": 1336,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 56,
+      "x": 1280,
+      "y": 1344,
+      "state": 0,
+      "dir": 0,
+      "trig": "",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 57,
+      "x": 1008,
+      "y": 1480,
+      "state": 0,
+      "dir": 1,
+      "trig": "s_12a3",
+      "auto": "s_12c2",
+      "vanish": 0
+     },
+     {
+      "id": 60,
+      "x": 1312,
+      "y": 1328,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12c8",
+      "auto": "s_12d6",
+      "vanish": 0
+     },
+     {
+      "id": 61,
+      "x": 1456,
+      "y": 1416,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cc",
+      "auto": "s_12db",
+      "vanish": 0
+     },
+     {
+      "id": 62,
+      "x": 1440,
+      "y": 1408,
+      "state": 0,
+      "dir": 2,
+      "trig": "s_12cf",
+      "auto": "s_12e4",
+      "vanish": 0
+     },
+     {
+      "id": 63,
+      "x": 1024,
+      "y": 1680,
+      "state": 0,
+      "dir": 0,
+      "trig": "s_13ca",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 74,
+      "x": 1424,
+      "y": 1416,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     },
+     {
+      "id": 75,
+      "x": 1440,
+      "y": 1424,
+      "state": 1,
+      "dir": 0,
+      "trig": "s_1fd5",
+      "auto": "",
+      "vanish": 0
+     }
+    ],
+    "dirtyScenes": []
+   }
+  }
+ ]
+}

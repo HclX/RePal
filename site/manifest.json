@@ -1,0 +1,19 @@
+{
+  "name": "RePal — 仙剑奇侠传",
+  "short_name": "RePal",
+  "description": "1995 DOS Chinese Paladin HD Remake (Pure Rust + WebAssembly)",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#070b0e",
+  "theme_color": "#142026",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

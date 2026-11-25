@@ -1,0 +1,13 @@
+{
+  "format": "repal-packs/1",
+  "schema_version": 1,
+  "version": "packs-v2",
+  "manifest": {
+    "urls": [
+      "https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@packs-v2/pack-manifest.json",
+      "https://raw.githubusercontent.com/HclX/RePal_Packs/packs-v2/pack-manifest.json"
+    ],
+    "sha256": "a85e74c1f652e963eb204e250f48f8c908726ebb89c4ed85e227dff8220005e7",
+    "size_bytes": 76829
+  }
+}

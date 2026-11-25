@@ -1,0 +1,97 @@
+name: CI Verification Suite
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch pinned legacy assets (only for legacy tarball assets-lock.json when ASSETS_REPO_TOKEN is set)
+        env:
+          GH_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "ASSETS_REPO_TOKEN not set; running offline unit tests only."
+            exit 0
+          fi
+          python3 -c '
+          import json, subprocess, hashlib, pathlib
+          lock = json.load(open("assets-lock.json"))
+          if lock.get("format") == "repal-packs/1" or "filename" not in lock:
+              print("repal-packs/1 manifest lock active; skipping legacy tarball download.")
+              raise SystemExit(0)
+          subprocess.check_call([
+              "gh", "release", "download", lock["tag"],
+              "--repo", lock["repo"],
+              "--pattern", lock["filename"],
+              "--output", "pal-assets.tar.gz",
+          ])
+          actual = hashlib.sha256(pathlib.Path("pal-assets.tar.gz").read_bytes()).hexdigest()
+          assert actual == lock["sha256"], f"SHA-256 mismatch: {actual}"
+          subprocess.check_call(["tar", "-xzf", "pal-assets.tar.gz", "-C", "site"])
+          pathlib.Path("pal-assets.tar.gz").unlink()
+          '
+
+      - name: Install Rust toolchain with wasm32 target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo registry & target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Rust workspace unit & pal-headless visual E2E tests
+        run: |
+          cargo check --workspace --tests
+          if [ -f site/assets/data/scenes.yaml ]; then
+            cargo test --workspace
+          else
+            cargo test --lib --workspace
+            cargo test -p pal-desktop
+          fi
+
+      - name: Build pal-wasm for wasm32-unknown-unknown
+        run: |
+          cargo build -p pal-wasm --target wasm32-unknown-unknown --release
+          mkdir -p site/wasm
+          cp target/wasm32-unknown-unknown/release/pal_wasm.wasm site/wasm/pal.wasm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python test dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run offline JS & Python hygiene suites
+        run: |
+          node tools/tests/test_host.mjs
+          node tools/tests/test_pack_manager.mjs
+          python3 -m pytest tools/tests/test_repo_hygiene.py -v
+
+      - name: Run asset-dependent browser-host & Python suites (when assets are available)
+        run: |
+          if [ ! -f site/assets/data/scenes.yaml ]; then
+            echo "Assets not present; skipping asset-dependent JS/Python suites."
+            exit 0
+          fi
+          node tools/tests/test_headless_harness.mjs
+          node tools/test_rust_core_host.mjs
+          python3 tools/audit_script_parity.py
+          python3 -m pytest tools/tests/ -v

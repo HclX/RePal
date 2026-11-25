@@ -1,0 +1,25 @@
+{
+  "issue": "#104",
+  "title": "Classic DOS save 10.rpg anchor walks and settles without stalling",
+  "replay": {
+    "kind": "PalRemake_CoreReplay_v1",
+    "seed": 1,
+    "anchor": {
+      "type": "orig_save",
+      "file": "10.rpg"
+    },
+    "log": [
+      { "t": 0, "i": [0, 0, 0, 0, 0, 0] },
+      { "t": 4, "i": [0, 0, 0, 0, 0, 0] },
+      { "t": 8, "i": [3, 0, 0, 0, 0, 0] },
+      { "t": 12, "i": [3, 0, 0, 0, 0, 0] },
+      { "t": 16, "i": [2, 0, 0, 0, 0, 0] },
+      { "t": 20, "i": [2, 1, 0, 0, 0, 0] }
+    ]
+  },
+  "run_ticks": 30,
+  "settle_after": true,
+  "expect": [
+    { "at_end": true, "busy": false, "min_ticks": 30 }
+  ]
+}
