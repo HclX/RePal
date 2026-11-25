@@ -3,10 +3,14 @@
 //! Runs the exact same shared `pal-runtime` (`pal-core` + `pal-render` + `pal-ui`) pipeline
 //! natively on x86_64 using synchronous local disk asset loading (`site/assets/`).
 
+#[cfg(feature = "disk")]
 pub mod capture;
+#[cfg(feature = "disk")]
 pub mod replay;
 pub mod text_mode;
 
+#[cfg(feature = "disk")]
+mod native_app {
 use pal_core::game::{HostCmd, HostReply, TickInput};
 use pal_core::isometric::CollisionGrid;
 use pal_core::render::try_manual_step;
@@ -405,3 +409,7 @@ pub fn non_black_pixel_ratio_fb(fb: &pal_render::framebuffer::Framebuffer) -> f6
         .count();
     (non_black as f64) / (total as f64)
 }
+} // mod native_app
+
+#[cfg(feature = "disk")]
+pub use native_app::*;

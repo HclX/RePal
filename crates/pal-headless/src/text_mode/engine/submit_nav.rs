@@ -456,6 +456,7 @@ impl TextEngine {
                 }
                 self.dispatch_ui_key(host, trimmed, uk)
             }
+            #[cfg(feature = "disk")]
             Command::View(v) => {
                 if let Err(e) = apply_named_view_rt(host.runtime_mut(), &v) {
                     return ExecOutcome::Done(self.err_reply(host, trimmed, &e));
@@ -469,6 +470,12 @@ impl TextEngine {
                     vec![format!("[view] switched to {v}")],
                 ))
             }
+            #[cfg(not(feature = "disk"))]
+            Command::View(_) => ExecOutcome::Done(self.err_reply(
+                host,
+                trimmed,
+                "view is not available in web wasm",
+            )),
             Command::Click { x, y } => {
                 if current_mode(host.runtime()) == "explore" {
                     let (start_scene, cur_pos) = leader_scene_pos(host.runtime());

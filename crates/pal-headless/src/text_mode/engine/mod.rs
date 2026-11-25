@@ -10,11 +10,15 @@ mod submit_debug;
 mod submit_nav;
 mod submit_rpg_io;
 
+#[cfg(feature = "disk")]
 pub use helpers::{
     confine_socket_path, confine_socket_write_path, default_magic_target, load_save_into_rt,
     resolve_save_path,
 };
+#[cfg(not(feature = "disk"))]
+pub use helpers::default_magic_target;
 use helpers::*;
+#[cfg(feature = "disk")]
 use crate::replay::{apply_named_view_rt, compare_with_golden_png_fb, run_core_replay_rt};
 use crate::text_mode::command::{parse_command, Command};
 use crate::text_mode::response::{
@@ -22,10 +26,12 @@ use crate::text_mode::response::{
     is_fair_visible_exit, item_target_kind, magic_target_kind, runtime_camera, ResponseOpts,
 };
 use crate::text_mode::{ClientOrigin, MinimapMode, ObsMode, TextHost};
+#[cfg(feature = "disk")]
 use crate::{export_fb_to_png, non_black_pixel_ratio_fb};
 use pal_core::game::{BattleCmd, TickInput, MOVE_TICKS};
 use pal_ui::{PointerEvent, PointerKind, UiAction, UiKey, UiView};
 use std::collections::HashMap;
+#[cfg(feature = "disk")]
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
@@ -263,6 +269,7 @@ pub struct TextEngine {
     last_battle_feed_total: u64,
     last_cmd_was_think: bool,
     active_task: Option<ActiveTask>,
+    #[cfg(feature = "disk")]
     capture: Option<crate::capture::FrameRecorder>,
 }
 
@@ -289,11 +296,13 @@ impl TextEngine {
             last_battle_feed_total: 0,
             last_cmd_was_think: false,
             active_task: None,
+            #[cfg(feature = "disk")]
             capture: None,
         }
     }
 
     /// Capture one rendered frame into the active [`FrameRecorder`] (if `capture start` is running).
+    #[cfg(feature = "disk")]
     pub fn capture_tick_if_active<H: TextHost>(&mut self, host: &mut H) {
         if self.capture.is_none() {
             return;
@@ -313,6 +322,9 @@ impl TextEngine {
             let _ = self.capture.take().map(|c| c.finish());
         }
     }
+
+    #[cfg(not(feature = "disk"))]
+    pub fn capture_tick_if_active<H: TextHost>(&mut self, _host: &mut H) {}
 
     fn check_remote_write_quota(&mut self, origin: ClientOrigin, est_bytes: u64) -> Result<(), String> {
         if !origin.is_remote() || self.allow_unsafe_remote {

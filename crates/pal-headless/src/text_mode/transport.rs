@@ -35,32 +35,7 @@ static NEXT_TCP_CLIENT_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Provenance of an incoming command, used for per-client notice cursors (#233)
 /// and socket/remote security policy enforcement (#193).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum ClientOrigin {
-    #[default]
-    Local,
-    Tcp {
-        client_id: u64,
-        is_loopback: bool,
-    },
-}
-
-impl ClientOrigin {
-    pub fn client_id(self) -> u64 {
-        match self {
-            Self::Local => 0,
-            Self::Tcp { client_id, .. } => client_id,
-        }
-    }
-
-    pub fn is_socket(self) -> bool {
-        matches!(self, Self::Tcp { .. })
-    }
-
-    pub fn is_remote(self) -> bool {
-        matches!(self, Self::Tcp { is_loopback: false, .. })
-    }
-}
+pub use crate::text_mode::ClientOrigin;
 
 struct ClientSlotGuard {
     total: Arc<AtomicUsize>,

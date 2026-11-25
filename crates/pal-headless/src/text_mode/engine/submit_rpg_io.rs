@@ -429,6 +429,7 @@ impl TextEngine {
                 ))
             }
 
+            #[cfg(feature = "disk")]
             Command::Shot { path: opt_path, with_thought } => {
                 if let Err(e) = self.check_remote_write_quota(origin, 256 * 1024) {
                     return ExecOutcome::Done(self.err_reply_code(host, trimmed, "quota_exceeded", &e));
@@ -508,6 +509,7 @@ impl TextEngine {
                 ExecOutcome::Done(self.ok_reply(host, trimmed, false, artifacts, log))
             }
 
+            #[cfg(feature = "disk")]
             Command::CaptureStart {
                 path,
                 stride,
@@ -566,6 +568,7 @@ impl TextEngine {
                 }
             }
 
+            #[cfg(feature = "disk")]
             Command::CaptureStop => {
                 let Some(rec) = self.capture.take() else {
                     return ExecOutcome::Done(self.err_reply(
@@ -604,6 +607,7 @@ impl TextEngine {
                 }
             }
 
+            #[cfg(feature = "disk")]
             Command::CaptureStatus => {
                 let (art, msg) = if let Some(rec) = &self.capture {
                     (
@@ -639,6 +643,7 @@ impl TextEngine {
                 ))
             }
 
+            #[cfg(feature = "disk")]
             Command::Golden {
                 ref_path,
                 max_diff,
@@ -731,6 +736,7 @@ impl TextEngine {
                 }
             }
 
+            #[cfg(feature = "disk")]
             Command::CoreReplay { path, until_tick } => {
                 let replay_path = if origin.is_socket() {
                     match confine_socket_path(host.out_dir(), &path) {
@@ -764,6 +770,7 @@ impl TextEngine {
                 }
             }
 
+            #[cfg(feature = "disk")]
             Command::DumpState(opt_path) => {
                 let state_json = host
                     .runtime()
@@ -832,6 +839,7 @@ impl TextEngine {
                 ExecOutcome::Pending
             }
 
+            #[cfg(feature = "disk")]
             Command::Save(path) => {
                 let mode = current_mode(host.runtime());
                 if mode != "explore" {
@@ -883,6 +891,7 @@ impl TextEngine {
                 ))
             }
 
+            #[cfg(feature = "disk")]
             Command::Load(path) => {
                 // Socket clients are confined to `out_dir` (and bare names in `assets_root/orig_saves`, #193).
                 let resolved = if origin.is_socket() {
@@ -930,6 +939,7 @@ impl TextEngine {
                 ExecOutcome::Pending
             }
 
+            #[cfg(feature = "disk")]
             Command::ExportReplay(path) => {
                 if let Err(e) = self.check_remote_write_quota(origin, 256 * 1024) {
                     return ExecOutcome::Done(self.err_reply_code(host, trimmed, "quota_exceeded", &e));
@@ -1006,6 +1016,22 @@ impl TextEngine {
                     )],
                 ))
             }
+
+            #[cfg(not(feature = "disk"))]
+            Command::Shot { .. }
+            | Command::CaptureStart { .. }
+            | Command::CaptureStop
+            | Command::CaptureStatus
+            | Command::Golden { .. }
+            | Command::CoreReplay { .. }
+            | Command::DumpState(_)
+            | Command::Save(_)
+            | Command::Load(_)
+            | Command::ExportReplay(_) => ExecOutcome::Done(self.err_reply(
+                host,
+                trimmed,
+                "this disk/file command is not available in web wasm",
+            )),
 
             Command::Think(opt_text) => {
                 if host.runtime().game.is_none() {

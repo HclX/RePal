@@ -3,10 +3,14 @@ name = "pal-headless"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["disk"]
+disk = ["pal-runtime/disk", "dep:image"]
+
 [dependencies]
 pal-core = { path = "../pal-core" }
 pal-render = { path = "../pal-render" }
-pal-runtime = { path = "../pal-runtime", features = ["disk"] }
+pal-runtime = { path = "../pal-runtime" }
 pal-ui = { path = "../pal-ui" }
-image = { version = "0.25", default-features = false, features = ["png", "webp"] }
+image = { version = "0.25", default-features = false, features = ["png", "webp"], optional = true }
 serde_json = "1"

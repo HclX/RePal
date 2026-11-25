@@ -303,6 +303,9 @@ export class RustCoreHost {
       } else if (this.replay) {
         this._replayStep();
         this.pumpCmds();
+      } else if (this.app.webAgent?.isBusy?.()) {
+        this.app.webAgent.stepOneTick();
+        this.pumpCmds();
       } else {
         if (this.w.core_is_blocked()) {
           this.w.core_tick(-1, 0, 0, 0, 0, 0);

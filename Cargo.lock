@@ -1492,6 +1492,7 @@ name = "pal-wasm"
 version = "0.1.0"
 dependencies = [
  "pal-core",
+ "pal-headless",
  "pal-render",
  "pal-runtime",
  "pal-ui",

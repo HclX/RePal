@@ -8,6 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 pal-core = { path = "../pal-core" }
+pal-headless = { path = "../pal-headless", default-features = false }
 pal-render = { path = "../pal-render" }
 pal-runtime = { path = "../pal-runtime" }
 pal-ui = { path = "../pal-ui" }

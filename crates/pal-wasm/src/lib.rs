@@ -11,6 +11,7 @@ use pal_ui::{PointerEvent, PointerKind, UiAction, UiKey, UiView};
 use std::cell::RefCell;
 use std::collections::VecDeque;
 
+mod agent;
 mod core_host;
 
 struct EngineState {
@@ -25,6 +26,7 @@ struct EngineState {
     pending_ui_actions: VecDeque<UiAction>,
     last_action_args: [u32; 2],
     sha256: pal_runtime::crypto::Sha256,
+    agent: agent::WebAgentState,
 }
 
 impl EngineState {
@@ -41,6 +43,7 @@ impl EngineState {
             pending_ui_actions: VecDeque::new(),
             last_action_args: [0, 0],
             sha256: pal_runtime::crypto::Sha256::new(),
+            agent: agent::WebAgentState::new(),
         }
     }
 }

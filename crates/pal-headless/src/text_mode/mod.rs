@@ -10,16 +10,48 @@ pub mod command;
 pub mod engine;
 pub mod help;
 pub mod response;
+#[cfg(feature = "disk")]
 pub mod transport;
 
 pub use command::{parse_command, split_batch_commands, Command, TargetRef};
-pub use engine::{load_save_into_rt, resolve_save_path, ExecOutcome, TextEngine, TextReply};
+pub use engine::{ExecOutcome, TextEngine, TextReply};
+#[cfg(feature = "disk")]
+pub use engine::{load_save_into_rt, resolve_save_path};
 pub use response::{
     build_response_json, build_response_json_ex, build_ui_menu, current_mode, event_screen_bbox,
     event_visible_in_viewport, format_plain_response, format_prompt, is_fair_visible_exit,
     runtime_camera, ui_view_id, ResponseOpts, TEXT_PROTOCOL_VERSION,
 };
-pub use transport::{write_reply, ChannelServer, ClientOrigin, IncomingCmd};
+#[cfg(feature = "disk")]
+pub use transport::{write_reply, ChannelServer, IncomingCmd};
+
+/// Provenance of an incoming Text Mode command (`Local` stdio/WASM vs `Tcp` socket client).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ClientOrigin {
+    #[default]
+    Local,
+    Tcp {
+        client_id: u64,
+        is_loopback: bool,
+    },
+}
+
+impl ClientOrigin {
+    pub fn client_id(self) -> u64 {
+        match self {
+            Self::Local => 0,
+            Self::Tcp { client_id, .. } => client_id,
+        }
+    }
+
+    pub fn is_socket(self) -> bool {
+        matches!(self, Self::Tcp { .. })
+    }
+
+    pub fn is_remote(self) -> bool {
+        matches!(self, Self::Tcp { is_loopback: false, .. })
+    }
+}
 
 /// Minimap emission policy for Text Mode responses (#234).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -77,13 +109,20 @@ pub struct RngStatus {
     pub skippable: bool,
 }
 
+#[cfg(feature = "disk")]
 use crate::HeadlessApp;
 use pal_core::Language;
 use pal_runtime::PalRuntime;
-use pal_ui::{UiAction, UiView};
+use pal_ui::UiAction;
+#[cfg(feature = "disk")]
+use pal_ui::UiView;
+#[cfg(feature = "disk")]
 use std::fs;
+#[cfg(feature = "disk")]
 use std::io::{self, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(feature = "disk")]
+use std::path::PathBuf;
 
 /// Platform-agnostic host contract bridging [`TextEngine`] to either headless or GUI runtimes.
 pub trait TextHost {
@@ -135,6 +174,10 @@ pub trait TextHost {
 }
 
 /// Configuration for headless Text Mode (`repal --text ...`).
+#[cfg(feature = "disk")]
+mod native_host {
+use super::*;
+
 #[derive(Clone, Debug)]
 pub struct TextModeConfig {
     pub assets_root: PathBuf,
@@ -497,3 +540,7 @@ pub fn run_text_mode(cfg: TextModeConfig) -> i32 {
     }
     if engine.golden_failed_any { 2 } else { 0 }
 }
+} // mod native_host
+
+#[cfg(feature = "disk")]
+pub use native_host::*;

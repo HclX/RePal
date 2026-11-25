@@ -22,6 +22,7 @@ import { RustCoreHost, fetchArrayBuffer } from "./host/core-host.js";
 import { PackManager } from "./host/pack-manager.js";
 import { GamepadController } from "./host/gamepad.js";
 import { WebReplayTheater } from "./host/replay-theater.js";
+import { WebAgentHost } from "./host/web-agent.js";
 import { saveLocalReplay } from "./host/repal-loader.js";
 
 const DEFAULT_PACK_MANIFEST_URL =
@@ -127,6 +128,7 @@ class PalRemakeApp {
       this.wireHud();
       this.gamepad = new GamepadController(this);
       this.replayTheater = new WebReplayTheater(this);
+      this.webAgent = new WebAgentHost(this);
       this.wireInputs();
       this.audio.installGestureUnlock();
 
@@ -157,12 +159,17 @@ class PalRemakeApp {
           .catch(() => {});
       }
 
-      // Optional URL auto-launch: `?replay=./replays/06_ch2_suzhou_full_to_hidden_dragon_cave.repal`
-      const replayParam = new URLSearchParams(window.location.search).get("replay");
+      // Optional URL auto-launch: `?replay=...` or `?agent_ws=ws://127.0.0.1:9999`
+      const urlParams = new URLSearchParams(window.location.search);
+      const replayParam = urlParams.get("replay");
       if (replayParam) {
         this.replayTheater.startFromUrl(replayParam).catch((err) => {
           this.hud.showToast(`加载录像失败：${err.message}`);
         });
+      }
+      const agentWsParam = urlParams.get("agent_ws");
+      if (agentWsParam) {
+        this.webAgent.connectWs(agentWsParam);
       }
 
       requestAnimationFrame((t) => this.frameLoop(t));
@@ -424,6 +431,11 @@ class PalRemakeApp {
       return;
     }
     this.gamepad?.markInputMode("keyboard");
+    if (e.key === "Escape" && this.webAgent?.isBusy?.()) {
+      e.preventDefault();
+      this.webAgent.cancel();
+      return;
+    }
     // In-game Replay Library keyboard/remote navigation
     if (this.replayTheater?.isLibraryOpen()) {
       e.preventDefault();

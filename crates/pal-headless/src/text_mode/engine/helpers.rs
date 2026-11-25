@@ -374,23 +374,26 @@ pub fn confine_socket_path(base_dir: &Path, raw: &str) -> Result<PathBuf, String
     }
     // Check canonical containment on the deepest existing ancestor (even when `base_dir`
     // itself hasn't been created yet) to prevent symlink escapes (#193, #262).
-    let deepest_existing = |mut p: &Path| -> Option<PathBuf> {
-        loop {
-            if p.exists() {
-                return fs::canonicalize(p).ok();
+    #[cfg(feature = "disk")]
+    {
+        let deepest_existing = |mut p: &Path| -> Option<PathBuf> {
+            loop {
+                if p.exists() {
+                    return fs::canonicalize(p).ok();
+                }
+                match p.parent() {
+                    Some(parent) if !parent.as_os_str().is_empty() => p = parent,
+                    _ => return None,
+                }
             }
-            match p.parent() {
-                Some(parent) if !parent.as_os_str().is_empty() => p = parent,
-                _ => return None,
-            }
-        }
-    };
-    if let Some(canon_base) = deepest_existing(base_dir) {
-        if let Some(canon_probe) = deepest_existing(&joined) {
-            if !canon_probe.starts_with(&canon_base) {
-                return Err(format!(
-                    "symlink path '{trimmed}' escapes allowed directory"
-                ));
+        };
+        if let Some(canon_base) = deepest_existing(base_dir) {
+            if let Some(canon_probe) = deepest_existing(&joined) {
+                if !canon_probe.starts_with(&canon_base) {
+                    return Err(format!(
+                        "symlink path '{trimmed}' escapes allowed directory"
+                    ));
+                }
             }
         }
     }
@@ -684,6 +687,7 @@ pub fn resolve_save_path(assets_root: &Path, p: &Path) -> PathBuf {
     p.to_path_buf()
 }
 
+#[cfg(feature = "disk")]
 pub fn load_save_into_rt(rt: &mut pal_runtime::PalRuntime, path: &Path) -> Result<(), String> {
     if path
         .extension()
