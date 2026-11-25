@@ -287,6 +287,8 @@ pub struct World {
     pub battlefield_id: i32,
     pub cash: u32,
     pub party: Vec<PartyMember>,
+    /// Authentic SDLPAL `s_iThisStepFrame` 4-phase party walk cycle (`0..4`).
+    pub party_step_phase: u8,
     /// Party vertical Z-sort layer (`gpGlobals->wLayer`, set by 3-arg `party_walk_step`, #186).
     pub party_layer: i32,
     pub trail: VecDeque<(i32, i32, u8)>,
@@ -325,6 +327,7 @@ impl World {
             battlefield_id: 0,
             cash: 0,
             party: vec![PartyMember { role_id: 0, x: 1312, y: 288, dir: 0, frame: 0 }],
+            party_step_phase: 0,
             party_layer: 0,
             trail: VecDeque::new(),
             follower_sprites: Vec::new(),
@@ -529,12 +532,20 @@ impl World {
         if self.trail.len() > 24 {
             self.trail.pop_back();
         }
+        // Authentic SDLPAL PAL_UpdatePartyGestures (`scene.c:669-679`):
+        // 4-phase walk cycle (0->1->0->2 for leader, opposite foot 0->2->0->1 for followers).
+        self.party_step_phase = (self.party_step_phase + 1) % 4;
+        let (leader_frame, follower_frame) = if self.party_step_phase & 1 != 0 {
+            let lf = (self.party_step_phase + 1) / 2;
+            (lf, 3 - lf)
+        } else {
+            (0, 0)
+        };
         let l = &mut self.party[0];
         l.x = nx;
         l.y = ny;
         l.dir = dir & 3;
-        l.frame = (l.frame + 1) % 3;
-        let frame = l.frame;
+        l.frame = leader_frame;
         for i in 1..self.party.len() {
             let target_k = (i * 2 - 1).min(self.trail.len().saturating_sub(1));
             // If a follower loaded from a DOS `.rpg` save starts further back along `rgTrail`
@@ -556,7 +567,7 @@ impl World {
                 m.x = x;
                 m.y = y;
                 m.dir = d;
-                m.frame = frame;
+                m.frame = follower_frame;
             }
         }
     }
@@ -709,5 +720,25 @@ impl World {
 
     pub fn object_script(&self, obj_id: i32) -> LabelId {
         self.object_scripts.get(&obj_id).copied().unwrap_or(NO_LABEL)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sdlpal_party_walk_uses_4_phase_stride_and_alternating_follower_feet() {
+        let mut w = World::empty();
+        w.party.push(PartyMember { role_id: 1, x: 1312, y: 288, dir: 0, frame: 0 });
+        let mut leader_seq = Vec::new();
+        let mut follower_seq = Vec::new();
+        for i in 1..=8 {
+            w.step_party_to(1312 - i * 16, 288 + i * 8, 0);
+            leader_seq.push(w.party[0].frame);
+            follower_seq.push(w.party[1].frame);
+        }
+        assert_eq!(leader_seq, vec![1, 0, 2, 0, 1, 0, 2, 0]);
+        assert_eq!(follower_seq, vec![2, 0, 1, 0, 2, 0, 1, 0]);
     }
 }
