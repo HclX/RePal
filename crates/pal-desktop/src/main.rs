@@ -230,25 +230,119 @@ impl DesktopApp {
         }
     }
 
+    fn is_pack_key_error(err: &str) -> bool {
+        err.contains("is encrypted")
+            || err.contains("REPAL_PACK_KEY")
+            || err.contains("unwrap_pack_key")
+            || err.contains("authentication failed")
+            || err.contains("Invalid pack key")
+    }
+
+    fn mount_packs_with_key_prompt(
+        &self,
+        packs_dir: &std::path::Path,
+        loose_overlay: Option<PathBuf>,
+    ) -> Result<OverlayVfs, String> {
+        let interactive = !self.cfg.text_stdio
+            && self.cfg.batch_cmds.is_none()
+            && self.cfg.script_file.is_none();
+
+        let mut retry_hint: Option<String> = None;
+        match load_pack_key_from_env_or_dir(Some(&self.cfg.user_dir)) {
+            Ok(key) => {
+                match OverlayVfs::from_packs_dir(
+                    packs_dir.to_path_buf(),
+                    key,
+                    loose_overlay.clone(),
+                    true,
+                ) {
+                    Ok(v) => return Ok(v),
+                    Err(e) if !interactive || !Self::is_pack_key_error(&e) => {
+                        return Err(format!(
+                            "Failed to mount asset packs from {}: {e}",
+                            packs_dir.display()
+                        ));
+                    }
+                    Err(_) if key.is_some() => {
+                        retry_hint = Some(
+                            "Stored key could not decrypt the asset packs. Please re-enter the 64-hex key.\n本地密钥无法解密资源包，请重新输入 64 位十六进制密钥。"
+                                .to_string(),
+                        );
+                    }
+                    Err(_) => {}
+                }
+            }
+            Err(e) if !interactive => {
+                return Err(format!("Invalid pack key: {e}"));
+            }
+            Err(_) => {
+                retry_hint = Some(
+                    "Stored pack.key is invalid. Please enter a valid 64-hex key.\n本地 pack.key 格式无效，请重新输入 64 位十六进制密钥。"
+                        .to_string(),
+                );
+            }
+        }
+
+        let key_file_hint = self.cfg.user_dir.join("pack.key");
+        loop {
+            let prompt = match &retry_hint {
+                Some(h) => h.clone(),
+                None => "Enter the 64-hex Asset Pack Key to decrypt RePal assets (saved locally on success):\n请输入 64 位十六进制资源包密钥（验证成功后将自动保存到本地）："
+                    .to_string(),
+            };
+            let Some(entered) = os_bridge::run_os_pack_key_prompt(&prompt) else {
+                return Err(format!(
+                    "Encrypted asset packs require a 64-hex key (set REPAL_PACK_KEY or save to {}).",
+                    key_file_hint.display()
+                ));
+            };
+            let parsed_key = match pal_runtime::crypto::parse_key_hex(&entered) {
+                Ok(k) => k,
+                Err(_) => {
+                    retry_hint = Some(
+                        "Invalid key format — expected 64 hexadecimal characters. Please try again.\n密钥格式错误（需要 64 位十六进制字符），请重试。"
+                            .to_string(),
+                    );
+                    continue;
+                }
+            };
+            match OverlayVfs::from_packs_dir(
+                packs_dir.to_path_buf(),
+                Some(parsed_key),
+                loose_overlay.clone(),
+                true,
+            ) {
+                Ok(vfs) => {
+                    if let Err(e) = os_bridge::save_pack_key_file(&self.cfg.user_dir, &entered) {
+                        eprintln!("[repal] warning: failed to save pack.key: {e}");
+                    }
+                    return Ok(vfs);
+                }
+                Err(e) if Self::is_pack_key_error(&e) => {
+                    retry_hint = Some(
+                        "Decryption failed — wrong key. Please try again.\n解密失败，密钥不正确，请重新输入。"
+                            .to_string(),
+                    );
+                }
+                Err(e) => {
+                    return Err(format!(
+                        "Failed to mount asset packs from {}: {e}",
+                        packs_dir.display()
+                    ));
+                }
+            }
+        }
+    }
+
     pub(crate) fn finish_boot(&mut self) {
         let user_cfg = UserConfig::load(&self.cfg.config_path);
         let hd_mode = self.cfg.hd_mode_override.unwrap_or(user_cfg.hd_mode);
         self.vfs = if let Some(packs_dir) = &self.cfg.packs_dir_arg {
-            let key = match load_pack_key_from_env_or_dir(Some(&self.cfg.user_dir)) {
-                Ok(k) => k,
-                Err(e) => {
-                    self.splash.error = Some(format!("Invalid pack key: {e}"));
-                    return;
-                }
-            };
             let loose_overlay = self.cfg.assets_arg.as_deref().map(PathBuf::from);
-            match OverlayVfs::from_packs_dir(packs_dir.clone(), key, loose_overlay, true) {
+            match self.mount_packs_with_key_prompt(packs_dir, loose_overlay) {
                 Ok(v) => v,
                 Err(e) => {
-                    self.splash.error = Some(format!(
-                        "Failed to mount asset packs from {}: {e}",
-                        packs_dir.display()
-                    ));
+                    self.splash.error = Some(e);
                     return;
                 }
             }

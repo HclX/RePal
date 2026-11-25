@@ -10,6 +10,15 @@ pub(crate) fn ps_escape_single_quoted(path: &Path) -> String {
     path.display().to_string().replace('\'', "''")
 }
 
+/// Escape an arbitrary (possibly multi-line) string for inclusion inside a single-quoted
+/// PowerShell string literal.
+#[cfg(any(target_os = "windows", test))]
+pub(crate) fn ps_escape_single_quoted_text(text: &str) -> String {
+    text.replace('\'', "''")
+        .replace('\r', "")
+        .replace('\n', "' + [Environment]::NewLine + '")
+}
+
 /// Open `dir` in the host OS file manager (creating it first if missing).
 pub(crate) fn open_folder_in_os(dir: &Path) {
     let _ = fs::create_dir_all(dir);
@@ -94,6 +103,126 @@ pub(crate) fn run_os_file_picker() -> Option<PathBuf> {
         }
         None
     }
+}
+
+/// Show a native OS password-entry dialog prompting the user for the 64-hex encrypted asset pack
+/// key. Returns `Some(key_hex)` on OK, or `None` on Cancel / unavailable dialog backend.
+pub(crate) fn run_os_pack_key_prompt(prompt: &str) -> Option<String> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        let escaped = ps_escape_single_quoted_text(prompt);
+        let script = format!(
+            "Add-Type -AssemblyName System.Windows.Forms; \
+             Add-Type -AssemblyName System.Drawing; \
+             $f = New-Object System.Windows.Forms.Form; \
+             $f.Text = 'RePal — Asset Pack Key'; \
+             $f.ClientSize = New-Object System.Drawing.Size(480, 168); \
+             $f.StartPosition = 'CenterScreen'; \
+             $f.FormBorderStyle = 'FixedDialog'; \
+             $f.MaximizeBox = $false; \
+             $f.MinimizeBox = $false; \
+             $f.TopMost = $true; \
+             $lbl = New-Object System.Windows.Forms.Label; \
+             $lbl.Text = '{escaped}'; \
+             $lbl.Location = New-Object System.Drawing.Point(16, 14); \
+             $lbl.Size = New-Object System.Drawing.Size(448, 56); \
+             $tb = New-Object System.Windows.Forms.TextBox; \
+             $tb.Location = New-Object System.Drawing.Point(16, 78); \
+             $tb.Size = New-Object System.Drawing.Size(448, 24); \
+             $tb.UseSystemPasswordChar = $true; \
+             $ok = New-Object System.Windows.Forms.Button; \
+             $ok.Text = 'OK'; \
+             $ok.Location = New-Object System.Drawing.Point(296, 120); \
+             $ok.Size = New-Object System.Drawing.Size(80, 28); \
+             $ok.DialogResult = [System.Windows.Forms.DialogResult]::OK; \
+             $cancel = New-Object System.Windows.Forms.Button; \
+             $cancel.Text = 'Cancel'; \
+             $cancel.Location = New-Object System.Drawing.Point(384, 120); \
+             $cancel.Size = New-Object System.Drawing.Size(80, 28); \
+             $cancel.DialogResult = [System.Windows.Forms.DialogResult]::Cancel; \
+             $f.Controls.AddRange(@($lbl, $tb, $ok, $cancel)); \
+             $f.AcceptButton = $ok; \
+             $f.CancelButton = $cancel; \
+             $f.Add_Shown({{ $f.Activate(); $tb.Focus() }}); \
+             if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {{ [Console]::Out.Write($tb.Text) }}"
+        );
+        let mut cmd = std::process::Command::new("powershell");
+        cmd.creation_flags(0x0800_0000);
+        let out = cmd
+            .args(["-NoProfile", "-STA", "-Command", &script])
+            .output()
+            .ok()?;
+        if !out.status.success() {
+            return None;
+        }
+        let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        return (!s.is_empty()).then_some(s);
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let script = "on run argv\n\
+                      text returned of (display dialog (item 1 of argv) with title \"RePal — Asset Pack Key\" default answer \"\" with hidden answer)\n\
+                      end run";
+        let out = std::process::Command::new("osascript")
+            .args(["-e", script, "--", prompt])
+            .output()
+            .ok()?;
+        if !out.status.success() {
+            return None;
+        }
+        let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        return (!s.is_empty()).then_some(s);
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        match std::process::Command::new("zenity")
+            .args([
+                "--entry",
+                "--hide-text",
+                "--title=RePal — Asset Pack Key",
+                &format!("--text={prompt}"),
+                "--width=440",
+            ])
+            .output()
+        {
+            Ok(out) => {
+                if !out.status.success() {
+                    return None;
+                }
+                let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                return (!s.is_empty()).then_some(s);
+            }
+            Err(_) => {}
+        }
+        if let Ok(out) = std::process::Command::new("kdialog")
+            .args(["--password", prompt, "--title", "RePal — Asset Pack Key"])
+            .output()
+        {
+            if out.status.success() {
+                let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                return (!s.is_empty()).then_some(s);
+            }
+        }
+        None
+    }
+}
+
+/// Validate and persist the 64-hex master pack key to `<user_dir>/pack.key` (mode `0600` on Unix).
+pub(crate) fn save_pack_key_file(user_dir: &Path, key_hex: &str) -> Result<PathBuf, String> {
+    let trimmed = key_hex.trim();
+    let _ = pal_runtime::crypto::parse_key_hex(trimmed)?;
+    fs::create_dir_all(user_dir)
+        .map_err(|e| format!("create {}: {e}", user_dir.display()))?;
+    let path = user_dir.join("pack.key");
+    fs::write(&path, format!("{}\n", trimmed.to_ascii_lowercase()))
+        .map_err(|e| format!("write {}: {e}", path.display()))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = fs::set_permissions(&path, fs::Permissions::from_mode(0o600));
+    }
+    Ok(path)
 }
 
 /// Submit a GitHub Issue on `HclX/RePal` via `gh issue create` in a background thread.
@@ -203,5 +332,42 @@ mod tests {
         }
         let other = Path::new("/var/tmp/repal_bug_sc1.repal");
         assert_eq!(sanitize_local_path_for_issue(other), "repal_bug_sc1.repal");
+    }
+
+    #[test]
+    fn ps_escape_single_quoted_text_handles_quotes_and_newlines() {
+        assert_eq!(
+            ps_escape_single_quoted_text("Can't decrypt\nTry again"),
+            "Can''t decrypt' + [Environment]::NewLine + 'Try again"
+        );
+    }
+
+    #[test]
+    fn save_pack_key_file_validates_writes_and_loads_back() {
+        let dir = std::env::temp_dir().join(format!(
+            "repal_pack_key_test_{}_{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        // Invalid hex must be rejected without creating pack.key.
+        assert!(save_pack_key_file(&dir, "not-a-valid-key").is_err());
+        assert!(!dir.join("pack.key").exists());
+
+        let valid_hex = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        let saved = save_pack_key_file(&dir, &format!("  {}  ", valid_hex.to_uppercase()))
+            .expect("save valid pack key");
+        assert_eq!(saved, dir.join("pack.key"));
+        let content = fs::read_to_string(&saved).unwrap();
+        assert_eq!(content.trim(), valid_hex);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(&saved).unwrap().permissions().mode() & 0o777;
+            assert_eq!(mode, 0o600);
+        }
+        let _ = fs::remove_dir_all(&dir);
     }
 }
