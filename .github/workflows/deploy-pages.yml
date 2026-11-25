@@ -17,11 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout verified commit
@@ -45,7 +42,7 @@ jobs:
 
       - name: Stamp cache-busting build SHA across HTML, ES modules, SW, and ASSET_VER
         env:
-          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          DEPLOY_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
         run: |
           python3 - <<'PY'
           import json, os, pathlib, re
@@ -98,6 +95,16 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           path: "./site"
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait briefly for GitHub artifact metadata propagation
+        run: sleep 5
 
       - name: Deploy to GitHub Pages
         id: deployment
