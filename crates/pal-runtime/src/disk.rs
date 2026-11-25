@@ -163,22 +163,18 @@ pub fn boot_runtime_from_dir(assets_root: &Path, hd_mode: bool) -> Result<PalRun
     Ok(rt)
 }
 
-/// Compute per-map GOP visual flags from `gop_XXX.json` + `gop_XXX_1x.webp` (cached on `Game`):
+/// Compute per-map GOP visual flags from `gop_XXX.json` + `gop_XXX_1x.webp` bytes:
 /// - `frame0_is_void`: true when GOP tile #0 is pure black / fully transparent (interior exterior void).
 /// - `opaque_frames[i]`: true when tile `i` has `>= 90%` (`>= 230/256` px) opaque diamond coverage,
 ///   distinguishing genuine overhead roofs/canopies from partial railings, door lintels, and foliage (#234).
-fn compute_gop_visual_flags(
-    assets_root: &Path,
-    map_id: u16,
+fn compute_gop_visual_flags_from_bytes(
+    meta_text: &str,
+    img_bytes: &[u8],
 ) -> Option<pal_core::isometric::GopVisualFlags> {
-    let meta_path = assets_root.join(format!("graphics/gop/gop_{map_id:03}.json"));
-    let tex_path = assets_root.join(format!("graphics/gop/gop_{map_id:03}_1x.webp"));
-    let meta_text = fs::read_to_string(meta_path).ok()?;
-    let meta_val: serde_json::Value = serde_json::from_str(&meta_text).ok()?;
+    let meta_val: serde_json::Value = serde_json::from_str(meta_text).ok()?;
     let frames = meta_val["frames"].as_array()?;
     let meta_w = meta_val["w"].as_u64().unwrap_or(0) as u32;
-    let img_bytes = fs::read(tex_path).ok()?;
-    let rgba = image::load_from_memory(&img_bytes).ok()?.to_rgba8();
+    let rgba = image::load_from_memory(img_bytes).ok()?.to_rgba8();
     let tex_w = rgba.width();
     let tex_h = rgba.height();
     let tex_scale = if meta_w > 0 && tex_w >= meta_w * 2 {
@@ -227,6 +223,17 @@ fn compute_gop_visual_flags(
         frame0_is_void,
         opaque_frames,
     })
+}
+
+fn compute_gop_visual_flags(
+    assets_root: &Path,
+    map_id: u16,
+) -> Option<pal_core::isometric::GopVisualFlags> {
+    let meta_path = assets_root.join(format!("graphics/gop/gop_{map_id:03}.json"));
+    let tex_path = assets_root.join(format!("graphics/gop/gop_{map_id:03}_1x.webp"));
+    let meta_text = fs::read_to_string(meta_path).ok()?;
+    let img_bytes = fs::read(tex_path).ok()?;
+    compute_gop_visual_flags_from_bytes(&meta_text, &img_bytes)
 }
 
 /// Upload a scene's 64 KiB collision map (`maps/map_XXX.bin`) and all active `mgo_XXX.json`
@@ -557,63 +564,8 @@ fn compute_gop_visual_flags_from_vfs(
     let json_key = format!("graphics/gop/gop_{map_id:03}.json");
     let tex_key = format!("graphics/gop/gop_{map_id:03}_1x.webp");
     let text = vfs.read_to_string(&json_key).ok()?;
-    let meta: serde_json::Value = serde_json::from_str(&text).ok()?;
-    let frames = meta.get("frames")?.as_array()?;
     let img_bytes = vfs.read_bytes(&tex_key).ok()?;
-    let rgba = image::load_from_memory(&img_bytes).ok()?.to_rgba8();
-    let (tex_w, tex_h) = rgba.dimensions();
-
-    let mut frame0_is_void = true;
-    let mut opaque_frames = Vec::with_capacity(frames.len());
-    let opaque_threshold: u32 = 32;
-
-    for (idx, f) in frames.iter().enumerate() {
-        let arr = match f.as_array() {
-            Some(a) if a.len() >= 4 => a,
-            _ => {
-                if idx == 0 {
-                    frame0_is_void = true;
-                }
-                opaque_frames.push(false);
-                continue;
-            }
-        };
-        let fx = arr[0].as_u64().unwrap_or(0) as u32;
-        let fy = arr[1].as_u64().unwrap_or(0) as u32;
-        let fw = arr[2].as_u64().unwrap_or(0) as u32;
-        let fh = arr[3].as_u64().unwrap_or(0) as u32;
-        if fw == 0 || fh == 0 || fx >= tex_w || fy >= tex_h {
-            if idx == 0 {
-                frame0_is_void = true;
-            }
-            opaque_frames.push(false);
-            continue;
-        }
-        let x_end = (fx + fw).min(tex_w);
-        let y_end = (fy + fh).min(tex_h);
-        let mut opaque_px = 0u32;
-        let mut non_black_px = 0u32;
-        for y in fy..y_end {
-            for x in fx..x_end {
-                let p = rgba.get_pixel(x, y).0;
-                if p[3] > 0 {
-                    opaque_px += 1;
-                    if p[0] > 4 || p[1] > 4 || p[2] > 4 {
-                        non_black_px += 1;
-                    }
-                }
-            }
-        }
-        if idx == 0 {
-            frame0_is_void = non_black_px == 0;
-        }
-        opaque_frames.push(opaque_px >= opaque_threshold);
-    }
-
-    Some(pal_core::isometric::GopVisualFlags {
-        frame0_is_void,
-        opaque_frames,
-    })
+    compute_gop_visual_flags_from_bytes(&text, &img_bytes)
 }
 
 /// Load a scene's collision map and event sprite frame dimensions via [`OverlayVfs`] (auto-mounting scene packs).
