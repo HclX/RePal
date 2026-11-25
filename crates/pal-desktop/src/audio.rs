@@ -729,4 +729,20 @@ mod tests {
         mixer.render_interleaved_stereo(&mut out);
         assert_eq!(out[0], 0.0);
     }
+
+    #[test]
+    fn decode_real_hd_bgm_mp3_if_present() {
+        let p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../site/assets/audio/bgm_hd/mus_004.mp3");
+        let Ok(bytes) = std::fs::read(&p) else {
+            return; // skip in public CI without assets
+        };
+        let (sr, left, right) = decode_compressed_stereo(&bytes, "mp3")
+            .expect("symphonia must decode real pre-rendered HD BGM mus_004.mp3");
+        assert_eq!(sr, 44100);
+        assert_eq!(left.len(), right.len());
+        assert!(left.len() > 44100 * 10, "title track must be >10s, got {} samples", left.len());
+        let peak = left.iter().chain(right.iter()).fold(0.0f32, |m, &x| m.max(x.abs()));
+        assert!(peak > 0.05 && peak <= 1.05, "unexpected peak amplitude: {peak}");
+    }
 }
