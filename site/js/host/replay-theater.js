@@ -801,7 +801,7 @@ export class WebReplayTheater {
     const tot = Math.floor((this.bundle.total_ticks || 0) / 50);
     const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
     const dbgBadge = this.bundle.debug_mode || this.bundle.tainted_by_debug ? " · [DEBUG]" : "";
-    const statusText = `${fmt(secs)} / ${fmt(tot)} · ${this.segIdx + 1}/${this.bundle.segments.length}${dbgBadge}`;
+    const statusText = `${fmt(secs)} / ${fmt(tot)} · ${this.segIdx + 1}/${this.bundle.segments.length} · t${absTick}${dbgBadge}`;
     this.elStatus.style.color = this.versionMismatch ? "#ffd27d" : "#d8e8f4";
     this.elStatus.textContent = statusText;
     if (this.elGpStatus) this.elGpStatus.textContent = statusText;

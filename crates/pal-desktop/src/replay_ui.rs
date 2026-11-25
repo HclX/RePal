@@ -574,13 +574,14 @@ pub fn render_replay_bar(buf: &mut [u32], width: usize, height: usize, player: &
         let secs = abs_tick / 50;
         let tot_secs = player.bundle.total_ticks / 50;
         let mut status = format!(
-            "{:02}:{:02} / {:02}:{:02}   SEG {}/{}",
+            "{:02}:{:02} / {:02}:{:02}  SEG {}/{}  T:{}",
             secs / 60,
             secs % 60,
             tot_secs / 60,
             tot_secs % 60,
             player.seg_idx + 1,
-            player.bundle.segments.len()
+            player.bundle.segments.len(),
+            abs_tick
         );
         if player.bundle.tainted_by_debug || player.bundle.debug_mode {
             status.push_str("  [DEBUG]");
