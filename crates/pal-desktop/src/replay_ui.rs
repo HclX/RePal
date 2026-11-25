@@ -6,7 +6,10 @@
 
 use crate::splash::{draw_rect_outline, draw_text_at, fill_rect, fill_rect_alpha};
 use image::ImageEncoder;
-use pal_core::game::replay_rec::{ReplayAnchor, ReplayBundle, ReplayEvent, ENGINE_VERSION};
+use pal_core::game::replay_rec::{
+    is_replay_engine_compatible, ReplayAnchor, ReplayBundle, ReplayEvent,
+    MIN_COMPAT_REPLAY_VERSION,
+};
 use pal_render::framebuffer::Framebuffer;
 use pal_runtime::replay_player::{ReplayPlayer, ReplayStepOutcome};
 use pal_runtime::PalRuntime;
@@ -15,7 +18,7 @@ use std::ops::{Deref, DerefMut};
 use std::time::{Duration, Instant};
 
 pub const THIN_BAR_HEIGHT: usize = 5;
-pub const CONTROLS_BAR_HEIGHT: usize = 38;
+pub const CONTROLS_BAR_HEIGHT: usize = 44;
 pub const CONTROLS_IDLE_HIDE: Duration = Duration::from_secs(3);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -60,7 +63,7 @@ impl DerefMut for CoreReplayPlayer {
 
 impl CoreReplayPlayer {
     pub fn from_bundle(filename: String, bundle: ReplayBundle) -> Result<Self, String> {
-        let version_mismatch = bundle.engine_version != ENGINE_VERSION;
+        let version_mismatch = !is_replay_engine_compatible(&bundle.engine_version);
         let inner = ReplayPlayer::new(bundle)?;
         Ok(Self {
             filename,
@@ -340,16 +343,90 @@ pub fn render_transition_banner(rt: &mut PalRuntime, text: &str, alpha: u8) {
     );
 }
 
-fn bottom_buttons() -> [(ReplayHudHit, usize, usize, &'static str); 7] {
+/// Responsive 3-zone bottom bar layout:
+/// - Left: transport icons (`|<`, `▶/⏸`, `>|`) + speed pill (`1X`)
+/// - Center: elapsed/total time & segment counter
+/// - Right: `CHAPTERS`, `TAKE OVER`, `EXIT`
+fn layout_bottom_buttons(width: usize) -> [(ReplayHudHit, usize, usize, &'static str); 7] {
+    let pad = 16usize;
+    let gap = 8usize;
+    let prev_x = pad;
+    let prev_w = 34;
+    let play_x = prev_x + prev_w + gap;
+    let play_w = 40;
+    let next_x = play_x + play_w + gap;
+    let next_w = 34;
+    let speed_x = next_x + next_w + 18;
+    let speed_w = 44;
+
+    let exit_w = 56;
+    let take_w = 94;
+    let chap_w = 88;
+    let right_gap = 10;
+    let right_total = chap_w + right_gap + take_w + right_gap + exit_w;
+    let min_right_x = speed_x + speed_w + 20;
+    let chap_x = width.saturating_sub(pad + right_total).max(min_right_x);
+    let take_x = chap_x + chap_w + right_gap;
+    let exit_x = take_x + take_w + right_gap;
+
     [
-        (ReplayHudHit::PrevSeg, 10, 40, "|<"),
-        (ReplayHudHit::PlayPause, 56, 62, "PAUSE"),
-        (ReplayHudHit::NextSeg, 124, 40, ">|"),
-        (ReplayHudHit::Speed, 170, 44, "1X"),
-        (ReplayHudHit::Chapters, 222, 86, "CHAPTERS"),
-        (ReplayHudHit::TakeOver, 314, 92, "TAKE OVER"),
-        (ReplayHudHit::Exit, 412, 54, "EXIT"),
+        (ReplayHudHit::PrevSeg, prev_x, prev_w, ""),
+        (ReplayHudHit::PlayPause, play_x, play_w, ""),
+        (ReplayHudHit::NextSeg, next_x, next_w, ""),
+        (ReplayHudHit::Speed, speed_x, speed_w, "1X"),
+        (ReplayHudHit::Chapters, chap_x, chap_w, "CHAPTERS"),
+        (ReplayHudHit::TakeOver, take_x, take_w, "TAKE OVER"),
+        (ReplayHudHit::Exit, exit_x, exit_w, "EXIT"),
     ]
+}
+
+fn draw_play_icon(buf: &mut [u32], width: usize, height: usize, cx: usize, cy: usize, color: u32) {
+    // Crisp 10x12 right-pointing triangle centered at (cx, cy)
+    for dy in -5i32..=5 {
+        let len = (6 - dy.abs()).max(1) as usize * 2;
+        let x0 = cx.saturating_sub(4);
+        let y = (cy as i32 + dy) as usize;
+        fill_rect(buf, width, height, x0, y, len.min(10), 1, color);
+    }
+}
+
+fn draw_pause_icon(buf: &mut [u32], width: usize, height: usize, cx: usize, cy: usize, color: u32) {
+    let top = cy.saturating_sub(5);
+    fill_rect(buf, width, height, cx.saturating_sub(5), top, 3, 11, color);
+    fill_rect(buf, width, height, cx + 2, top, 3, 11, color);
+}
+
+fn draw_prev_icon(buf: &mut [u32], width: usize, height: usize, cx: usize, cy: usize, color: u32) {
+    // Vertical bar on left + left-pointing triangle
+    fill_rect(buf, width, height, cx.saturating_sub(6), cy.saturating_sub(5), 2, 11, color);
+    for dy in -4i32..=4 {
+        let len = (5 - dy.abs()).max(1) as usize;
+        let x0 = cx + 4 - len;
+        let y = (cy as i32 + dy) as usize;
+        fill_rect(buf, width, height, x0, y, len, 1, color);
+    }
+}
+
+fn draw_next_icon(buf: &mut [u32], width: usize, height: usize, cx: usize, cy: usize, color: u32) {
+    // Right-pointing triangle + vertical bar on right
+    for dy in -4i32..=4 {
+        let len = (5 - dy.abs()).max(1) as usize;
+        let x0 = cx.saturating_sub(5);
+        let y = (cy as i32 + dy) as usize;
+        fill_rect(buf, width, height, x0, y, len, 1, color);
+    }
+    fill_rect(buf, width, height, cx + 4, cy.saturating_sub(5), 2, 11, color);
+}
+
+fn draw_replay_icon(buf: &mut [u32], width: usize, height: usize, cx: usize, cy: usize, color: u32) {
+    // Clean square-ring restart arrow
+    let l = cx.saturating_sub(5);
+    let t = cy.saturating_sub(5);
+    fill_rect(buf, width, height, l, t, 10, 2, color);
+    fill_rect(buf, width, height, l, t + 9, 10, 2, color);
+    fill_rect(buf, width, height, l, t, 2, 11, color);
+    fill_rect(buf, width, height, l + 8, t + 5, 2, 6, color);
+    fill_rect(buf, width, height, l + 7, t.saturating_sub(1), 3, 4, color);
 }
 
 /// Hit-test the bottom razor-thin progress bar (always active) and auto-hiding control buttons.
@@ -376,7 +453,7 @@ pub fn hit_test_replay_bar(
     let bar_top = height.saturating_sub(THIN_BAR_HEIGHT + CONTROLS_BAR_HEIGHT);
     let bar_bot = height.saturating_sub(THIN_BAR_HEIGHT);
     if y >= bar_top + 6 && y <= bar_bot.saturating_sub(4) {
-        for (hit, bx, bw, _) in bottom_buttons() {
+        for (hit, bx, bw, _) in layout_bottom_buttons(width) {
             if x >= bx && x <= bx + bw {
                 return Some(hit);
             }
@@ -387,11 +464,32 @@ pub fn hit_test_replay_bar(
 
 /// Render the bottom cinema-style replay overlay:
 /// - Always draws the razor-thin (`5px`) translucent progress bar along the bottom edge.
-/// - Only draws the compact playback buttons when `player.controls_visible()` is true.
+/// - Shows a clean top-center compatibility warning pill when the replay is older than `MIN_COMPAT_REPLAY_VERSION`.
+/// - Only draws the spacious 3-zone playback controls when `player.controls_visible()` is true.
 pub fn render_replay_bar(buf: &mut [u32], width: usize, height: usize, player: &CoreReplayPlayer) {
     if width < 200 || height < 60 {
         return;
     }
+
+    // 0. Compatibility warning pill at top-center for legacy replays (< MIN_COMPAT_REPLAY_VERSION)
+    if player.version_mismatch {
+        let rec = player.bundle.engine_version.trim().trim_start_matches(['v', 'V']);
+        let rec_disp = if rec.is_empty() { "?" } else { rec };
+        let warn = format!(
+            "LEGACY REPLAY V{} (< V{}) - MAY DESYNC",
+            rec_disp.to_ascii_uppercase(),
+            MIN_COMPAT_REPLAY_VERSION
+        );
+        let text_w = warn.len() * 12;
+        let pill_w = (text_w + 24).min(width.saturating_sub(24));
+        let pill_h = 26usize;
+        let pill_x = (width.saturating_sub(pill_w)) / 2;
+        let pill_y = 12usize;
+        fill_rect_alpha(buf, width, height, pill_x, pill_y, pill_w, pill_h, 0x002B1A08, 210);
+        draw_rect_outline(buf, width, height, pill_x, pill_y, pill_w, pill_h, 1, 0x00F0A848);
+        draw_text_at(buf, width, height, &warn, pill_x + 12, pill_y + 7, 2, 0x00FFD27D);
+    }
+
     let abs_tick = player.current_abs_tick();
     let pct = if player.bundle.total_ticks > 0 {
         ((abs_tick as f32) / (player.bundle.total_ticks as f32)).clamp(0.0, 1.0)
@@ -417,47 +515,66 @@ pub fn render_replay_bar(buf: &mut [u32], width: usize, height: usize, player: &
         );
     }
 
-    // 2. Auto-hiding control buttons above the progress bar
+    // 2. Auto-hiding spacious 3-zone control strip above the progress bar
     if !player.controls_visible() {
         return;
     }
     let ctrl_y = bar_y.saturating_sub(CONTROLS_BAR_HEIGHT);
-    fill_rect_alpha(buf, width, height, 0, ctrl_y, width, CONTROLS_BAR_HEIGHT, 0x000A141E, 200);
-    fill_rect_alpha(buf, width, height, 0, ctrl_y, width, 1, 0x00C8A458, 180);
+    fill_rect_alpha(buf, width, height, 0, ctrl_y, width, CONTROLS_BAR_HEIGHT, 0x000A141E, 212);
+    fill_rect_alpha(buf, width, height, 0, ctrl_y, width, 1, 0x00C8A458, 160);
 
+    let buttons = layout_bottom_buttons(width);
     let speed_lbl = format!("{}X", player.speed);
-    let pause_lbl = if player.finished {
-        "REPLAY"
-    } else if player.paused {
-        "PLAY"
-    } else {
-        "PAUSE"
-    };
-    for (hit, bx, bw, default_lbl) in bottom_buttons() {
+    let btn_y = ctrl_y + 8;
+    let btn_h = 28;
+    let btn_cy = btn_y + btn_h / 2;
+
+    for (hit, bx, bw, default_lbl) in buttons {
         if bx + bw > width {
-            break;
+            continue;
         }
-        let lbl = match hit {
-            ReplayHudHit::PlayPause => pause_lbl,
-            ReplayHudHit::Speed => speed_lbl.as_str(),
-            _ => default_lbl,
+        let (bg, border, fg) = match hit {
+            ReplayHudHit::PlayPause => (0x00263F56, 0x00F0CB72, 0x00FFF2CC),
+            ReplayHudHit::Exit => (0x004A1E24, 0x00D96B6B, 0x00F6D8D8),
+            ReplayHudHit::TakeOver => (0x001A3B2D, 0x0062D4A0, 0x00DCF8EA),
+            _ => (0x00162636, 0x008E7A4E, 0x00EBE2CE),
         };
-        let (bg, border) = match hit {
-            ReplayHudHit::Exit => (0x00522026, 0x00E06C6C),
-            ReplayHudHit::TakeOver => (0x001D4030, 0x0066E0A8),
-            _ => (0x001D3144, 0x00C8A458),
-        };
-        fill_rect(buf, width, height, bx, ctrl_y + 6, bw, 26, bg);
-        draw_rect_outline(buf, width, height, bx, ctrl_y + 6, bw, 26, 1, border);
-        draw_text_at(buf, width, height, lbl, bx + 7, ctrl_y + 13, 2, 0x00F2E8D0);
+        fill_rect_alpha(buf, width, height, bx, btn_y, bw, btn_h, bg, 235);
+        draw_rect_outline(buf, width, height, bx, btn_y, bw, btn_h, 1, border);
+        let cx = bx + bw / 2;
+        match hit {
+            ReplayHudHit::PrevSeg => draw_prev_icon(buf, width, height, cx, btn_cy, fg),
+            ReplayHudHit::PlayPause => {
+                if player.finished {
+                    draw_replay_icon(buf, width, height, cx, btn_cy, fg);
+                } else if player.paused {
+                    draw_play_icon(buf, width, height, cx, btn_cy, fg);
+                } else {
+                    draw_pause_icon(buf, width, height, cx, btn_cy, fg);
+                }
+            }
+            ReplayHudHit::NextSeg => draw_next_icon(buf, width, height, cx, btn_cy, fg),
+            ReplayHudHit::Speed => {
+                let tw = speed_lbl.len() * 12;
+                let tx = bx + bw.saturating_sub(tw) / 2;
+                draw_text_at(buf, width, height, &speed_lbl, tx, btn_y + 8, 2, fg);
+            }
+            _ => {
+                let tw = default_lbl.len() * 12;
+                let tx = bx + bw.saturating_sub(tw) / 2;
+                draw_text_at(buf, width, height, default_lbl, tx, btn_y + 8, 2, fg);
+            }
+        }
     }
 
-    let info_x = 478usize;
-    if width > info_x + 120 {
+    // Center-aligned time & segment status in the breathing space between Speed and Chapters
+    let left_end = buttons[3].1 + buttons[3].2 + 16;
+    let right_start = buttons[4].1.saturating_sub(16);
+    if right_start > left_end + 110 {
         let secs = abs_tick / 50;
         let tot_secs = player.bundle.total_ticks / 50;
         let mut status = format!(
-            "{:02}:{:02}/{:02}:{:02}  SEG {}/{}",
+            "{:02}:{:02} / {:02}:{:02}   SEG {}/{}",
             secs / 60,
             secs % 60,
             tot_secs / 60,
@@ -465,18 +582,22 @@ pub fn render_replay_bar(buf: &mut [u32], width: usize, height: usize, player: &
             player.seg_idx + 1,
             player.bundle.segments.len()
         );
-        if player.version_mismatch {
-            status.push_str("  [VER]");
-        }
         if player.bundle.tainted_by_debug || player.bundle.debug_mode {
             status.push_str("  [DEBUG]");
         }
+        let text_w = status.len() * 12;
+        let avail = right_start - left_end;
+        let info_x = if text_w < avail {
+            left_end + (avail - text_w) / 2
+        } else {
+            left_end
+        };
         let color = if player.version_mismatch {
             0x00FFAA66
         } else {
             0x00D8E8F4
         };
-        draw_text_at(buf, width, height, &status, info_x, ctrl_y + 13, 2, color);
+        draw_text_at(buf, width, height, &status, info_x, btn_y + 8, 2, color);
     }
 }
 
@@ -523,7 +644,35 @@ pub fn decode_png_rgba(bytes: &[u8]) -> Option<(u32, u32, Vec<u8>)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pal_core::game::replay_rec::{ReplayAnnotation, ReplaySegment};
+    use pal_core::game::replay_rec::{ReplayAnnotation, ReplaySegment, ENGINE_VERSION};
+
+    #[test]
+    fn min_compat_replay_version_check() {
+        assert!(!is_replay_engine_compatible("0.3.8"));
+        assert!(!is_replay_engine_compatible("v0.3.11"));
+        assert!(!is_replay_engine_compatible(""));
+        assert!(is_replay_engine_compatible("0.4.0"));
+        assert!(is_replay_engine_compatible("v0.5.4"));
+        assert!(is_replay_engine_compatible(ENGINE_VERSION));
+    }
+
+    #[test]
+    fn three_zone_replay_bar_layout_and_hit_test() {
+        let w = 1280usize;
+        let h = 800usize;
+        let btns = layout_bottom_buttons(w);
+        // Right group (Chapters/TakeOver/Exit) must be right-aligned with generous center gap
+        assert!(btns[4].1 > btns[3].1 + btns[3].2 + 200);
+        let y = (h - THIN_BAR_HEIGHT - CONTROLS_BAR_HEIGHT / 2) as f64;
+        assert_eq!(
+            hit_test_replay_bar((btns[1].1 + 10) as f64, y, w, h, true),
+            Some(ReplayHudHit::PlayPause)
+        );
+        assert_eq!(
+            hit_test_replay_bar((btns[6].1 + 10) as f64, y, w, h, true),
+            Some(ReplayHudHit::Exit)
+        );
+    }
 
     #[test]
     fn restore_annotation_at_binary_searches_and_respects_scene_boundaries() {

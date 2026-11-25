@@ -15,6 +15,35 @@ use serde_json::{json, Value};
 
 pub const REPLAY_FORMAT_KIND: &str = "RePal_CoreReplay_v3";
 pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
+/// Minimum `engine_version` whose deterministic simulation (battle/RNG/VM) is compatible with the
+/// current engine. Replays recorded on older versions (e.g. `v0.3.x` prior to the `v0.4.0` strict
+/// SDLPAL `fight.c` battle formula overhaul) display an incompatibility warning during playback.
+pub const MIN_COMPAT_REPLAY_VERSION: &str = "0.4.0";
+
+/// Parse a `major.minor.patch` semver triple (ignoring any leading `v` or `-prerelease` suffix).
+pub fn parse_semver_triple(raw: &str) -> Option<(u32, u32, u32)> {
+    let clean = raw.trim().trim_start_matches(['v', 'V']);
+    let core = clean.split(['-', '+']).next()?.trim();
+    if core.is_empty() {
+        return None;
+    }
+    let mut parts = core.split('.');
+    let maj = parts.next()?.parse::<u32>().ok()?;
+    let min = parts.next().unwrap_or("0").parse::<u32>().ok()?;
+    let pat = parts.next().unwrap_or("0").parse::<u32>().ok()?;
+    Some((maj, min, pat))
+}
+
+/// Returns `true` iff `recorded_version` meets or exceeds [`MIN_COMPAT_REPLAY_VERSION`].
+pub fn is_replay_engine_compatible(recorded_version: &str) -> bool {
+    let Some(rec) = parse_semver_triple(recorded_version) else {
+        return false;
+    };
+    let Some(min_req) = parse_semver_triple(MIN_COMPAT_REPLAY_VERSION) else {
+        return true;
+    };
+    rec >= min_req
+}
 /// Minimum ticks between automatic idle-overworld segment splits (30 min at 50 Hz).
 pub const SEGMENT_MIN_GAP_TICKS: u64 = 90_000;
 /// Minimum recorded events before auto-archiving a finished session.

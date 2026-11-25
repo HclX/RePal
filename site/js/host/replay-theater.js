@@ -12,6 +12,30 @@ import { decodePngToRgba, loadReplayLibrary, parseRepalBytes } from "./repal-loa
 import { pickFile } from "./wasm-runtime.js";
 
 const IDLE_HIDE_MS = 3000;
+// Must stay in sync with `pal_core::game::replay_rec::MIN_COMPAT_REPLAY_VERSION`.
+const MIN_COMPAT_REPLAY_VERSION = "0.4.0";
+
+function parseSemverTriple(raw) {
+  const clean = String(raw || "").trim().replace(/^v/i, "").split(/[-+]/)[0].trim();
+  if (!clean) return null;
+  const parts = clean.split(".");
+  const maj = Number.parseInt(parts[0], 10);
+  const min = Number.parseInt(parts[1] ?? "0", 10);
+  const pat = Number.parseInt(parts[2] ?? "0", 10);
+  if ([maj, min, pat].some((n) => Number.isNaN(n) || n < 0)) return null;
+  return [maj, min, pat];
+}
+
+function isReplayEngineCompatible(recorded) {
+  const rec = parseSemverTriple(recorded);
+  const minReq = parseSemverTriple(MIN_COMPAT_REPLAY_VERSION);
+  if (!rec) return false;
+  if (!minReq) return true;
+  for (let i = 0; i < 3; i++) {
+    if (rec[i] !== minReq[i]) return rec[i] > minReq[i];
+  }
+  return true;
+}
 
 export class WebReplayTheater {
   constructor(app) {
@@ -57,31 +81,46 @@ export class WebReplayTheater {
     const stage = document.getElementById("game-stage");
     if (!stage) return;
 
-    // Bottom theater overlay (always-visible 5px thin bar + auto-hiding control strip)
+    // Top-center compatibility warning pill for legacy replays (< MIN_COMPAT_REPLAY_VERSION)
+    const compatBanner = document.createElement("div");
+    compatBanner.id = "repal-compat-banner";
+    compatBanner.style.cssText =
+      "position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:26;display:none;pointer-events:none;padding:5px 14px;border-radius:999px;background:rgba(43,26,8,0.88);border:1px solid rgba(240,168,72,0.85);color:#ffd27d;font-size:12px;letter-spacing:0.4px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.45);font-family:'Noto Serif SC',system-ui,sans-serif;";
+    stage.appendChild(compatBanner);
+    this.elCompatBanner = compatBanner;
+
+    // Bottom theater overlay (always-visible 5px thin bar + auto-hiding spacious 3-zone control strip)
     const barWrap = document.createElement("div");
     barWrap.id = "repal-theater-overlay";
     barWrap.style.cssText =
       "position:absolute;left:0;right:0;bottom:0;z-index:25;display:none;pointer-events:none;font-family:'Noto Serif SC',system-ui,sans-serif;";
     barWrap.innerHTML = `
-      <div id="repal-ctrl-strip" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 12px;background:rgba(10,20,30,0.82);border-top:1px solid rgba(200,164,88,0.65);color:#f2e8d0;font-size:13px;pointer-events:auto;transition:opacity 0.25s ease;">
-        <div id="repal-mouse-btns" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <button data-act="prev" class="repal-hud-btn">|&lt;</button>
-          <button data-act="play" class="repal-hud-btn" id="repal-btn-play">PAUSE</button>
-          <button data-act="next" class="repal-hud-btn">&gt;|</button>
-          <button data-act="speed" class="repal-hud-btn" id="repal-btn-speed">1X</button>
-          <button data-act="thoughts" class="repal-hud-btn" id="repal-btn-thoughts">字幕:开</button>
-          <button data-act="chapters" class="repal-hud-btn">章节</button>
-          <button data-act="takeover" class="repal-hud-btn" style="border-color:#66e0a8;background:#1d4030;">接管</button>
-          <button data-act="exit" class="repal-hud-btn" style="border-color:#e06c6c;background:#522026;">退出</button>
+      <div id="repal-ctrl-strip" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 18px;background:rgba(10,20,30,0.86);backdrop-filter:blur(6px);border-top:1px solid rgba(200,164,88,0.55);color:#f2e8d0;font-size:13px;pointer-events:auto;transition:opacity 0.25s ease;">
+        <div id="repal-mouse-btns" style="display:flex;align-items:center;justify-content:space-between;flex:1;gap:16px;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button data-act="prev" class="repal-hud-btn repal-icon-btn" title="上一章节 ([)">⏮</button>
+            <button data-act="play" class="repal-hud-btn repal-icon-btn repal-play-btn" id="repal-btn-play" title="暂停/播放 (Space)">⏸</button>
+            <button data-act="next" class="repal-hud-btn repal-icon-btn" title="下一章节 (])">⏭</button>
+            <button data-act="speed" class="repal-hud-btn" id="repal-btn-speed" style="margin-left:8px;min-width:42px;" title="切换倍速 (+/-)">1×</button>
+          </div>
+          <div id="repal-status-txt" style="color:#d8e8f4;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px;letter-spacing:0.5px;">00:00 / 00:00 · 1/1</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button data-act="thoughts" class="repal-hud-btn" id="repal-btn-thoughts" title="开关 AI 思考字幕 (F7)">字幕:开</button>
+            <button data-act="chapters" class="repal-hud-btn" title="章节列表 (Tab)">章节</button>
+            <button data-act="takeover" class="repal-hud-btn" style="border-color:#62d4a0;background:#1a3b2d;color:#dcf8ea;" title="从此处接管游玩 (F8)">接管</button>
+            <button data-act="exit" class="repal-hud-btn" style="border-color:#d96b6b;background:#4a1e24;color:#f6d8d8;" title="退出回放 (Esc)">退出</button>
+          </div>
         </div>
-        <div id="repal-gp-hints" style="display:none;align-items:center;gap:12px;font-size:13px;color:#f2e8d0;">
-          <span><b style="color:#e0b96b;">[A]</b> 暂停/播放</span>
-          <span><b style="color:#e0b96b;">[LB/RB]</b> 上/下章</span>
-          <span><b style="color:#e0b96b;">[LT/RT]</b> 倍速</span>
-          <span><b style="color:#e0b96b;">[Y]</b> 章节</span>
-          <span><b style="color:#e0b96b;">[Start]</b> 菜单/接管</span>
+        <div id="repal-gp-hints" style="display:none;align-items:center;justify-content:space-between;flex:1;gap:14px;font-size:13px;color:#f2e8d0;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <span><b style="color:#e0b96b;">[A]</b> 暂停/播放</span>
+            <span><b style="color:#e0b96b;">[LB/RB]</b> 上/下章</span>
+            <span><b style="color:#e0b96b;">[LT/RT]</b> 倍速</span>
+            <span><b style="color:#e0b96b;">[Y]</b> 章节</span>
+            <span><b style="color:#e0b96b;">[Start]</b> 菜单/接管</span>
+          </div>
+          <div id="repal-gp-status-txt" style="color:#d8e8f4;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px;">00:00 / 00:00</div>
         </div>
-        <div id="repal-status-txt" style="color:#d8e8f4;font-variant-numeric:tabular-nums;white-space:nowrap;">00:00 / 00:00  SEG 1/1</div>
       </div>
       <div id="repal-thin-track" style="height:5px;background:rgba(8,16,24,0.72);cursor:pointer;pointer-events:auto;position:relative;">
         <div id="repal-thin-fill" style="height:100%;width:0%;background:#d8b25c;"></div>
@@ -95,10 +134,12 @@ export class WebReplayTheater {
       st.id = "repal-theater-style";
       st.textContent = `
         .repal-hud-btn {
-          background:#1d3144;color:#f2e8d0;border:1px solid #c8a458;border-radius:4px;
-          padding:3px 9px;font-size:12px;cursor:pointer;font-family:inherit;
+          background:rgba(22,38,54,0.92);color:#ebe2ce;border:1px solid rgba(200,164,88,0.58);border-radius:6px;
+          padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;line-height:1.1;transition:background 0.12s ease,border-color 0.12s ease;
         }
-        .repal-hud-btn:hover { background:#2a455e; }
+        .repal-hud-btn:hover { background:#274058;border-color:#f0cb72; }
+        .repal-icon-btn { min-width:34px;padding:5px 8px;font-size:14px;text-align:center; }
+        .repal-play-btn { min-width:40px;background:rgba(38,63,86,0.96);border-color:#f0cb72;color:#fff2cc; }
         #repal-library-modal {
           position:absolute;inset:0;z-index:40;display:none;align-items:center;justify-content:center;
           background:rgba(6,10,16,0.82);backdrop-filter:blur(4px);font-family:'Noto Serif SC',system-ui,sans-serif;
@@ -144,6 +185,7 @@ export class WebReplayTheater {
     this.elMouseBtns = barWrap.querySelector("#repal-mouse-btns");
     this.elGpHints = barWrap.querySelector("#repal-gp-hints");
     this.elStatus = barWrap.querySelector("#repal-status-txt");
+    this.elGpStatus = barWrap.querySelector("#repal-gp-status-txt");
     this.elBtnPlay = barWrap.querySelector("#repal-btn-play");
     this.elBtnSpeed = barWrap.querySelector("#repal-btn-speed");
     this.elBtnThoughts = barWrap.querySelector("#repal-btn-thoughts");
@@ -320,9 +362,8 @@ export class WebReplayTheater {
     this.active = true;
     this.filename = filename;
     this.bundle = bundle;
-    const curVer = (core.engineVersion?.() || "").replace(/^v/i, "");
     const recVer = String(bundle.engine_version || "").replace(/^v/i, "");
-    this.versionMismatch = Boolean(curVer && recVer !== curVer);
+    this.versionMismatch = !isReplayEngineCompatible(recVer);
     this.segIdx = 0;
     this.segTick = 0;
     this.evIdx = 0;
@@ -356,9 +397,17 @@ export class WebReplayTheater {
 
     this.loadSegment(0);
     this.elOverlay.style.display = "block";
+    if (this.elCompatBanner) {
+      if (this.versionMismatch) {
+        this.elCompatBanner.textContent = `⚠ 旧版录像 v${recVer || "?"}（最低兼容 v${MIN_COMPAT_REPLAY_VERSION}）· 战斗/剧情可能不同步`;
+        this.elCompatBanner.style.display = "block";
+      } else {
+        this.elCompatBanner.style.display = "none";
+      }
+    }
     const tags = [];
     if (this.versionMismatch) {
-      tags.push(`引擎版本不同: v${recVer || "?"} ≠ v${curVer}`);
+      tags.push(`旧版录像 v${recVer || "?"} < v${MIN_COMPAT_REPLAY_VERSION}，可能不同步`);
     }
     if (bundle.debug_mode || bundle.tainted_by_debug) {
       tags.push("含调试指令");
@@ -571,6 +620,7 @@ export class WebReplayTheater {
     this.bundle = null;
     this._setThought("");
     this.elOverlay.style.display = "none";
+    if (this.elCompatBanner) this.elCompatBanner.style.display = "none";
     const w = this.app.core.w;
     if (w.core_take_over_replay) {
       w.core_take_over_replay(wasTainted ? 1 : 0);
@@ -588,6 +638,7 @@ export class WebReplayTheater {
     this.bundle = null;
     this._setThought("");
     this.elOverlay.style.display = "none";
+    if (this.elCompatBanner) this.elCompatBanner.style.display = "none";
     this.app.core.w.core_set_replay_debug_flags?.(0, 0);
     this.app.core.w.core_set_replay_mode(0);
     this.app.hud.onReturnToTitle?.();
@@ -727,6 +778,9 @@ export class WebReplayTheater {
     if (!this.active || !this.bundle) return;
     const menuOpen = this.isReplayMenuOpen();
     this.elOverlay.style.display = menuOpen ? "none" : "block";
+    if (this.elCompatBanner) {
+      this.elCompatBanner.style.display = !menuOpen && this.versionMismatch ? "block" : "none";
+    }
     if (menuOpen) return;
 
     const seg = this.bundle.segments[this.segIdx];
@@ -746,12 +800,14 @@ export class WebReplayTheater {
     const secs = Math.floor(absTick / 50);
     const tot = Math.floor((this.bundle.total_ticks || 0) / 50);
     const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-    const verBadge = this.versionMismatch ? "  [VER]" : "";
-    const dbgBadge = this.bundle.debug_mode || this.bundle.tainted_by_debug ? "  [DEBUG]" : "";
-    this.elStatus.style.color = this.versionMismatch ? "#ffaa66" : "#d8e8f4";
-    this.elStatus.textContent = `${fmt(secs)} / ${fmt(tot)}  SEG ${this.segIdx + 1}/${this.bundle.segments.length}${verBadge}${dbgBadge}`;
-    this.elBtnPlay.textContent = this.finished ? "REPLAY" : this.paused ? "PLAY" : "PAUSE";
-    this.elBtnSpeed.textContent = `${this.speed}X`;
+    const dbgBadge = this.bundle.debug_mode || this.bundle.tainted_by_debug ? " · [DEBUG]" : "";
+    const statusText = `${fmt(secs)} / ${fmt(tot)} · ${this.segIdx + 1}/${this.bundle.segments.length}${dbgBadge}`;
+    this.elStatus.style.color = this.versionMismatch ? "#ffd27d" : "#d8e8f4";
+    this.elStatus.textContent = statusText;
+    if (this.elGpStatus) this.elGpStatus.textContent = statusText;
+    this.elBtnPlay.textContent = this.finished ? "↻" : this.paused ? "▶" : "⏸";
+    this.elBtnPlay.title = this.finished ? "重新播放 (Space)" : this.paused ? "播放 (Space)" : "暂停 (Space)";
+    this.elBtnSpeed.textContent = `${this.speed}×`;
     if (this.elBtnThoughts) {
       this.elBtnThoughts.textContent = this.showThoughts ? "字幕:开" : "字幕:关";
     }

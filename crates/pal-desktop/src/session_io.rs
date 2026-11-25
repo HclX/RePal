@@ -497,7 +497,7 @@ impl DesktopApp {
                             if let Some(rt) = self.rt.as_mut() {
                                 let mut tags = Vec::new();
                                 if ver_warn {
-                                    tags.push("引擎版本不同");
+                                    tags.push("旧版录像(<v0.4.0)可能不同步");
                                 }
                                 if taint_warn {
                                     tags.push("含调试指令");
