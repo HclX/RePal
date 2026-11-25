@@ -16,31 +16,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Fetch pinned legacy assets (only for legacy tarball assets-lock.json when ASSETS_REPO_TOKEN is set)
+      - name: Check PACKS_PUBLISH_TOKEN availability
+        id: assets_token
         env:
-          GH_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+          PACKS_PUBLISH_TOKEN: ${{ secrets.PACKS_PUBLISH_TOKEN }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "ASSETS_REPO_TOKEN not set; running offline unit tests only."
-            exit 0
+          if [ -n "$PACKS_PUBLISH_TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "PACKS_PUBLISH_TOKEN not set (e.g. fork PR); running offline suites only."
           fi
-          python3 -c '
-          import json, subprocess, hashlib, pathlib
-          lock = json.load(open("assets-lock.json"))
-          if lock.get("format") == "repal-packs/1" or "filename" not in lock:
-              print("repal-packs/1 manifest lock active; skipping legacy tarball download.")
-              raise SystemExit(0)
-          subprocess.check_call([
-              "gh", "release", "download", lock["tag"],
-              "--repo", lock["repo"],
-              "--pattern", lock["filename"],
-              "--output", "pal-assets.tar.gz",
-          ])
-          actual = hashlib.sha256(pathlib.Path("pal-assets.tar.gz").read_bytes()).hexdigest()
-          assert actual == lock["sha256"], f"SHA-256 mismatch: {actual}"
-          subprocess.check_call(["tar", "-xzf", "pal-assets.tar.gz", "-C", "site"])
-          pathlib.Path("pal-assets.tar.gz").unlink()
-          '
+
+      - name: Checkout HclX/RePal_Assets (when PACKS_PUBLISH_TOKEN is available)
+        if: steps.assets_token.outputs.available == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: HclX/RePal_Assets
+          ref: main
+          token: ${{ secrets.PACKS_PUBLISH_TOKEN }}
+          path: _repal_assets
+          fetch-depth: 1
+
+      - name: Mount assets into site/assets
+        if: steps.assets_token.outputs.available == 'true'
+        run: |
+          rm -rf site/assets
+          ln -s "$PWD/_repal_assets/assets" site/assets
+          test -f site/assets/data/scenes.yaml
 
       - name: Install Rust toolchain with wasm32 target
         uses: dtolnay/rust-toolchain@stable

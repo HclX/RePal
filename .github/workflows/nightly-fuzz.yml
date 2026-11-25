@@ -26,28 +26,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Fetch pinned assets from RePal_Assets
+      - name: Validate PACKS_PUBLISH_TOKEN secret
         env:
-          GH_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+          PACKS_PUBLISH_TOKEN: ${{ secrets.PACKS_PUBLISH_TOKEN }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "ASSETS_REPO_TOKEN not set; cannot run 51-save fuzz suite."
-            exit 0
+          if [ -z "$PACKS_PUBLISH_TOKEN" ]; then
+            echo "::error::PACKS_PUBLISH_TOKEN not set; cannot checkout HclX/RePal_Assets for 51-save fuzz suite."
+            exit 1
           fi
-          python3 -c '
-          import json, subprocess, hashlib, pathlib
-          lock = json.load(open("assets-lock.json"))
-          subprocess.check_call([
-              "gh", "release", "download", lock["tag"],
-              "--repo", lock["repo"],
-              "--pattern", lock["filename"],
-              "--output", "pal-assets.tar.gz",
-          ])
-          actual = hashlib.sha256(pathlib.Path("pal-assets.tar.gz").read_bytes()).hexdigest()
-          assert actual == lock["sha256"], f"SHA-256 mismatch: {actual}"
-          subprocess.check_call(["tar", "-xzf", "pal-assets.tar.gz", "-C", "site"])
-          pathlib.Path("pal-assets.tar.gz").unlink()
-          '
+
+      - name: Checkout HclX/RePal_Assets
+        uses: actions/checkout@v4
+        with:
+          repository: HclX/RePal_Assets
+          ref: main
+          token: ${{ secrets.PACKS_PUBLISH_TOKEN }}
+          path: _repal_assets
+          fetch-depth: 1
+
+      - name: Mount assets into site/assets
+        run: |
+          rm -rf site/assets
+          ln -s "$PWD/_repal_assets/assets" site/assets
+          test -f site/assets/data/scenes.yaml
+          test "$(ls site/assets/orig_saves/*.rpg | wc -l)" -eq 51
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -63,10 +65,6 @@ jobs:
           PAL_CONT_FOLLOW: "600"
           PAL_PARSER_FUZZ_ITERS: "3000"
         run: |
-          if [ ! -f site/assets/data/scenes.yaml ]; then
-            echo "Assets not present; skipping fuzz suite."
-            exit 0
-          fi
           cargo test -p pal-core --test fuzz_invariants --test fuzz_parsers --release -- --nocapture
           cargo test -p pal-runtime --features disk --test fuzz_runtime --release -- --nocapture
           cargo test -p pal-headless --test fuzz_text_mode --release -- --nocapture
