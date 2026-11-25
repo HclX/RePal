@@ -95,7 +95,7 @@ In explore mode, open the full RPG menu with `menu` (or `m`). Both headless and 
 | :--- | :--- |
 | `use <id \| name> [slot \| party_idx]` | Use a usable item (by `#id` or name) from the bag on party slot `party_idx` (default leader `0`), trigger field/quest items (e.g. `破天锤`, `桂花酒`), OR in battle automatically use/throw the item (equivalent to `item`). |
 | `magic <id \| name> [target_idx] [caster_idx]` | Cast a field-usable spell (by `#id` or name, e.g. `magic 气疗术 0` or `magic 296 0`) in `explore` mode (aliases: `cast`, `m <id\|name> ...`). |
-| `equip <id \| name> [party_idx]` | Equip a weapon/armor/accessory (by `#id` or name) on party slot `party_idx` (default `0`). |
+| `equip <id \| name> [party_idx]` | Equip a weapon/armor/accessory (by `#id` or name) on party slot `party_idx` (default `0`). **Argument order is `<item> <party_idx>`** — e.g. `equip 铁剑 0`, `equip 玉佛珠 1`. |
 | `buy <shop_idx> [qty]` / `sell <id \| name> [qty]` | Transact inside active Shop / Pawnshop. **Note**: Regular shops (`ui_view: shop`, e.g. blacksmith/medicine shops) are **buy-only** (`buy`); `sell` ONLY works inside a **Pawnshop** (`ui_view: pawnshop` / 当铺). |
 
 ### Turn-Based Battles
@@ -126,11 +126,18 @@ In explore mode, open the full RPG menu with `menu` (or `m`). Both headless and 
 1. **Read the dialogues**: Quest objectives and next NPCs are told directly in the dialogue lines returned by `continue` (`log`).
 2. **Giving quest items to NPCs**: In 1995 Chinese Paladin, giving a quest item (e.g., 桂花酒 `#272` to 醉道士) requires standing right next to / facing the NPC (`goto <ev_id>`) and running **`use <item_id>`** — `talk` alone just repeats their hint!
 3. **Navigate blind with `map` + `walkable_dist` (`--obs fair`)**: In `--obs fair` mode, `map` shows the exact walkable floor (`.`), walls (`#`), occluded cells (`?`), exterior void (` `), visible events/NPCs (`E`), and visible doorways/stairs (`>`). Use `goto <ev_id>` for visible exits/NPCs, or `sw`/`nw`/`ne`/`se [steps]` guided by `walkable_dist` to explore rooms without taking any screenshots.
+   - **Dynamic opened doors**: Right after opening a stone/mechanism door (e.g. `雕龙石壁机关`), if `walkable_dist` still reports `0` on the adjacent tile, test stepping 1 tile (`sw`/`nw`/`ne`/`se 1`) through the doorway before assuming it is blocked.
 4. **Interacting with exits vs NPCs**:
    - For `出口/传送` / `出口` (`portal` / `exit`): `goto <ev_id>` walks onto the trigger zone and transitions scenes automatically.
    - **Blocked exits / closed doors**: If an exit is blocked by adjacent objects (or `goto` returns `unreachable` with `artifacts.goto.blockers`), try `talk <id>` or `search` on the blocking object first — many closed doors, curtains, and fences open when examined, after which `goto <exit_id>` enters cleanly.
+   - **Cross-floor / disconnected targets (`disconnected: true`)**: If `goto` returns `artifacts.goto.disconnected: true`, the target is on another disconnected floor/platform (NOT blocked by an NPC); inspect `artifacts.goto.reachable_exits` to find the staircase/portal connecting that region.
    - For `NPC/交互` (people/chests/items): `talk <ev_id>` walks up to them and triggers their interaction script.
    - If `goto <ev_id>` stops 1–2 steps short because the NPC is solid, follow up with `talk` or step 1 tile toward them and `search`.
-5. **Narrate key decisions with `think`**: Emit concise `think <text>` commentary (15–40 chars, plain CJK/Latin without emoji; wrap in quotes if containing `;`) when arriving at new objectives, solving puzzles, or making tactical battle choices — it appears live in 4× HD and is recorded cleanly in `.repal` (`annotations.json`) and exportable to `.srt`.
-6. **Take screenshots & file bugs**: `shot [path]` saves a settled thought-free 4× HD PNG (`shot --with-thought [path]` includes the HD subtitle bar), and `bugreport <description>` exports full diagnostics!
-7. **Spectator Mode pacing**: When connected to `repal --listen` / `--gui --text` with a human watching, do **not** spam skip keys during cutscenes, and let dialogues advance naturally so spectators can read the story.
+5. **Dungeon switches & narrow-corridor combat**:
+   - **Toggleable pressure plates**: Floor switches (e.g. General's Tomb `菱形石砖踏板`) are **two-way toggles** — stepping on an already-triggered plate while backtracking closes the stone door again! Track triggered plate coordinates and route around them on return trips.
+   - **Pre-battle dialogue (`mode == "dialog"` with `battle.active == true`)**: Some encounters (e.g. `菜刀婆婆`) play dialogue before the first battle turn. Always check `mode == "dialog"` and send `next`/`continue` **before** dispatching battle commands (`attack`/`magic`).
+   - **Narrow-corridor `flee` loops**: Fleeing in a 1-tile-wide dungeon corridor leaves the wandering monster right next to you, causing immediate re-engagement if you step forward. Defeat the enemy, use `驱魔香` (incense), or step back / `wait` for it to wander away.
+6. **Recording continuous `.repal` replays**: One-shot per-turn `repal --text --save` restarts do **not** produce a single continuous `.repal` archive unless `--record` is used. To record a full playable `.repal` (with `annotations.json` AI thoughts), run a **persistent** stdio or `--listen` TCP session and run `replay-export <path.repal>` before quitting.
+7. **Narrate key decisions with `think`**: Emit concise `think <text>` commentary (15–40 chars, plain CJK/Latin without emoji; wrap in quotes if containing `;`) when arriving at new objectives, solving puzzles, or making tactical battle choices — it appears live in 4× HD and is recorded cleanly in `.repal` (`annotations.json`) and exportable to `.srt`.
+8. **Take screenshots & file bugs**: `shot [path]` saves a settled thought-free 4× HD PNG (`shot --with-thought [path]` includes the HD subtitle bar), and `bugreport <description>` exports full diagnostics!
+9. **Spectator Mode pacing**: When connected to `repal --listen` / `--gui --text` with a human watching, do **not** spam skip keys during cutscenes, and let dialogues advance naturally so spectators can read the story.
