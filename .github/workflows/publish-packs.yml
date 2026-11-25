@@ -58,6 +58,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: HclX/RePal_Packs
+          ref: main
           token: ${{ secrets.PACKS_PUBLISH_TOKEN }}
           path: _repal_packs
           fetch-depth: 1
