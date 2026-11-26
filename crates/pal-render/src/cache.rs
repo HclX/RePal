@@ -583,6 +583,14 @@ impl AssetCache {
         self.permanent_missing.insert(id);
     }
 
+    /// Forget all permanent-missing / failed-cooldown marks so those assets are requested again.
+    /// Hosts call this after new asset packages become available (e.g. a chapter package finished
+    /// downloading), because assets requested while it was still downloading were marked missing.
+    pub fn forget_missing(&mut self) {
+        self.permanent_missing.clear();
+        self.failed_until.clear();
+    }
+
     fn evict_lru_if_needed(&mut self) {
         while self.total_texture_bytes > self.max_texture_bytes {
             let victim = self
@@ -680,6 +688,24 @@ mod tests {
         }
         assert!(cache.get_or_request_hd_map("graphics/maps_hd/map_200/meta.json").is_none());
         assert!(cache.pop_request().is_none());
+    }
+
+    #[test]
+    fn forget_missing_allows_rerequest_after_packages_arrive() {
+        let mut cache = AssetCache::new(64 * 1024 * 1024);
+        let key = "graphics/maps_hd/map_012/meta.json";
+        cache.mark_missing_permanent(AssetKind::HdMapMeta, key);
+        assert!(cache.get_or_request_hd_map(key).is_none());
+        assert!(
+            cache.pop_request().is_none(),
+            "poisoned while the chapter was downloading"
+        );
+        cache.forget_missing();
+        assert!(cache.get_or_request_hd_map(key).is_none());
+        assert!(
+            cache.pop_request().is_some(),
+            "requested again once the package is available"
+        );
     }
 
     #[test]

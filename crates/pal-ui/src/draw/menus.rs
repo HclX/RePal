@@ -367,9 +367,18 @@ pub(super) fn draw_remake_submenu(
             tr(ui, "匯出錄像", "导出录像", "Export Replay").to_string(),
         ]
     };
+    let mut items = items;
+    if !ui.replay_mode {
+        if let Some(dl) = ui.download_all_label.clone() {
+            items.push(dl);
+        }
+    }
 
     let (n_rows, row_pitch, font_sz) = if ui.replay_mode {
         ((items.len() as i32 - 1).max(1), 17, (10 * s) as u16)
+    } else if items.len() > 10 {
+        // 11th host item ("download all assets", #18): tighten the pitch to stay within y=10..190.
+        (8, 15, (9 * s) as u16)
     } else {
         // Fit all 10 gameplay remake options cleanly within y=10..190 without bottom clipping (#168).
         (8, 16, (9 * s) as u16)

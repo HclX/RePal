@@ -478,6 +478,9 @@ impl DesktopApp {
             }
             Some(res) => {
                 self.download_all_job = None;
+                if let Some(rt) = self.rt.as_mut() {
+                    rt.compositor.cache.forget_missing();
+                }
                 let lang = self
                     .rt
                     .as_ref()
@@ -696,5 +699,8 @@ fn complete_scene_load(
     if let Some(g) = rt.game.as_mut() {
         load_scene_assets_from_vfs(vfs, g, map_id);
     }
+    // While a chapter package was downloading, the renderer may already have requested the new
+    // scene's map tiles and marked them permanently missing; let them be requested again now.
+    rt.compositor.cache.forget_missing();
     rt.reply(HostReply::SceneLoaded);
 }

@@ -562,7 +562,11 @@ impl UiState {
                 }
             }
             UiView::RemakeSubmenu => {
-                let count = if self.replay_mode { 5 } else { 10 };
+                let count = if self.replay_mode {
+                    5
+                } else {
+                    10 + usize::from(self.download_all_label.is_some())
+                };
                 if self.remake_sub_cursor >= count {
                     self.remake_sub_cursor = 0;
                 }
@@ -623,7 +627,8 @@ impl UiState {
                                     UiAction::ToggleAgentMode
                                 }
                                 8 => UiAction::RestartRecording,
-                                _ => UiAction::ExportReplay,
+                                9 => UiAction::ExportReplay,
+                                _ => UiAction::DownloadAllAssets,
                             }
                         }
                     }
