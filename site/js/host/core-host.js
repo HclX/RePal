@@ -582,7 +582,7 @@ export class RustCoreHost {
           "",
           "### 附件（已自动下载到本地）",
           `- 截图：\`${pngFile}\`${copiedImg ? "（已复制到剪贴板，按 Ctrl+V / Cmd+V 直接粘贴到此处）" : "（请拖入此处）"}`,
-          `- 确定性录像：\`${jsonFile}\`（请拖入此处，本地可用 \`pal-headless --core-replay\` 100% 复现）`,
+          `- 确定性录像：\`${jsonFile}\`（请拖入此处，本地可用 \`repal --replay ${jsonFile}\` 100% 复现）`,
         ].join("\n");
         const url = `https://github.com/HclX/RePal/issues/new?labels=bug&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
         window.open(url, "_blank", "noopener,noreferrer");
