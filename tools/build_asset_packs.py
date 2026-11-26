@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import collections
 import hashlib
+import hmac
 import json
 import os
 import re
@@ -258,6 +259,54 @@ def scan_all_assets(assets_root: Path) -> Dict[str, Path]:
 
 # FBP backdrops referenced by engine/UI code rather than scripts; must ship in `boot`.
 ENGINE_FBP_IDS = (0, 1, 2, 3, 4, 60, 68, 69)
+
+
+def asset_category(key: str) -> str:
+    """Stable shard category of an asset key (`data`, `mgo`, `maps_hd`, `bgm_hd`, `fonts`, ...)."""
+    parts = key.split("/")
+    if parts[0] in ("data", "orig_saves") or key in ("manifest.json", "pack_key_index.json"):
+        return "data"
+    if parts[0] in ("graphics", "audio") and len(parts) > 2:
+        return parts[1]
+    return parts[0] if len(parts) > 1 else "misc"
+
+
+def stable_shards(
+    pid: str, keys: Iterable[str], all_files: Dict[str, Path], max_bytes: int
+) -> List[Tuple[str, List[str]]]:
+    """Split one package into `(shard_id, keys)` by category, then by size within a category.
+    `data` comes first (it carries `pack_key_index.json` for boot packages)."""
+    by_cat: Dict[str, List[str]] = collections.defaultdict(list)
+    for k in keys:
+        by_cat[asset_category(k)].append(k)
+    out: List[Tuple[str, List[str]]] = []
+    for cat in sorted(by_cat, key=lambda c: (c != "data", c)):
+        chunks: List[List[str]] = []
+        cur: List[str] = []
+        cur_sz = 0
+        for k in sorted(by_cat[cat]):
+            sz = all_files[k].stat().st_size if k in all_files else 0
+            if cur and cur_sz + sz > max_bytes:
+                chunks.append(cur)
+                cur, cur_sz = [], 0
+            cur.append(k)
+            cur_sz += sz
+        if cur:
+            chunks.append(cur)
+        for n, chunk in enumerate(chunks, start=1):
+            sid = f"{pid}-{cat}" if len(chunks) == 1 else f"{pid}-{cat}-{n}"
+            out.append((sid, chunk))
+    return out
+
+
+def derive_content_key(master_key: bytes, pack_id: str, entry_map: Dict[str, bytes]) -> bytes:
+    """HMAC-SHA256(master, pack_id + digest of every (key, sha256(content))) — deterministic and
+    content-bound, so identical packs encrypt identically while any content change rotates the key."""
+    h = hashlib.sha256()
+    for k in sorted(entry_map):
+        h.update(k.encode("utf-8") + b"\0" + hashlib.sha256(entry_map[k]).digest())
+    msg = b"repal-pack-content/v1\0" + pack_id.encode("utf-8") + b"\0" + h.digest()
+    return hmac.new(master_key, msg, hashlib.sha256).digest()
 
 
 def team_enemy_ids(team: dict) -> List[int]:
@@ -852,39 +901,22 @@ def cmd_build(args: argparse.Namespace) -> int:
     boot_ids = [BASE_PACK]
     shared_ids: List[str] = []
 
-    # Optional automatic sharding (`--max-pack-mb 18`) so every `.rpk` fits under CDN per-file
-    # caps such as jsDelivr's 20 MiB GitHub limit (#237).
+    # Stable sharding (`--max-pack-mb 18`, jsDelivr's 20 MiB per-file cap): split each package by
+    # asset category first (data, mgo, maps_hd, bgm_hd, ...) and only then fill size-limited shards
+    # in sorted order *within* a category. A size change in one category (e.g. a translation fix in
+    # `data/`) can therefore never shift shard boundaries in another; together with deterministic
+    # content keys, unchanged shards stay byte-identical across publishes and stay cached (#18).
     max_pack_bytes = int(args.max_pack_mb * 1024 * 1024) if args.max_pack_mb and args.max_pack_mb > 0 else 0
     if max_pack_bytes > 0:
         sharded_map: Dict[str, List[str]] = {}
         for pid in list(sorted(pack_keys.keys())):
-            ks = sorted(pack_keys[pid])
-            total_sz = sum(all_files[k].stat().st_size for k in ks)
-            if total_sz <= max_pack_bytes or len(ks) <= 1:
-                continue
-            shards: List[List[str]] = []
-            cur: List[str] = []
-            cur_sz = 0
-            for k in ks:
-                sz = all_files[k].stat().st_size
-                if cur and cur_sz + sz > max_pack_bytes:
-                    shards.append(cur)
-                    cur = [k]
-                    cur_sz = sz
-                else:
-                    cur.append(k)
-                    cur_sz += sz
-            if cur:
-                shards.append(cur)
-            if len(shards) <= 1:
+            shards = stable_shards(pid, pack_keys[pid], all_files, max_pack_bytes)
+            if len(shards) <= 1 and shards and shards[0][0] == pid:
                 continue
             del pack_keys[pid]
-            new_ids = []
-            for idx, shard_ks in enumerate(shards, start=1):
-                spid = f"{pid}-{idx}"
-                pack_keys[spid] = set(shard_ks)
-                new_ids.append(spid)
-            sharded_map[pid] = new_ids
+            for spid, ks in shards:
+                pack_keys[spid] = set(ks)
+            sharded_map[pid] = [spid for spid, _ in shards]
 
         if sharded_map:
             def expand(id_list: List[str]) -> List[str]:
@@ -931,7 +963,11 @@ def cmd_build(args: argparse.Namespace) -> int:
         if pid == boot_primary:
             entry_map["pack_key_index.json"] = key_index_bytes
 
-        content_key = secrets.token_bytes(32) if master_key is not None else None
+        # Deterministic per-pack content key bound to the pack's exact contents: unchanged packs
+        # re-encrypt to identical bytes (same SHA/filename -> clients keep their cached copy), and
+        # since entry nonces are derived from (pack_id, index), a key is only ever reused for the
+        # very same plaintext.
+        content_key = derive_content_key(master_key, pid, entry_map) if master_key is not None else None
         rpk_bytes, entry_count = write_rpk_bytes(
             pid,
             entry_map,
@@ -990,7 +1026,9 @@ def cmd_build(args: argparse.Namespace) -> int:
     )
     groups: Dict[str, List[str]] = collections.defaultdict(list)
     for pid in packs_meta:
-        groups[re.sub(r"-\d+$", "", pid) if pid not in REGION_SLUGS else pid].append(pid)
+        owner = next((g for g in [BASE_PACK] + sorted(REGION_SLUGS, key=len, reverse=True)
+                      if pid == g or pid.startswith(g + "-")), pid)
+        groups[owner].append(pid)
     for g in [BASE_PACK] + [r for r, _lo, _hi in REGION_RANGES]:
         ids = groups.get(g)
         if not ids:
