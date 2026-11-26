@@ -19,7 +19,7 @@ import {
 } from "./host/asset-provider.js";
 import { POINTER_KIND } from "./host/wasm-presenter.js";
 import { RustCoreHost, fetchArrayBuffer } from "./host/core-host.js";
-import { PackManager } from "./host/pack-manager.js";
+import { PackManager, masterKeyHexFromPassphrase } from "./host/pack-manager.js";
 import { GamepadController } from "./host/gamepad.js";
 import { WebReplayTheater } from "./host/replay-theater.js";
 import { WebAgentHost } from "./host/web-agent.js";
@@ -43,7 +43,7 @@ function promptPackKeyOverlay(overlay, statusEl, message) {
     const inp = document.createElement("input");
     inp.type = "password";
     inp.autocomplete = "off";
-    inp.placeholder = "输入 64 位资产包密钥 (Enter 64-hex pack key)";
+    inp.placeholder = "输入资源包口令或 64 位密钥 (passphrase or 64-hex key)";
     inp.style.cssText =
       "width:320px;padding:7px 10px;border-radius:6px;border:1px solid #56c2b1;background:#0d171c;color:#f3ecdc;font-size:13px;font-family:monospace;";
     const btn = document.createElement("button");
@@ -51,16 +51,10 @@ function promptPackKeyOverlay(overlay, statusEl, message) {
     btn.style.cssText =
       "padding:7px 14px;border-radius:6px;border:0;background:#e0b96b;color:#142026;font-weight:600;cursor:pointer;";
     const submit = () => {
-      const clean = inp.value.trim().toLowerCase();
-      if (!/^[0-9a-f]{64}$/.test(clean)) {
-        if (statusEl) statusEl.textContent = "密钥格式无效：需要 64 位十六进制字符 (64 hex chars)";
-        return;
-      }
-      try {
-        localStorage.setItem(PACK_KEY_STORAGE_KEY, clean);
-      } catch {}
+      const raw = inp.value.trim();
+      if (!raw) return;
       box.remove();
-      resolve(clean);
+      resolve(raw);
     };
     btn.onclick = submit;
     inp.addEventListener("keydown", (e) => {
@@ -257,6 +251,14 @@ class PalRemakeApp {
           },
         });
         await pm.init();
+        if (keyHex) {
+          // Remember the resolved master key (never the passphrase) and ask the browser to keep
+          // this origin's storage so TV/console browsers don't evict it (#18).
+          try {
+            localStorage.setItem(PACK_KEY_STORAGE_KEY, keyHex);
+          } catch {}
+          navigator.storage?.persist?.().catch(() => {});
+        }
         this.packManager = pm;
         this.renderer.packManager = pm;
         this.renderer.presenter.assets.packManager = pm;
@@ -277,10 +279,28 @@ class PalRemakeApp {
         try {
           localStorage.removeItem(PACK_KEY_STORAGE_KEY);
         } catch {}
-        const promptMsg = keyHex
-          ? "密钥校验失败，请重新输入 64 位资产包密钥 (Invalid key, please retry)"
-          : "当前资产包已加密，请输入 64 位资产包密钥（仅需输入一次）";
-        keyHex = await promptPackKeyOverlay(this.loadingOverlay, this.loadingText, promptMsg);
+        let promptMsg = keyHex
+          ? "口令或密钥校验失败，请重试 (Wrong passphrase or key, please retry)"
+          : "当前资产包已加密，请输入资源包口令或 64 位密钥（仅需输入一次）";
+        for (;;) {
+          const entered = await promptPackKeyOverlay(this.loadingOverlay, this.loadingText, promptMsg);
+          if (/^[0-9a-fA-F]{64}$/.test(entered)) {
+            keyHex = entered.toLowerCase();
+            break;
+          }
+          this.setBootProgress(0.25, "正在验证口令... (Checking passphrase)");
+          let manifest = null;
+          try {
+            const r = await fetch(manifestUrl, { cache: "no-cache" });
+            manifest = r.ok ? await r.json() : null;
+          } catch {}
+          const hex = manifest ? await masterKeyHexFromPassphrase(manifest, entered) : null;
+          if (hex) {
+            keyHex = hex;
+            break;
+          }
+          promptMsg = "口令不正确，请重试 (Wrong passphrase, please retry)";
+        }
         this.setBootProgress(0.26, "正在解密启动资产包...");
       }
     }

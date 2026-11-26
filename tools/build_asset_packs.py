@@ -299,6 +299,24 @@ def stable_shards(
     return out
 
 
+PASSPHRASE_KDF_ITERATIONS = 600_000
+
+
+def normalize_passphrase(raw: str) -> str:
+    """Trim, collapse whitespace and lowercase — must match pal-runtime `normalize_passphrase`
+    and Web `normalizePassphrase` exactly."""
+    return " ".join(raw.split()).lower()
+
+
+def wrap_master_key_with_passphrase(master_key: bytes, passphrase: str, iterations: int = PASSPHRASE_KDF_ITERATIONS) -> dict:
+    """Manifest `master_key_wraps` entry: PBKDF2-HMAC-SHA256(passphrase) -> AES-256-GCM(master)."""
+    salt = secrets.token_bytes(16)
+    kek = hashlib.pbkdf2_hmac("sha256", normalize_passphrase(passphrase).encode("utf-8"), salt, iterations, 32)
+    nonce = secrets.token_bytes(12)
+    ct = aes256_gcm_encrypt(kek, nonce, b"repal-master-wrap/v1", master_key)
+    return {"kdf": "pbkdf2-sha256", "iterations": iterations, "salt": salt.hex(), "wrapped": "v1:" + (nonce + ct).hex()}
+
+
 def derive_content_key(master_key: bytes, pack_id: str, entry_map: Dict[str, bytes]) -> bytes:
     """HMAC-SHA256(master, pack_id + digest of every (key, sha256(content))) — deterministic and
     content-bound, so identical packs encrypt identically while any content change rotates the key."""
@@ -994,6 +1012,14 @@ def cmd_build(args: argparse.Namespace) -> int:
             desc["wrapped_key"] = wrap_pack_key(master_key, pid, content_key)
         packs_meta[pid] = desc
 
+    master_key_wraps = []
+    if master_key is not None and args.passphrase_env:
+        phrase = os.environ.get(args.passphrase_env, "")
+        if phrase.strip():
+            master_key_wraps.append(wrap_master_key_with_passphrase(master_key, phrase))
+        else:
+            print(f"warning: --passphrase-env {args.passphrase_env} is empty; no passphrase wrap emitted", file=sys.stderr)
+
     manifest = {
         "format": PACK_MANIFEST_FORMAT,
         "schema_version": PACK_SCHEMA_VERSION,
@@ -1007,6 +1033,8 @@ def cmd_build(args: argparse.Namespace) -> int:
         "prefetch": prefetch_map,
         "key_index_entry": "pack_key_index.json",
     }
+    if master_key_wraps:
+        manifest["master_key_wraps"] = master_key_wraps
     manifest_bytes = (json.dumps(manifest, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
     manifest_path = out_dir / "pack-manifest.json"
     manifest_path.write_bytes(manifest_bytes)
@@ -1102,6 +1130,7 @@ def main() -> int:
     pb.add_argument("--master-key-hex", default="", help="64-hex-char master key (for dev/CI)")
     pb.add_argument("--master-key-file", default="", help="Path to file containing 64-hex-char master key")
     pb.add_argument("--master-key-env", default="", help="Env var name containing 64-hex-char master key (recommended for CI)")
+    pb.add_argument("--passphrase-env", default="", help="Env var holding a player passphrase; adds a PBKDF2-wrapped master key to the manifest")
 
     pr = sub.add_parser("rotate-key", help="Re-wrap pack content keys in pack-manifest.json under a new master key")
     pr.add_argument("--manifest", required=True, help="Path to pack-manifest.json")

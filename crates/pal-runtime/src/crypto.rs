@@ -506,9 +506,162 @@ pub fn parse_key_hex(raw: &str) -> Result<[u8; 32], String> {
         .map_err(|v: Vec<u8>| format!("expected 32-byte (64 hex char) key, got {} bytes", v.len()))
 }
 
+
+/// HMAC-SHA256 (RFC 2104).
+pub fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] {
+    let mut k = [0u8; 64];
+    if key.len() > 64 {
+        k[..32].copy_from_slice(&sha256(key));
+    } else {
+        k[..key.len()].copy_from_slice(key);
+    }
+    let mut ipad = [0x36u8; 64];
+    let mut opad = [0x5cu8; 64];
+    for i in 0..64 {
+        ipad[i] ^= k[i];
+        opad[i] ^= k[i];
+    }
+    let mut inner = Sha256::new();
+    inner.update(&ipad);
+    inner.update(msg);
+    let ih = inner.finalize();
+    let mut outer = Sha256::new();
+    outer.update(&opad);
+    outer.update(&ih);
+    outer.finalize()
+}
+
+/// PBKDF2-HMAC-SHA256 (RFC 8018) producing `out.len()` bytes.
+pub fn pbkdf2_hmac_sha256(password: &[u8], salt: &[u8], iterations: u32, out: &mut [u8]) {
+    for (block_idx, chunk) in out.chunks_mut(32).enumerate() {
+        let mut msg = salt.to_vec();
+        msg.extend_from_slice(&((block_idx as u32) + 1).to_be_bytes());
+        let mut u = hmac_sha256(password, &msg);
+        let mut t = u;
+        for _ in 1..iterations.max(1) {
+            u = hmac_sha256(password, &u);
+            for (a, b) in t.iter_mut().zip(u.iter()) {
+                *a ^= *b;
+            }
+        }
+        chunk.copy_from_slice(&t[..chunk.len()]);
+    }
+}
+
+/// Normalize a human-entered pack passphrase so TV/remote typos in case or spacing don't matter:
+/// trim, lowercase, and collapse internal whitespace runs to a single space. Must match the
+/// builder (`tools/build_asset_packs.py`) and Web (`pack-manager.js`) normalization exactly.
+pub fn normalize_passphrase(raw: &str) -> String {
+    raw.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
+const MASTER_WRAP_AAD: &[u8] = b"repal-master-wrap/v1";
+
+/// Unwrap the 32-byte master pack key from a manifest `master_key_wraps` entry using a passphrase.
+pub fn unwrap_master_key_with_passphrase(
+    passphrase: &str,
+    salt_hex: &str,
+    iterations: u32,
+    wrapped: &str,
+) -> Result<[u8; 32], String> {
+    let salt = hex_decode(salt_hex)?;
+    let mut kek = [0u8; 32];
+    pbkdf2_hmac_sha256(
+        normalize_passphrase(passphrase).as_bytes(),
+        &salt,
+        iterations,
+        &mut kek,
+    );
+    let hex_part = wrapped
+        .trim()
+        .strip_prefix("v1:")
+        .ok_or_else(|| "unsupported master_key_wraps version (expected 'v1:...')".to_string())?;
+    let blob = hex_decode(hex_part)?;
+    if blob.len() != 12 + 32 + 16 {
+        return Err(format!("invalid master key wrap length {}", blob.len()));
+    }
+    let nonce: [u8; 12] = blob[..12].try_into().unwrap();
+    let pt = aes256_gcm_decrypt(&kek, &nonce, MASTER_WRAP_AAD, &blob[12..])
+        .map_err(|_| "wrong passphrase".to_string())?;
+    pt.try_into()
+        .map_err(|_| "unwrapped master key is not 32 bytes".to_string())
+}
+
+/// Wrap `master_key` under a passphrase-derived key (used by tests; the builder does the same).
+pub fn wrap_master_key_with_passphrase(
+    passphrase: &str,
+    salt: &[u8],
+    iterations: u32,
+    master_key: &[u8; 32],
+    nonce: &[u8; 12],
+) -> String {
+    let mut kek = [0u8; 32];
+    pbkdf2_hmac_sha256(
+        normalize_passphrase(passphrase).as_bytes(),
+        salt,
+        iterations,
+        &mut kek,
+    );
+    let ct = aes256_gcm_encrypt(&kek, nonce, MASTER_WRAP_AAD, master_key);
+    let mut blob = nonce.to_vec();
+    blob.extend_from_slice(&ct);
+    format!("v1:{}", hex_encode(&blob))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pbkdf2_and_hmac_match_known_vectors() {
+        // RFC 4231 test case 2.
+        assert_eq!(
+            hex_encode(&hmac_sha256(b"Jefe", b"what do ya want for nothing?")),
+            "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+        );
+        // RFC 7914 section 11, PBKDF2-HMAC-SHA256 vector 1.
+        let mut out = [0u8; 64];
+        pbkdf2_hmac_sha256(b"passwd", b"salt", 1, &mut out);
+        assert_eq!(
+            hex_encode(&out),
+            "55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc49ca9cccf179b645991664b39d77ef317c71b845b1e30bd509112041d3a19783"
+        );
+    }
+
+    #[test]
+    fn unwraps_python_builder_passphrase_wrap() {
+        // Produced by tools/build_asset_packs.py (normalize + hashlib.pbkdf2_hmac + AES-GCM).
+        let k = unwrap_master_key_with_passphrase(
+            "xian jian qi xia",
+            "726570616c2d746573742d73616c7421",
+            2000,
+            "v1:6e6f6e63652d3132627974658e6ae6420037fbefcd9e7aa75ca919bc05658bc8afe8c714d303c4cceba501bc6bd3a5757b86e01cf162f1a772f4ebda",
+        )
+        .unwrap();
+        let expect: Vec<u8> = (0u8..32).collect();
+        assert_eq!(k.to_vec(), expect);
+    }
+
+    #[test]
+    fn passphrase_wrap_roundtrip_normalizes_case_and_spaces() {
+        let master = [0x42u8; 32];
+        let w = wrap_master_key_with_passphrase(
+            "Xian Jian  1995",
+            b"saltsaltsaltsalt",
+            1000,
+            &master,
+            &[7u8; 12],
+        );
+        let salt_hex = hex_encode(b"saltsaltsaltsalt");
+        assert_eq!(
+            unwrap_master_key_with_passphrase("  xian   JIAN 1995 ", &salt_hex, 1000, &w).unwrap(),
+            master
+        );
+        assert!(unwrap_master_key_with_passphrase("xian jian 1996", &salt_hex, 1000, &w).is_err());
+    }
 
     #[test]
     fn sha256_and_crc32_match_standard_vectors() {

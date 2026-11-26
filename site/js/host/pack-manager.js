@@ -115,6 +115,42 @@ function buildAad(packId, key) {
 }
 
 /** Unwrap a manifest `wrapped_key` (`v1:<hex(12B nonce || 32B ct || 16B tag)>`) using 32-byte master key. */
+/** Trim, collapse whitespace, lowercase — must match pal-runtime / builder normalization. */
+export function normalizePassphrase(raw) {
+  return String(raw || "").trim().split(/\s+/).filter(Boolean).join(" ").toLowerCase();
+}
+
+/**
+ * Unlock the 64-hex master pack key from a manifest's `master_key_wraps` using a player
+ * passphrase (PBKDF2-HMAC-SHA256 -> AES-256-GCM, #18). Returns null if none matches.
+ */
+export async function masterKeyHexFromPassphrase(manifest, passphrase) {
+  const wraps = Array.isArray(manifest?.master_key_wraps) ? manifest.master_key_wraps : [];
+  if (!wraps.length) return null;
+  const subtle = await getSubtle();
+  const pw = new TextEncoder().encode(normalizePassphrase(passphrase));
+  const base = await subtle.importKey("raw", pw, "PBKDF2", false, ["deriveBits"]);
+  for (const w of wraps) {
+    if (w?.kdf !== "pbkdf2-sha256" || !String(w.wrapped || "").startsWith("v1:")) continue;
+    try {
+      const bits = await subtle.deriveBits(
+        { name: "PBKDF2", salt: hexToBytes(w.salt), iterations: w.iterations, hash: "SHA-256" },
+        base,
+        256
+      );
+      const kek = await subtle.importKey("raw", bits, { name: "AES-GCM" }, false, ["decrypt"]);
+      const blob = hexToBytes(String(w.wrapped).slice(3));
+      const pt = await subtle.decrypt(
+        { name: "AES-GCM", iv: blob.slice(0, 12), additionalData: new TextEncoder().encode("repal-master-wrap/v1") },
+        kek,
+        blob.slice(12)
+      );
+      return Array.from(new Uint8Array(pt), (b) => b.toString(16).padStart(2, "0")).join("");
+    } catch {}
+  }
+  return null;
+}
+
 export async function unwrapPackKey(masterKeyBytes, packId, wrappedKey) {
   const rest = String(wrappedKey || "");
   if (!rest.startsWith("v1:")) {

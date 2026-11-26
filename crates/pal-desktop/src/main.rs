@@ -33,7 +33,7 @@ use pal_headless::text_mode::{
 use pal_runtime::disk::{
     boot_runtime_from_vfs, load_scene_assets_from_vfs, pump_render_assets_from_vfs,
 };
-use pal_runtime::pack_vfs::{load_pack_key_from_env_or_dir, OverlayVfs};
+use pal_runtime::pack_vfs::{load_pack_key_for_packs, OverlayVfs};
 use pal_runtime::PalRuntime;
 use pal_ui::{PointerEvent, PointerKind, UiAction, UiKey, UiView};
 use replay_ui::{
@@ -256,7 +256,7 @@ impl DesktopApp {
             && self.cfg.script_file.is_none();
 
         let mut retry_hint: Option<String> = None;
-        match load_pack_key_from_env_or_dir(Some(&self.cfg.user_dir)) {
+        match load_pack_key_for_packs(Some(&self.cfg.user_dir), packs_dir) {
             Ok(key) => {
                 match OverlayVfs::from_packs_dir(
                     packs_dir.to_path_buf(),
@@ -295,22 +295,29 @@ impl DesktopApp {
         loop {
             let prompt = match &retry_hint {
                 Some(h) => h.clone(),
-                None => "Enter the 64-hex Asset Pack Key to decrypt RePal assets (saved locally on success):\n请输入 64 位十六进制资源包密钥（验证成功后将自动保存到本地）："
+                None => "Enter the asset pack passphrase (or the 64-hex key); saved locally on success:\n请输入资源包口令（或 64 位十六进制密钥），验证成功后将自动保存到本地："
                     .to_string(),
             };
             let Some(entered) = os_bridge::run_os_pack_key_prompt(&prompt) else {
                 return Err(format!(
-                    "Encrypted asset packs require a 64-hex key (set REPAL_PACK_KEY or save to {}).",
+                    "Encrypted asset packs require the passphrase or 64-hex key (set REPAL_PACK_KEY or save to {}).",
                     key_file_hint.display()
                 ));
             };
-            let parsed_key = match pal_runtime::crypto::parse_key_hex(&entered) {
+            // Accept either the 64-hex key or the release passphrase (unlocked via the manifest).
+            let manifest = std::fs::read_to_string(packs_dir.join("pack-manifest.json"))
+                .ok()
+                .and_then(|t| pal_runtime::rpk_manifest::PackManifest::from_json_str(&t).ok());
+            let parsed_key = match pal_runtime::pack_vfs::resolve_pack_key_input(
+                &entered,
+                manifest.as_ref(),
+            ) {
                 Ok(k) => k,
                 Err(_) => {
                     retry_hint = Some(
-                        "Invalid key format — expected 64 hexadecimal characters. Please try again.\n密钥格式错误（需要 64 位十六进制字符），请重试。"
-                            .to_string(),
-                    );
+                            "Wrong passphrase or invalid key — please try again.\n口令错误或密钥格式无效，请重试。"
+                                .to_string(),
+                        );
                     continue;
                 }
             };
@@ -321,7 +328,9 @@ impl DesktopApp {
                 true,
             ) {
                 Ok(vfs) => {
-                    if let Err(e) = os_bridge::save_pack_key_file(&self.cfg.user_dir, &entered) {
+                    // Always persist the resolved 64-hex master key (never the passphrase itself).
+                    let key_hex = pal_runtime::crypto::hex_encode(&parsed_key);
+                    if let Err(e) = os_bridge::save_pack_key_file(&self.cfg.user_dir, &key_hex) {
                         eprintln!("[repal] warning: failed to save pack.key: {e}");
                     }
                     return Ok(vfs);

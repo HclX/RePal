@@ -34,6 +34,54 @@ pub fn load_pack_key_from_env_or_dir(user_dir: Option<&Path>) -> Result<Option<[
     Ok(None)
 }
 
+/// Resolve user-entered key material: a 64-hex master key, or a passphrase unlocked through the
+/// manifest's `master_key_wraps` (#18). Returns the 32-byte master key.
+pub fn resolve_pack_key_input(
+    raw: &str,
+    manifest: Option<&PackManifest>,
+) -> Result<[u8; 32], String> {
+    let trimmed = raw.trim();
+    if trimmed.len() == 64 && trimmed.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return parse_key_hex(trimmed);
+    }
+    let wraps = manifest
+        .map(|m| m.master_key_wraps.as_slice())
+        .unwrap_or(&[]);
+    if wraps.is_empty() {
+        return Err(
+            "expected a 64-hex pack key (this pack release has no passphrase configured)".into(),
+        );
+    }
+    for w in wraps.iter().filter(|w| w.kdf == "pbkdf2-sha256") {
+        if let Ok(k) = crate::crypto::unwrap_master_key_with_passphrase(
+            trimmed,
+            &w.salt,
+            w.iterations,
+            &w.wrapped,
+        ) {
+            return Ok(k);
+        }
+    }
+    Err("wrong passphrase".into())
+}
+
+/// Like [`load_pack_key_from_env_or_dir`], but `REPAL_PACK_KEY` may also hold a passphrase, which
+/// is unlocked via `<packs_dir>/pack-manifest.json`.
+pub fn load_pack_key_for_packs(
+    user_dir: Option<&Path>,
+    packs_dir: &Path,
+) -> Result<Option<[u8; 32]>, String> {
+    if let Ok(raw) = std::env::var("REPAL_PACK_KEY") {
+        if !raw.trim().is_empty() {
+            let manifest = fs::read_to_string(packs_dir.join("pack-manifest.json"))
+                .ok()
+                .and_then(|t| PackManifest::from_json_str(&t).ok());
+            return resolve_pack_key_input(&raw, manifest.as_ref()).map(Some);
+        }
+    }
+    load_pack_key_from_env_or_dir(user_dir)
+}
+
 /// Resolve a relative key safely under `root`, rejecting `..`, absolute paths, and OS prefixes.
 fn resolve_loose_path(root: &Path, key: &str) -> Option<PathBuf> {
     let norm = normalize_rpk_key(key).ok()?;
@@ -395,5 +443,31 @@ mod tests {
         assert_eq!(vfs.mounted_pack_count(), 2);
 
         let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn resolve_pack_key_input_accepts_hex_or_passphrase() {
+        let master = [0x5Au8; 32];
+        let salt = [9u8; 16];
+        let wrapped = crate::crypto::wrap_master_key_with_passphrase(
+            "Ling Er", &salt, 1000, &master, &[3u8; 12],
+        );
+        let manifest = PackManifest {
+            master_key_wraps: vec![crate::rpk_manifest::MasterKeyWrap {
+                kdf: "pbkdf2-sha256".into(),
+                iterations: 1000,
+                salt: crate::crypto::hex_encode(&salt),
+                wrapped,
+            }],
+            ..Default::default()
+        };
+        let hex = crate::crypto::hex_encode(&master);
+        assert_eq!(resolve_pack_key_input(&hex, None).unwrap(), master);
+        assert_eq!(
+            resolve_pack_key_input(" ling  er ", Some(&manifest)).unwrap(),
+            master
+        );
+        assert!(resolve_pack_key_input("wrong", Some(&manifest)).is_err());
+        assert!(resolve_pack_key_input("ling er", None).is_err());
     }
 }

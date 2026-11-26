@@ -249,14 +249,17 @@ pub struct HeadlessTextHost {
     bug_counter: usize,
 }
 
-impl HeadlessTextHost {
-    pub fn from_config(cfg: &TextModeConfig) -> Result<Self, String> {
-        let mut app = if let Some(packs_dir) = &cfg.packs_dir {
-            let key = pal_runtime::pack_vfs::load_pack_key_from_env_or_dir(cfg.user_dir.as_deref())?;
-            HeadlessApp::from_packs_dir(packs_dir, key, cfg.loose_overlay.clone(), cfg.hd_mode)?
-        } else {
-            if !cfg.assets_root.join("data/scenes.yaml").is_file() {
-                return Err(format!(
+    impl HeadlessTextHost {
+        pub fn from_config(cfg: &TextModeConfig) -> Result<Self, String> {
+            let mut app = if let Some(packs_dir) = &cfg.packs_dir {
+                let key = pal_runtime::pack_vfs::load_pack_key_for_packs(
+                    cfg.user_dir.as_deref(),
+                    packs_dir,
+                )?;
+                HeadlessApp::from_packs_dir(packs_dir, key, cfg.loose_overlay.clone(), cfg.hd_mode)?
+            } else {
+                if !cfg.assets_root.join("data/scenes.yaml").is_file() {
+                    return Err(format!(
                     "assets not found at {} (expected data/scenes.yaml; pass --assets <DIR>, --packs-dir <DIR>, or run 'repal' once to auto-download assets)",
                     cfg.assets_root.display()
                 ));

@@ -7,6 +7,8 @@ import {
   crc32Ieee,
   deriveRpkNonce,
   hexToBytes,
+  masterKeyHexFromPassphrase,
+  normalizePassphrase,
   resolvePackUrl,
   sha256SourceHex,
   unwrapPackKey,
@@ -163,6 +165,27 @@ async function runTests() {
   assert.equal(n0.length, 12);
   assert.equal(n0[8], 0);
   assert.equal(n1[8], 1);
+
+  // Passphrase unlock (#18): vector produced by tools/build_asset_packs.py, also checked in
+  // pal-runtime crypto tests, so builder / desktop / Web stay interoperable.
+  assert.equal(normalizePassphrase("  Xian   JIAN qi xia "), "xian jian qi xia");
+  const ppManifest = {
+    master_key_wraps: [
+      {
+        kdf: "pbkdf2-sha256",
+        iterations: 2000,
+        salt: "726570616c2d746573742d73616c7421",
+        wrapped:
+          "v1:6e6f6e63652d3132627974658e6ae6420037fbefcd9e7aa75ca919bc05658bc8afe8c714d303c4cceba501bc6bd3a5757b86e01cf162f1a772f4ebda",
+      },
+    ],
+  };
+  assert.equal(
+    await masterKeyHexFromPassphrase(ppManifest, "XIAN jian  qi xia"),
+    Array.from({ length: 32 }, (_, i) => i.toString(16).padStart(2, "0")).join("")
+  );
+  assert.equal(await masterKeyHexFromPassphrase(ppManifest, "wrong phrase"), null);
+  assert.equal(await masterKeyHexFromPassphrase({}, "anything"), null);
 
   console.log("test_pack_manager: all assertions passed!");
 }

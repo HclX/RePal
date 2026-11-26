@@ -71,6 +71,7 @@ jobs:
       - name: Build encrypted RPK1 packs
         env:
           REPAL_PACK_KEY: ${{ secrets.REPAL_PACK_KEY }}
+          REPAL_PACK_PASSPHRASE: ${{ secrets.REPAL_PACK_PASSPHRASE }}
           PACK_VERSION: ${{ inputs.version }}
           MAX_PACK_MB: ${{ inputs.max_pack_mb }}
         run: |
@@ -82,6 +83,7 @@ jobs:
             --max-pack-mb "$MAX_PACK_MB" \
             --encrypt \
             --master-key-env REPAL_PACK_KEY \
+            ${REPAL_PACK_PASSPHRASE:+--passphrase-env REPAL_PACK_PASSPHRASE} \
             --opaque-names \
             --base-url "https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@${PACK_VERSION}" \
             --mirror-url "https://raw.githubusercontent.com/HclX/RePal_Packs/${PACK_VERSION}"

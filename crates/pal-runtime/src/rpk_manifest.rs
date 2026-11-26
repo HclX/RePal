@@ -103,6 +103,19 @@ pub struct PackManifest {
     /// any arbitrary `asset_key -> pack_id` for dynamic edge cases.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key_index_entry: Option<String>,
+    /// Optional passphrase-wrapped copies of the master pack key (#18): players may unlock with a
+    /// short passphrase instead of the 64-hex key. Absent in older manifests.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub master_key_wraps: Vec<MasterKeyWrap>,
+}
+
+/// One passphrase wrap of the master key: `kdf` = `pbkdf2-sha256`, `salt` hex, `wrapped` = `v1:<hex>`.
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct MasterKeyWrap {
+    pub kdf: String,
+    pub iterations: u32,
+    pub salt: String,
+    pub wrapped: String,
 }
 
 impl PackManifest {
