@@ -97,4 +97,7 @@ jobs:
           node tools/tests/test_headless_harness.mjs
           node tools/test_rust_core_host.mjs
           python3 tools/audit_script_parity.py
+          # Asset-package completeness gate (#18): every asset reachable from a chapter must be
+          # in `base` or that chapter's package.
+          python3 tools/build_asset_packs.py check --assets site/assets
           python3 -m pytest tools/tests/ -v

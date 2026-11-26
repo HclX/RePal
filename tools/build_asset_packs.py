@@ -475,6 +475,8 @@ def analyze_dependencies(
     key_regions: Dict[str, Set[str]] = collections.defaultdict(set)
     scene_packs: Dict[str, List[str]] = {}
     scene_to_region: Dict[int, str] = {}
+    map_regions: Dict[int, Set[str]] = collections.defaultdict(set)
+    rng_regions: Dict[int, Set[str]] = collections.defaultdict(set)
 
     for sc in scenes_list:
         sid = int(sc["id"])
@@ -484,6 +486,7 @@ def analyze_dependencies(
 
         map_id = int(sc.get("map_id", 0) or 0)
         if map_id > 0:
+            map_regions[map_id].add(reg)
             mbin = f"maps/map_{map_id:03d}.bin"
             if mbin in all_files and mbin not in assigned_non_region:
                 key_regions[mbin].add(reg)
@@ -574,6 +577,9 @@ def analyze_dependencies(
                     for k in abc_files.get(aid, []):
                         if k not in assigned_non_region:
                             key_regions[k].update(regs)
+            elif op == "rng_set":
+                rid = int(st.get("rng_id", args[0] if args else 0) or 0)
+                rng_regions[rid].update(regs)
             elif op == "fbp_show":
                 fid = int(st.get("fbp_id", args[0] if args else 0) or 0)
                 for k in fbp_files.get(fid, []):
@@ -634,7 +640,169 @@ def analyze_dependencies(
         "small_dup_entries": dup_entries,
         "small_dup_bytes": dup_bytes,
     }
+    stats["map_regions"] = {m: sorted(r) for m, r in map_regions.items()}
+    stats["rng_regions"] = {i: sorted(r) for i, r in rng_regions.items()}
     return pack_keys, scene_packs, map_hd_packs, rng_packs, prefetch_map, stats
+
+
+BASE_PACK = "base"
+REGION_SLUGS = {r for r, _lo, _hi in REGION_RANGES}
+
+
+def chapter_layout(
+    pack_keys: Dict[str, Set[str]],
+    map_hd_packs: Dict[str, str],
+    rng_packs: Dict[str, str],
+    stats: dict,
+) -> Dict[str, Set[str]]:
+    """Fold the fine-grained dependency packs into the v5 layout (#18): one `base` package plus
+    one package per chapter (region).
+
+    - `base` = boot + shared + everything unattributed (former on-demand `extra`) + any HD map /
+      RNG cutscene used by two or more chapters (or by none).
+    - `<chapter>` = the region pack + HD maps and RNG cutscenes used only by that chapter.
+    No asset is ever fetched on a miss: every key lives in `base` or in its chapter's package.
+    """
+    regions = [r for r, _lo, _hi in REGION_RANGES]
+    out: Dict[str, Set[str]] = {BASE_PACK: set()}
+    for pid in ("boot", "shared", "extra"):
+        out[BASE_PACK] |= pack_keys.get(pid, set())
+    for r in regions:
+        out[r] = set(pack_keys.get(r, set()))
+
+    def place(pid: str, regs) -> None:
+        regs = [r for r in regs if r in out and r != BASE_PACK]
+        dst = regs[0] if len(regs) == 1 else BASE_PACK
+        out[dst] |= pack_keys.get(pid, set())
+
+    map_regions = stats.get("map_regions", {})
+    for map_id, pid in map_hd_packs.items():
+        place(pid, map_regions.get(int(map_id), []))
+    rng_regions = stats.get("rng_regions", {})
+    for rid, pid in rng_packs.items():
+        place(pid, rng_regions.get(int(rid), []))
+
+    for pid, ks in pack_keys.items():
+        if pid.startswith("dev-"):
+            out[pid] = set(ks)
+    for r in regions:
+        out[r] -= out[BASE_PACK]
+        if not out[r]:
+            del out[r]
+    return out
+
+
+def scene_requirements(assets_root: Path, all_files: Dict[str, Path]) -> Dict[int, Set[str]]:
+    """Independently derive, per scene, every asset key that playing the scene can load:
+    map/GOP/HD-map files, event sprites, and assets of scripts reachable from the scene's
+    enter/teleport/event labels (following jumps, calls, branches and fall-through):
+    `battle_start` enemy atlases, `fbp_show` art and `rng_set` cutscenes."""
+    scenes = (yaml.safe_load((assets_root / "data/scenes.yaml").read_text("utf-8")) or {}).get("scenes", [])
+    events = {
+        int(e["id"]): e
+        for e in (yaml.safe_load((assets_root / "data/events.yaml").read_text("utf-8")) or {}).get("events", [])
+        if "id" in e
+    }
+    enemies_doc = yaml.safe_load((assets_root / "data/enemies.yaml").read_text("utf-8")) or {}
+    abc_of = {int(e["enemy_id"]): int(e.get("abc_sprite_id", 0) or 0) for e in enemies_doc.get("enemies", []) if "enemy_id" in e}
+    teams = {int(t.get("team_id", 0) or 0): team_enemy_ids(t) for t in enemies_doc.get("teams", [])}
+    blocks = load_script_blocks(assets_root)
+    edges = script_label_edges(blocks)
+
+    def prefixed(prefix: str) -> Set[str]:
+        return {k for k in all_files if k.startswith(prefix)}
+
+    by_prefix: Dict[str, Set[str]] = {}
+
+    def keys_for(prefix: str) -> Set[str]:
+        if prefix not in by_prefix:
+            by_prefix[prefix] = prefixed(prefix)
+        return by_prefix[prefix]
+
+    req: Dict[int, Set[str]] = {}
+    for sc in scenes:
+        sid = int(sc["id"])
+        need: Set[str] = set()
+        map_id = int(sc.get("map_id", 0) or 0)
+        if map_id > 0:
+            need |= {k for k in (f"maps/map_{map_id:03d}.bin",) if k in all_files}
+            need |= keys_for(f"graphics/gop/gop_{map_id:03d}")
+            need |= keys_for(f"graphics/maps_hd/map_{map_id:03d}/")
+        seeds = [sc.get("script_enter") or "", sc.get("script_teleport") or ""]
+        for eid in range(int(sc.get("event_start", 0) or 0), int(sc.get("event_end", 0) or 0) + 1):
+            ev = events.get(eid)
+            if not ev:
+                continue
+            sp = int(ev.get("sprite_id", 0) or 0)
+            if sp > 0:
+                need |= keys_for(f"graphics/mgo/mgo_{sp:03d}")
+            seeds += [ev.get("script_trigger") or "", ev.get("script_auto") or ""]
+        seen: Set[str] = set()
+        stack = [l for l in seeds if l in blocks]
+        while stack:
+            lbl = stack.pop()
+            if lbl in seen:
+                continue
+            seen.add(lbl)
+            stack.extend(n for n in edges.get(lbl, ()) if n not in seen)
+            for st in blocks[lbl]:
+                if not isinstance(st, dict):
+                    continue
+                op = st.get("op", "")
+                args = st.get("args") or []
+                if op == "battle_start":
+                    tid = int(st.get("team_id", args[0] if args else 0) or 0)
+                    for eid in teams.get(tid, []):
+                        aid = abc_of.get(eid, 0)
+                        if aid > 0:
+                            need |= keys_for(f"graphics/abc/abc_{aid:03d}")
+                elif op == "fbp_show":
+                    fid = int(st.get("fbp_id", args[0] if args else 0) or 0)
+                    need |= keys_for(f"graphics/fbp/fbp_{fid:03d}_")
+                elif op == "rng_set":
+                    rid = int(st.get("rng_id", args[0] if args else 0) or 0)
+                    need |= keys_for(f"graphics/rng/rng_{rid:02d}/")
+        req[sid] = need
+    return req
+
+
+def engine_required_keys(all_files: Dict[str, Path]) -> Set[str]:
+    """Assets loaded directly by engine/UI code (not via scene data or scripts): must be in base."""
+    out: Set[str] = set()
+    for k in all_files:
+        if (
+            k.startswith("data/")
+            or k.startswith("fonts/")
+            or k.startswith("graphics/ui/")
+            or k.startswith("graphics/f/")
+            or k.startswith("graphics/fire/")
+            or k.startswith("audio/sfx/")
+        ):
+            out.add(k)
+        m = re.match(r"^graphics/fbp/fbp_(\d+)_", k)
+        if m and int(m.group(1)) in ENGINE_FBP_IDS:
+            out.add(k)
+    return out
+
+
+def check_layout(assets_root: Path, all_files: Dict[str, Path], layout: Dict[str, Set[str]]) -> List[str]:
+    """Return human-readable completeness violations of a base + chapter layout (empty == OK)."""
+    errors: List[str] = []
+    base = layout.get(BASE_PACK, set())
+    for k in sorted(engine_required_keys(all_files) - base):
+        errors.append(f"engine asset not in base: {k}")
+    packed: Set[str] = set()
+    for ks in layout.values():
+        packed |= ks
+    public = {k for k in all_files if not (k.startswith("orig_saves/") and k != "orig_saves/10.rpg") and not k.startswith("mods/")}
+    for k in sorted(public - packed):
+        errors.append(f"asset not in any package: {k}")
+    for sid, need in sorted(scene_requirements(assets_root, all_files).items()):
+        chapter = region_for_scene(sid)
+        avail = base | layout.get(chapter, set())
+        for k in sorted(need - avail):
+            errors.append(f"scene {sid} ({chapter}) needs {k} outside base+{chapter}")
+    return errors
 
 
 def cmd_build(args: argparse.Namespace) -> int:
@@ -665,8 +833,24 @@ def cmd_build(args: argparse.Namespace) -> int:
         assets_root, all_files, args.include_dev_saves
     )
 
-    boot_ids = ["boot"]
-    shared_ids = ["shared"]
+    # v5 layout (#18): `base` + one package per chapter. Keep the manifest schema unchanged so
+    # existing runtimes read it as-is: `boot` = base shards, `shared` empty, `scenes` -> chapter.
+    pack_keys = chapter_layout(pack_keys, map_hd_packs, rng_packs, stats)
+    errors = check_layout(assets_root, all_files, pack_keys)
+    if errors:
+        print(f"ERROR: package completeness check failed ({len(errors)} issue(s)):", file=sys.stderr)
+        for e in errors[:50]:
+            print(f"  - {e}", file=sys.stderr)
+        return 3
+    scene_packs = {
+        sid: [r for r in plist if r in pack_keys] for sid, plist in scene_packs.items()
+    }
+    map_hd_packs = {}
+    rng_packs = {}
+    prefetch_map = {}
+
+    boot_ids = [BASE_PACK]
+    shared_ids: List[str] = []
 
     # Optional automatic sharding (`--max-pack-mb 18`) so every `.rpk` fits under CDN per-file
     # caps such as jsDelivr's 20 MiB GitHub limit (#237).
@@ -674,8 +858,6 @@ def cmd_build(args: argparse.Namespace) -> int:
     if max_pack_bytes > 0:
         sharded_map: Dict[str, List[str]] = {}
         for pid in list(sorted(pack_keys.keys())):
-            if pid.startswith("map-hd-") or pid.startswith("rng-"):
-                continue
             ks = sorted(pack_keys[pid])
             total_sz = sum(all_files[k].stat().st_size for k in ks)
             if total_sz <= max_pack_bytes or len(ks) <= 1:
@@ -806,14 +988,37 @@ def cmd_build(args: argparse.Namespace) -> int:
         f"unreferenced->extra={stats['unreferenced_to_extra']}, "
         f"small_dup={stats['small_dup_entries']} files / {stats['small_dup_bytes']/1024:.1f} KiB)"
     )
-    for pid in ("boot", "shared", "extra") + tuple(r[0] for r in REGION_RANGES):
-        if pid in packs_meta:
-            p = packs_meta[pid]
-            print(f"    {pid:18s} {p['entry_count']:4d} entries  {p['size']/(1024*1024):6.2f} MiB  {p['file']}")
-    map_hd_total = sum(p["size"] for k, p in packs_meta.items() if k.startswith("map-hd-"))
-    rng_total = sum(p["size"] for k, p in packs_meta.items() if k.startswith("rng-"))
-    print(f"    {'map-hd-* (x' + str(len(map_hd_packs)) + ')':18s}            {map_hd_total/(1024*1024):6.2f} MiB")
-    print(f"    {'rng-* (x' + str(len(rng_packs)) + ')':18s}            {rng_total/(1024*1024):6.2f} MiB")
+    groups: Dict[str, List[str]] = collections.defaultdict(list)
+    for pid in packs_meta:
+        groups[re.sub(r"-\d+$", "", pid) if pid not in REGION_SLUGS else pid].append(pid)
+    for g in [BASE_PACK] + [r for r, _lo, _hi in REGION_RANGES]:
+        ids = groups.get(g)
+        if not ids:
+            continue
+        size = sum(packs_meta[i]["size"] for i in ids)
+        entries = sum(packs_meta[i]["entry_count"] for i in ids)
+        print(f"    {g:18s} {entries:5d} entries  {size/(1024*1024):7.2f} MiB  ({len(ids)} shard(s))")
+    return 0
+
+
+def cmd_check(args: argparse.Namespace) -> int:
+    assets_root = Path(args.assets).resolve()
+    all_files = scan_all_assets(assets_root)
+    pack_keys, _scene_packs, map_hd_packs, rng_packs, _prefetch, stats = analyze_dependencies(
+        assets_root, all_files, False
+    )
+    layout = chapter_layout(pack_keys, map_hd_packs, rng_packs, stats)
+    errors = check_layout(assets_root, all_files, layout)
+    for pid in [BASE_PACK] + [r for r, _lo, _hi in REGION_RANGES]:
+        if pid in layout:
+            size = sum(all_files[k].stat().st_size for k in layout[pid])
+            print(f"  {pid:18s} {len(layout[pid]):5d} files  {size / (1024 * 1024):7.2f} MiB")
+    if errors:
+        print(f"FAIL: {len(errors)} completeness issue(s)", file=sys.stderr)
+        for e in errors:
+            print(f"  - {e}", file=sys.stderr)
+        return 1
+    print("OK: every asset reachable from a chapter is in base or that chapter's package")
     return 0
 
 
@@ -867,9 +1072,17 @@ def main() -> int:
     pr.add_argument("--new-key-hex", default="")
     pr.add_argument("--new-key-file", default="")
 
+    pc = sub.add_parser(
+        "check",
+        help="Verify the base + per-chapter layout is complete (CI gate; no packs are written)",
+    )
+    pc.add_argument("--assets", default="site/assets", help="Path to loose assets directory")
+
     args = ap.parse_args()
     if args.cmd == "build":
         return cmd_build(args)
+    if args.cmd == "check":
+        return cmd_check(args)
     if args.cmd == "rotate-key":
         return cmd_rotate_key(args)
     return 2
