@@ -781,6 +781,14 @@ export class PackManager {
     return this.mountedKeys.has(key) || this.keyIndex.has(key);
   }
 
+  /** All known asset keys (mounted packs + `pack_key_index.json`) under `prefix`, sorted. */
+  listKeys(prefix) {
+    const out = new Set();
+    for (const k of this.mountedKeys.keys()) if (k.startsWith(prefix)) out.add(k);
+    for (const k of this.keyIndex.keys()) if (k.startsWith(prefix)) out.add(k);
+    return Array.from(out).sort();
+  }
+
   async readBytes(key) {
     let pid = this.mountedKeys.get(key);
     if (!pid) {

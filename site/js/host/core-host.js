@@ -123,11 +123,24 @@ export class RustCoreHost {
     this.syncMods();
     // Load optional decoupled English translation overlays (`data/i18n/en/*.json`).
     if (typeof this.w.core_load_i18n_en === "function") {
-      const i18nFiles = ["tables.json", "scripts_ch1.json"];
+      // Pack mode: read every `data/i18n/en/*.json` from the packs (the live site has no loose
+      // files, so a bare fetch 404'd and Web silently showed no English text). Loose mode cannot
+      // list directories over HTTP, so probe the known file names and ignore 404s.
+      const I18N_DIR = "data/i18n/en/";
+      const packKeys = pm?.listKeys ? pm.listKeys(I18N_DIR).filter((k) => k.endsWith(".json")) : [];
+      const looseNames = [
+        "tables.json",
+        "scripts_ch1.json",
+        ...Array.from({ length: 11 }, (_, i) => `scripts_${String(i).padStart(2, "0")}.json`),
+      ];
       const i18nDocs = await Promise.all(
-        i18nFiles.map(async (f) => {
+        (packKeys.length ? packKeys : looseNames.map((n) => I18N_DIR + n)).map(async (key) => {
           try {
-            const resp = await fetch(withAssetVersion(`${base}/data/i18n/en/${f}`));
+            if (pm) {
+              const text = await pm.readText(key);
+              if (text != null) return text;
+            }
+            const resp = await fetch(withAssetVersion(`${base}/${key}`));
             return resp.ok ? await resp.text() : null;
           } catch {
             return null;
