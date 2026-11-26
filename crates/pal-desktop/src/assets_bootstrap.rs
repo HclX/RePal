@@ -81,6 +81,26 @@ fn configure_bg_command(_cmd: &mut Command) {}
 
 /// Fast synchronous check for already-available local or hash-verified cached assets.
 /// Returns `None` if assets need to be downloaded in the background with the splash screen.
+/// Remove legacy extracted asset-archive caches (`<cache_root>/<12-hex sha>/` holding `assets/`
+/// and/or `.verified_sha256`) left behind by pre-pack releases. Only called in packs mode, where
+/// assets are read from `<cache_root>/packs/`; never touches anything else.
+pub fn gc_legacy_loose_asset_caches(cache_root: &Path) -> usize {
+    let Ok(rd) = fs::read_dir(cache_root) else {
+        return 0;
+    };
+    let mut removed = 0;
+    for entry in rd.flatten() {
+        let path = entry.path();
+        let name = entry.file_name().to_string_lossy().to_string();
+        let is_hash_dir = name.len() == 12 && name.bytes().all(|b| b.is_ascii_hexdigit());
+        let looks_legacy = path.join(".verified_sha256").is_file() || path.join("assets").is_dir();
+        if path.is_dir() && is_hash_dir && looks_legacy && fs::remove_dir_all(&path).is_ok() {
+            removed += 1;
+        }
+    }
+    removed
+}
+
 pub fn try_resolve_local_assets(explicit: Option<&str>, cache_root: &Path) -> Option<PathBuf> {
     if let Some(p) = explicit {
         return Some(PathBuf::from(p));
@@ -364,6 +384,8 @@ pub fn spawn_asset_download(
                     return;
                 }
             };
+            // Packs mode no longer needs the pre-pack extracted asset archive caches.
+            gc_legacy_loose_asset_caches(&cache_root);
             let boot_ids: Vec<String> = fetcher.manifest.boot.clone();
             let total = boot_ids.len().max(1);
             for (idx, pid) in boot_ids.iter().enumerate() {
@@ -516,5 +538,28 @@ mod tests {
         assert!(format_curl_auth_config("").is_none());
         assert!(format_curl_auth_config("bad\ntoken").is_none());
         assert!(format_curl_auth_config("bad\"token").is_none());
+    }
+}
+
+#[cfg(test)]
+mod legacy_cache_gc_tests {
+    use super::*;
+
+    #[test]
+    fn removes_only_legacy_hash_asset_dirs() {
+        let root = std::env::temp_dir().join(format!("repal_legacy_gc_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("dabe2b493d0c/assets/data")).unwrap();
+        fs::write(root.join("dabe2b493d0c/.verified_sha256"), "x").unwrap();
+        fs::create_dir_all(root.join("packs")).unwrap();
+        fs::write(root.join("packs/pack-manifest.json"), "{}").unwrap();
+        fs::create_dir_all(root.join("0123456789ab")).unwrap(); // hash-named but not legacy
+        fs::create_dir_all(root.join("notes")).unwrap();
+        assert_eq!(gc_legacy_loose_asset_caches(&root), 1);
+        assert!(!root.join("dabe2b493d0c").exists());
+        assert!(root.join("packs/pack-manifest.json").is_file());
+        assert!(root.join("0123456789ab").is_dir());
+        assert!(root.join("notes").is_dir());
+        let _ = fs::remove_dir_all(&root);
     }
 }

@@ -59,6 +59,23 @@ jobs:
                       asset_ver = lock_sha[:10]
               except Exception:
                   pass
+          # Pin the Web pack manifest to the same release as desktop (assets-lock.json), so a
+          # publish-packs lock bump moves Web and desktop together (#18).
+          manifest_url = ""
+          if lock_path.is_file():
+              try:
+                  manifest_url = (json.loads(lock_path.read_text("utf-8")).get("manifest", {}).get("urls") or [""])[0]
+              except Exception:
+                  pass
+          if manifest_url:
+              mj = pathlib.Path("site/js/main.js")
+              mj_txt = re.sub(
+                  r'(const DEFAULT_PACK_MANIFEST_URL =\s*)"[^"]*";',
+                  lambda m: f'{m.group(1)}"{manifest_url}";',
+                  mj.read_text("utf-8"),
+              )
+              mj.write_text(mj_txt, "utf-8")
+              print("Web pack manifest pinned to", manifest_url)
           ap = pathlib.Path("site/js/host/asset-provider.js")
           ap_txt = ap.read_text("utf-8")
           ap_txt = re.sub(r'export const ASSET_VER = "[^"]*";', f'export const ASSET_VER = "{asset_ver}";', ap_txt)

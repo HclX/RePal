@@ -26,7 +26,7 @@ import { WebAgentHost } from "./host/web-agent.js";
 import { saveLocalReplay } from "./host/repal-loader.js";
 
 const DEFAULT_PACK_MANIFEST_URL =
-  "https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@packs-v2/pack-manifest.json";
+  "https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@packs-v5/pack-manifest.json"; // stamped from assets-lock.json on deploy
 const PACK_KEY_STORAGE_KEY = "repal_pack_key_v1";
 
 function promptPackKeyOverlay(overlay, statusEl, message) {
