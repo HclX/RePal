@@ -8,6 +8,7 @@ impl DesktopApp {
             self.splash.tick = self.splash.tick.wrapping_add(1);
             return;
         }
+        self.poll_download_all();
         let now = Instant::now();
         let dt = (now - self.last_frame).min(TICK_DURATION * 8);
         self.last_frame = now;
@@ -79,7 +80,12 @@ impl DesktopApp {
             let agent_input = self.step_text_engine();
             // Interim #228 arbitration: while a TextEngine agent task is running, ignore human
             // directional/interact/click inputs (Esc cancels and hands control back to the human).
-            let input = if self.agent_task_active() {
+            let input = if self.pending_scene_load.is_some() {
+                // Loading overlay up (#18): the core is blocked on the host anyway; drop human input.
+                self.pending_interact = false;
+                self.pending_click = None;
+                TickInput::IDLE
+            } else if self.agent_task_active() {
                 self.pending_interact = false;
                 self.pending_click = None;
                 agent_input
@@ -303,6 +309,17 @@ impl DesktopApp {
                 render_transition_banner(rt, text, alpha);
             } else {
                 self.transition_banner = None;
+            }
+        }
+
+        // Chapter package download overlay (#18), shown after a short delay so cached transitions
+        // never flash; errors show immediately while the download auto-retries.
+        if let Some(p) = &self.pending_scene_load {
+            if p.error.is_some()
+                || p.job.started.elapsed() >= crate::pack_download::LOADING_OVERLAY_DELAY
+            {
+                let text = crate::pack_download::loading_text(p, rt.ui.lang);
+                render_transition_banner(rt, &text, 205);
             }
         }
 

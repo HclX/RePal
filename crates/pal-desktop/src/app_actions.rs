@@ -152,6 +152,7 @@ impl DesktopApp {
                     };
                     rt.show_toast(msg, 110);
                 }
+                self.refresh_download_all_label();
             }
             UiAction::ToggleFullscreen => {
                 let next = self.rt.as_ref().unwrap().ui.fullscreen;
@@ -167,6 +168,7 @@ impl DesktopApp {
             UiAction::RefreshAgentToken => {
                 self.refresh_agent_token();
             }
+            UiAction::DownloadAllAssets => self.start_download_all(),
             UiAction::CheckForUpdate => {
                 if let Some(info) = self.pending_update.clone() {
                     if let Some(rt) = self.rt.as_mut() {
@@ -321,6 +323,12 @@ impl DesktopApp {
     }
 
     pub(crate) fn service_host_cmds(&mut self) {
+        // A chapter package download is pending: keep the remaining host commands queued (order
+        // matters) and leave the core blocked until `SceneLoaded` is sent (#18).
+        if !self.poll_pending_scene_load() {
+            return;
+        }
+        let mut deferred: Option<(u16, u16, Vec<String>)> = None;
         let (Some(rt), Some(audio)) = (self.rt.as_mut(), self.audio.as_mut()) else {
             return;
         };
@@ -332,18 +340,24 @@ impl DesktopApp {
                 HostCmd::StopMusic => audio.stop_music(),
                 HostCmd::PlaySfx(id) => audio.play_sfx_vfs(id, Some(&mut self.vfs)),
                 HostCmd::LoadScene { scene_id, map_id } => {
-                    if let Some(fetcher) = &self.pack_fetcher {
-                        if let Err(e) =
-                            fetcher.ensure_scene_packs(scene_id, (map_id > 0).then_some(map_id))
-                        {
-                            eprintln!("[repal] on-demand pack fetch warning (scene {scene_id}): {e}");
-                        }
-                        fetcher.prefetch_adjacent_async(scene_id);
+                    let missing = self
+                        .pack_fetcher
+                        .as_ref()
+                        .map(|f| f.missing_scene_packs(scene_id, (map_id > 0).then_some(map_id)))
+                        .unwrap_or_default();
+                    if !missing.is_empty() {
+                        // Download the chapter package off the event-loop thread behind a
+                        // loading overlay; finish this LoadScene once it is cached.
+                        deferred = Some((scene_id, map_id, missing));
+                        break;
                     }
-                    if let Some(g) = rt.game.as_mut() {
-                        load_scene_assets_from_vfs(&mut self.vfs, g, map_id);
-                    }
-                    rt.reply(HostReply::SceneLoaded);
+                    complete_scene_load(
+                        &mut self.vfs,
+                        self.pack_fetcher.as_ref(),
+                        rt,
+                        scene_id,
+                        map_id,
+                    );
                 }
                 HostCmd::LoadChapter(_) => {
                     rt.reply(HostReply::Done);
@@ -403,6 +417,159 @@ impl DesktopApp {
                     rt.show_toast("勝敗乃兵家常事，請重新來過", 180);
                 }
                 _ => {}
+            }
+        }
+        if let (Some((scene_id, map_id, missing)), Some(fetcher)) =
+            (deferred, self.pack_fetcher.as_ref())
+        {
+            self.pending_scene_load = Some(crate::pack_download::PendingSceneLoad {
+                scene_id,
+                map_id,
+                job: crate::pack_download::PackDownloadJob::spawn(
+                    fetcher,
+                    missing,
+                    &format!("scene-{scene_id}"),
+                ),
+                error: None,
+                retry_at: None,
+            });
+        }
+    }
+
+    /// Start the background "download all assets" job (#18); play continues meanwhile.
+    pub(crate) fn start_download_all(&mut self) {
+        if self.download_all_job.is_some() {
+            return;
+        }
+        let Some(fetcher) = self.pack_fetcher.as_ref() else {
+            return;
+        };
+        let missing = fetcher.missing_packs();
+        let lang = self
+            .rt
+            .as_ref()
+            .map(|rt| rt.ui.lang)
+            .unwrap_or(pal_core::Language::ZhHans);
+        if missing.is_empty() {
+            if let Some(rt) = self.rt.as_mut() {
+                rt.show_toast(crate::pack_download::download_all_label(0, None, lang), 120);
+            }
+            self.refresh_download_all_label();
+            return;
+        }
+        self.download_all_job = Some(crate::pack_download::PackDownloadJob::spawn(
+            fetcher, missing, "all",
+        ));
+        self.refresh_download_all_label();
+    }
+
+    /// Poll the background "download all" job, updating the Title Options label and toasting the
+    /// outcome when it finishes.
+    pub(crate) fn poll_download_all(&mut self) {
+        let Some(job) = self.download_all_job.as_mut() else {
+            return;
+        };
+        let before = job.done_bytes;
+        match job.poll() {
+            None => {
+                if job.done_bytes != before {
+                    self.refresh_download_all_label();
+                }
+            }
+            Some(res) => {
+                self.download_all_job = None;
+                let lang = self
+                    .rt
+                    .as_ref()
+                    .map(|rt| rt.ui.lang)
+                    .unwrap_or(pal_core::Language::ZhHans);
+                let msg = match (&res, lang) {
+                    (Ok(()), _) => crate::pack_download::download_all_label(0, None, lang),
+                    (Err(_), pal_core::Language::En) => {
+                        "Download failed — try again from Options".to_string()
+                    }
+                    (Err(_), pal_core::Language::ZhHant) => {
+                        "資源下載失敗，請稍後在選項中重試".to_string()
+                    }
+                    (Err(_), pal_core::Language::ZhHans) => {
+                        "资源下载失败，请稍后在选项中重试".to_string()
+                    }
+                };
+                if let Err(e) = res {
+                    eprintln!("[repal] download-all failed: {e}");
+                }
+                if let Some(rt) = self.rt.as_mut() {
+                    rt.show_toast(msg, 150);
+                }
+                self.refresh_download_all_label();
+            }
+        }
+    }
+
+    /// Recompute the Title Options "download all assets" label (hidden without a pack fetcher).
+    pub(crate) fn refresh_download_all_label(&mut self) {
+        let label = self.pack_fetcher.as_ref().map(|f| {
+            let remaining: u64 = f.missing_packs().iter().map(|p| f.pack_size(p)).sum();
+            let lang = self
+                .rt
+                .as_ref()
+                .map(|rt| rt.ui.lang)
+                .unwrap_or(pal_core::Language::ZhHans);
+            crate::pack_download::download_all_label(
+                remaining,
+                self.download_all_job.as_ref(),
+                lang,
+            )
+        });
+        if let Some(rt) = self.rt.as_mut() {
+            if rt.ui.download_all_label != label {
+                rt.ui.download_all_label = label;
+                rt.ui.dirty = true;
+            }
+        }
+    }
+
+    /// Advance a pending chapter download (#18). Returns `true` when no download is pending (or it
+    /// just completed and `SceneLoaded` was sent), i.e. host commands may be serviced again.
+    pub(crate) fn poll_pending_scene_load(&mut self) -> bool {
+        let Some(p) = self.pending_scene_load.as_mut() else {
+            return true;
+        };
+        if let Some(at) = p.retry_at {
+            if Instant::now() >= at {
+                if let Some(f) = self.pack_fetcher.as_ref() {
+                    let missing =
+                        f.missing_scene_packs(p.scene_id, (p.map_id > 0).then_some(p.map_id));
+                    p.job = crate::pack_download::PackDownloadJob::spawn(f, missing, "retry");
+                }
+                p.retry_at = None;
+            }
+            return false;
+        }
+        match p.job.poll() {
+            None => false,
+            Some(Err(e)) => {
+                eprintln!(
+                    "[repal] chapter package download failed (scene {}): {e}",
+                    p.scene_id
+                );
+                p.error = Some(e);
+                p.retry_at = Some(Instant::now() + crate::pack_download::RETRY_DELAY);
+                false
+            }
+            Some(Ok(())) => {
+                let (scene_id, map_id) = (p.scene_id, p.map_id);
+                self.pending_scene_load = None;
+                if let Some(rt) = self.rt.as_mut() {
+                    complete_scene_load(
+                        &mut self.vfs,
+                        self.pack_fetcher.as_ref(),
+                        rt,
+                        scene_id,
+                        map_id,
+                    );
+                }
+                true
             }
         }
     }
@@ -508,4 +675,26 @@ impl DesktopApp {
         }
     }
 
+}
+
+/// Mount a scene's (already cached) packages, load its collision/sprite metadata, and unblock the
+/// core with `SceneLoaded`.
+fn complete_scene_load(
+    vfs: &mut OverlayVfs,
+    fetcher: Option<&crate::pack_fetcher::PackFetcher>,
+    rt: &mut PalRuntime,
+    scene_id: u16,
+    map_id: u16,
+) {
+    if let Some(fetcher) = fetcher {
+        // Cheap once cached: SHA-256 is verified once per pack per session.
+        if let Err(e) = fetcher.ensure_scene_packs(scene_id, (map_id > 0).then_some(map_id)) {
+            eprintln!("[repal] on-demand pack fetch warning (scene {scene_id}): {e}");
+        }
+        fetcher.prefetch_adjacent_async(scene_id);
+    }
+    if let Some(g) = rt.game.as_mut() {
+        load_scene_assets_from_vfs(vfs, g, map_id);
+    }
+    rt.reply(HostReply::SceneLoaded);
 }

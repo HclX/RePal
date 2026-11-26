@@ -141,6 +141,8 @@ pub enum UiAction {
     CopyAgentToken,
     RefreshAgentToken,
     CheckForUpdate,
+    /// Download every asset package not cached yet (desktop packs mode, #18).
+    DownloadAllAssets,
     RestartRecording,
     ExportReplay,
     OpenReplay,

@@ -271,13 +271,18 @@ pub(super) fn draw_title_options(
     let n_cols = if ui.lang.is_en() { 8 } else { 7 };
     let bx = if ui.lang.is_en() { 78 } else { 86 };
     let by = 14;
-    let (bw, _) = draw_pal_box(fb, cache, bx, by, 7, n_cols, 0, s, hd);
+    let rows = if ui.download_all_label.is_some() {
+        8
+    } else {
+        7
+    };
+    let (bw, _) = draw_pal_box(fb, cache, bx, by, rows, n_cols, 0, s, hd);
     let update_item = if let Some(ver) = ui.update_available.as_deref() {
         format!("{} {} ★", tr(ui, "更新至", "更新至", "Update"), ver)
     } else {
         tr(ui, "檢查更新", "检查更新", "Check Update").to_string()
     };
-    let items = [
+    let mut items = vec![
         tr(ui, "錄像回放", "录像回放", "Replays").to_string(),
         format!(
             "{}: {}",
@@ -319,6 +324,9 @@ pub(super) fn draw_title_options(
         ),
         update_item,
     ];
+    if let Some(dl) = ui.download_all_label.clone() {
+        items.push(dl);
+    }
     for (i, label) in items.iter().enumerate() {
         let ry = by + 13 + (i as i32) * 18;
         let sel = ui.title_options_cursor == i;

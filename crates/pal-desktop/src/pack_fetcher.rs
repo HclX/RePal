@@ -15,6 +15,7 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::{Arc, Mutex};
 
 #[cfg(target_os = "windows")]
 fn configure_bg_command(cmd: &mut Command) {
@@ -61,11 +62,23 @@ fn parse_file_url(url: &str) -> Option<PathBuf> {
 /// Download a single URL (`https://`, `http://`, or `file://`) to `dst`.
 /// Sends no credentials by default (only attaches `GITHUB_TOKEN` to trusted GitHub HTTPS hosts).
 pub fn fetch_url_to_file(url: &str, dst: &Path) -> Result<(), String> {
+    fetch_url_to_file_with_progress(url, dst, &mut |_| {})
+}
+
+/// Like [`fetch_url_to_file`], reporting the number of bytes written to `dst` so far (polled
+/// ~10×/s while `curl` runs) so hosts can render a download progress bar.
+pub fn fetch_url_to_file_with_progress(
+    url: &str,
+    dst: &Path,
+    on_bytes: &mut dyn FnMut(u64),
+) -> Result<(), String> {
     if let Some(src_path) = parse_file_url(url) {
         if let Some(parent) = dst.parent() {
             let _ = fs::create_dir_all(parent);
         }
-        fs::copy(&src_path, dst).map_err(|e| format!("copy {} -> {}: {e}", src_path.display(), dst.display()))?;
+        let n = fs::copy(&src_path, dst)
+            .map_err(|e| format!("copy {} -> {}: {e}", src_path.display(), dst.display()))?;
+        on_bytes(n);
         return Ok(());
     }
     if !(url.starts_with("https://") || url.starts_with("http://")) {
@@ -77,7 +90,7 @@ pub fn fetch_url_to_file(url: &str, dst: &Path) -> Result<(), String> {
     let mut cmd = Command::new("curl");
     configure_bg_command(&mut cmd);
     cmd.args([
-        "-fSL",
+        "-fsSL",
         "--connect-timeout",
         "15",
         "--proto",
@@ -109,14 +122,34 @@ pub fn fetch_url_to_file(url: &str, dst: &Path) -> Result<(), String> {
             let _ = stdin.write_all(payload.as_bytes());
         }
     }
-    let output = child
-        .wait_with_output()
-        .map_err(|e| format!("wait curl: {e}"))?;
-    if output.status.success() {
+    // Poll for completion while reporting bytes written so far. `-s` keeps curl's stderr limited
+    // to the final error line, so the pipe cannot fill up and stall the child while we poll.
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) => {
+                if let Ok(meta) = fs::metadata(dst) {
+                    on_bytes(meta.len());
+                }
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+            Err(e) => return Err(format!("wait curl: {e}")),
+        }
+    };
+    let mut stderr = String::new();
+    if let Some(mut err) = child.stderr.take() {
+        let _ = err.read_to_string(&mut stderr);
+    }
+    if status.success() {
+        if let Ok(meta) = fs::metadata(dst) {
+            on_bytes(meta.len());
+        }
         Ok(())
     } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(format!("curl failed ({}) for {url}: {}", output.status, stderr.trim()))
+        Err(format!(
+            "curl failed ({status}) for {url}: {}",
+            stderr.trim()
+        ))
     }
 }
 
@@ -175,6 +208,9 @@ pub struct PackFetcher {
     pub cache_dir: PathBuf,
     pub manifest_url: String,
     pub manifest: PackManifest,
+    /// Pack files whose SHA-256 was already verified this session (shared across clones), so
+    /// cached packs are not re-hashed on every scene change.
+    verified: Arc<Mutex<HashSet<String>>>,
 }
 
 impl PackFetcher {
@@ -211,6 +247,7 @@ impl PackFetcher {
             cache_dir,
             manifest_url,
             manifest,
+            verified: Arc::new(Mutex::new(HashSet::new())),
         })
     }
 
@@ -218,6 +255,69 @@ impl PackFetcher {
     /// Tries every URL in `manifest.resolve_pack_urls(pack_id, &self.manifest_url)` in order,
     /// rejecting any corrupted/tampered mirror and failing over to the next URL.
     pub fn ensure_pack(&self, pack_id: &str) -> Result<PathBuf, String> {
+        self.ensure_pack_with_progress(pack_id, &mut |_| {})
+    }
+
+    fn size_matches(&self, pack_id: &str) -> bool {
+        let Some(desc) = self.manifest.packs.get(pack_id) else {
+            return false;
+        };
+        let p = self.cache_dir.join(&desc.file);
+        p.is_file()
+            && (desc.size == 0
+                || fs::metadata(&p)
+                    .map(|m| m.len() == desc.size)
+                    .unwrap_or(false))
+    }
+
+    fn mark_verified(&self, file: &str) {
+        if let Ok(mut v) = self.verified.lock() {
+            v.insert(file.to_string());
+        }
+    }
+
+    /// Cheap local check (no hashing): the pack file exists with the manifest size.
+    pub fn is_pack_cached(&self, pack_id: &str) -> bool {
+        self.size_matches(pack_id)
+    }
+
+    /// Manifest size in bytes of `pack_id` (0 if unknown).
+    pub fn pack_size(&self, pack_id: &str) -> u64 {
+        self.manifest
+            .packs
+            .get(pack_id)
+            .map(|d| d.size)
+            .unwrap_or(0)
+    }
+
+    /// Packs required for `scene_id` that are not cached locally yet.
+    pub fn missing_scene_packs(&self, scene_id: u16, map_id: Option<u16>) -> Vec<String> {
+        self.manifest
+            .packs_for_scene(scene_id, map_id)
+            .into_iter()
+            .filter(|pid| !self.is_pack_cached(pid))
+            .collect()
+    }
+
+    /// Every pack in the manifest that is not cached locally yet (for "download all").
+    pub fn missing_packs(&self) -> Vec<String> {
+        let mut ids: Vec<String> = self
+            .manifest
+            .packs
+            .keys()
+            .filter(|pid| !pid.starts_with("dev-") && !self.is_pack_cached(pid))
+            .cloned()
+            .collect();
+        ids.sort();
+        ids
+    }
+
+    /// [`Self::ensure_pack`] reporting bytes downloaded so far for this pack via `on_bytes`.
+    pub fn ensure_pack_with_progress(
+        &self,
+        pack_id: &str,
+        on_bytes: &mut dyn FnMut(u64),
+    ) -> Result<PathBuf, String> {
         let desc = self
             .manifest
             .packs
@@ -225,16 +325,20 @@ impl PackFetcher {
             .ok_or_else(|| format!("pack '{pack_id}' not found in manifest"))?;
         let final_path = self.cache_dir.join(&desc.file);
 
-        // Fast path: already cached on disk & matches size + SHA-256.
+        // Fast path: already cached on disk & matches size + SHA-256 (hashed once per session).
         if final_path.is_file() {
-            let size_ok = desc.size == 0
-                || fs::metadata(&final_path).map(|m| m.len() == desc.size).unwrap_or(false);
-            if size_ok {
-                if desc.sha256.is_empty() {
+            if self.size_matches(pack_id) {
+                let already = self
+                    .verified
+                    .lock()
+                    .map(|v| v.contains(&desc.file))
+                    .unwrap_or(false);
+                if already || desc.sha256.is_empty() {
                     return Ok(final_path);
                 }
                 if let Ok(actual) = sha256_file_streaming(&final_path) {
                     if actual.eq_ignore_ascii_case(&desc.sha256) {
+                        self.mark_verified(&desc.file);
                         return Ok(final_path);
                     }
                 }
@@ -260,7 +364,7 @@ impl PackFetcher {
                 idx
             ));
             let _ = fs::remove_file(&tmp_path);
-            if let Err(e) = fetch_url_to_file(url, &tmp_path) {
+            if let Err(e) = fetch_url_to_file_with_progress(url, &tmp_path, on_bytes) {
                 let _ = fs::remove_file(&tmp_path);
                 errors.push(format!("{url}: {e}"));
                 continue;
@@ -288,6 +392,7 @@ impl PackFetcher {
                 errors.push(format!("commit {}: {e}", final_path.display()));
                 continue;
             }
+            self.mark_verified(&desc.file);
             return Ok(final_path);
         }
 

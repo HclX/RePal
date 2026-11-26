@@ -3,6 +3,11 @@
 use super::*;
 
 impl UiState {
+    /// Number of Title Options rows: 8 fixed + optional host "download all assets" item (#18).
+    pub(crate) fn title_options_count(&self) -> usize {
+        8 + usize::from(self.download_all_label.is_some())
+    }
+
     /// Process a keyboard event in the current UI view and return any resulting `UiAction`.
     pub fn on_key(&mut self, key: UiKey, state: &GameState, battle: Option<&mut BattleVisuals>) -> UiAction {
         self.dirty = true;
@@ -57,11 +62,13 @@ impl UiState {
             },
             UiView::TitleOptions => match key {
                 UiKey::Up | UiKey::Left => {
-                    self.title_options_cursor = (self.title_options_cursor + 7) % 8;
+                    let n = self.title_options_count();
+                    self.title_options_cursor = (self.title_options_cursor + n - 1) % n;
                     UiAction::None
                 }
                 UiKey::Down | UiKey::Right => {
-                    self.title_options_cursor = (self.title_options_cursor + 1) % 8;
+                    let n = self.title_options_count();
+                    self.title_options_cursor = (self.title_options_cursor + 1) % n;
                     UiAction::None
                 }
                 UiKey::Cancel | UiKey::MenuToggle => {
@@ -94,6 +101,8 @@ impl UiState {
                         self.agent_mode = (self.agent_mode + 1) % 3;
                         UiAction::ToggleAgentMode
                     }
+                    7 => UiAction::CheckForUpdate,
+                    _ if self.download_all_label.is_some() => UiAction::DownloadAllAssets,
                     _ => UiAction::CheckForUpdate,
                 },
                 _ => UiAction::None,

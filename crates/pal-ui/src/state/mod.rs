@@ -284,6 +284,9 @@ pub struct UiState {
     pub hit_rects: Vec<HitRect>,
     /// Optional available update version tag (e.g. `Some("v0.3.10")`) shown in Title & TitleOptions.
     pub update_available: Option<String>,
+    /// Host-provided label for the Title Options "download all assets" item (e.g.
+    /// `Some("下载全部资源 (312 MB)")`); `None` hides the item (Web / loose-asset mode, #18).
+    pub download_all_label: Option<String>,
     pub toast_text: Option<String>,
     /// Current AI thought/commentary subtitle (`think <text>`), rendered only in 4x HD mode.
     pub ai_thought: Option<String>,
@@ -365,6 +368,7 @@ impl UiState {
             catalog: UiCatalog::with_defaults(),
             hit_rects: Vec::new(),
             update_available: None,
+            download_all_label: None,
             toast_text: None,
             ai_thought: None,
             show_ai_thought: true,

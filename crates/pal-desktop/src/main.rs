@@ -13,6 +13,7 @@ mod app_sim;
 mod audio;
 mod cli;
 mod os_bridge;
+mod pack_download;
 mod pack_fetcher;
 mod replay_ui;
 mod saves;
@@ -78,6 +79,11 @@ pub(crate) struct DesktopApp {
     pub(crate) cfg: CliConfig,
     pub(crate) vfs: OverlayVfs,
     pub(crate) pack_fetcher: Option<pack_fetcher::PackFetcher>,
+    /// Chapter package download in progress for a `LoadScene` (#18): `SceneLoaded` is withheld
+    /// and a loading overlay is shown until it completes.
+    pub(crate) pending_scene_load: Option<pack_download::PendingSceneLoad>,
+    /// Optional background "download all assets" job started from Title Options (#18).
+    pub(crate) download_all_job: Option<pack_download::PackDownloadJob>,
     pub(crate) rt: Option<PalRuntime>,
     pub(crate) audio: Option<NativeAudio>,
     pub(crate) saves: SaveStore,
@@ -165,6 +171,8 @@ impl DesktopApp {
             cfg,
             vfs,
             pack_fetcher: None,
+            pending_scene_load: None,
+            download_all_job: None,
             rt: None,
             audio: None,
             saves,
@@ -472,6 +480,7 @@ impl DesktopApp {
         self.rt = Some(rt);
         self.audio = Some(audio);
         self.last_frame = Instant::now();
+        self.refresh_download_all_label();
         self.service_host_cmds();
         if self.cfg.initial_scene.is_some() {
             if let Some(g) = self.rt.as_mut().and_then(|rt| rt.game.as_mut()) {

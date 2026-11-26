@@ -228,6 +228,11 @@ impl ApplicationHandler for DesktopApp {
                     let _ = self.save_screenshot();
                     return;
                 }
+                // Chapter package download in progress (#18): the core is blocked on the host, so
+                // swallow gameplay/menu keys until the loading overlay goes away.
+                if self.pending_scene_load.is_some() {
+                    return;
+                }
                 if self.rng_play.is_some()
                     && matches!(
                         code,
@@ -312,6 +317,10 @@ impl ApplicationHandler for DesktopApp {
                 }
             }
             WindowEvent::MouseInput { state, button, .. } => {
+                if self.pending_scene_load.is_some() {
+                    self.pointer_drag = false;
+                    return;
+                }
                 if self.rt.is_none() {
                     return;
                 }
