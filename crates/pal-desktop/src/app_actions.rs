@@ -161,6 +161,12 @@ impl DesktopApp {
                 let next = self.rt.as_ref().unwrap().ui.agent_mode;
                 self.set_agent_mode(next);
             }
+            UiAction::CopyAgentToken => {
+                self.copy_agent_token();
+            }
+            UiAction::RefreshAgentToken => {
+                self.refresh_agent_token();
+            }
             UiAction::CheckForUpdate => {
                 if let Some(info) = self.pending_update.clone() {
                     if let Some(rt) = self.rt.as_mut() {

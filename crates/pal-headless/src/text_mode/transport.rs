@@ -101,7 +101,7 @@ fn ct_eq(a: &[u8], b: &[u8]) -> bool {
 }
 
 /// Generate a 128-bit hex session token for non-loopback TCP servers (#193).
-fn generate_session_token() -> String {
+pub fn generate_session_token() -> String {
     let mut bytes = [0u8; 16];
     #[cfg(unix)]
     let filled = File::open("/dev/urandom")
@@ -263,11 +263,25 @@ impl ChannelServer {
         json_mode: bool,
         record_file: Option<PathBuf>,
     ) -> Result<Self, String> {
+        Self::start_tcp_with_token(addr, json_mode, record_file, None)
+    }
+
+    /// Start a TCP socket server with an optional caller-supplied auth token for non-loopback
+    /// bindings (falls back to a fresh 128-bit random token when `None` or empty).
+    pub fn start_tcp_with_token(
+        addr: &str,
+        json_mode: bool,
+        record_file: Option<PathBuf>,
+        preset_token: Option<String>,
+    ) -> Result<Self, String> {
         let listener = TcpListener::bind(addr).map_err(|e| format!("bind {addr}: {e}"))?;
         let local_addr = listener.local_addr().ok();
         let _ = listener.set_nonblocking(true);
         let auth_token = if local_addr.is_some_and(|a| !a.ip().is_loopback()) {
-            let tok = generate_session_token();
+            let tok = preset_token
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .unwrap_or_else(generate_session_token);
             eprintln!(
                 "[repal] Text Mode Socket Server listening on {addr} (format={}, LAN auth required)",
                 if json_mode { "json" } else { "plain" }

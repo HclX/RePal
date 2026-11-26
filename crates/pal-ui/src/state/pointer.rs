@@ -265,6 +265,16 @@ impl UiState {
                     return self.on_key(UiKey::Confirm, state, battle);
                 }
             }
+            HitTag::CopyAgentToken => {
+                if is_click {
+                    return UiAction::CopyAgentToken;
+                }
+            }
+            HitTag::RefreshAgentToken => {
+                if is_click {
+                    return UiAction::RefreshAgentToken;
+                }
+            }
         }
         UiAction::None
     }

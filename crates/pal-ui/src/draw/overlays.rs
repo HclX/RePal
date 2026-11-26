@@ -342,25 +342,120 @@ pub(super) fn draw_title_options(
     draw_agent_token_bar(fb, fonts, ui, s);
 }
 
-/// Persistent bottom bar showing the LAN `auth <token>` secret while Agent Mode is LAN (`#236`).
-pub(super) fn draw_agent_token_bar(fb: &mut Framebuffer, fonts: &mut FontEngine, ui: &UiState, s: i32) {
+/// Persistent bottom bar showing the LAN `auth <token>` secret with clickable `[Copy]` and
+/// `[Refresh]` buttons while Agent Mode is LAN (`#236`).
+pub(super) fn draw_agent_token_bar(
+    fb: &mut Framebuffer,
+    fonts: &mut FontEngine,
+    ui: &mut UiState,
+    s: i32,
+) {
     if ui.agent_mode != 2 {
         return;
     }
-    let Some(tok) = ui.agent_token.as_deref().filter(|t| !t.is_empty()) else {
+    let Some(tok) = ui
+        .agent_token
+        .as_deref()
+        .filter(|t| !t.is_empty())
+        .map(str::to_string)
+    else {
         return;
     };
-    fb.fill_rect(0, 186 * s, 320 * s, 14 * s, Color::rgba(8, 12, 18, 225));
-    let label = format!("LAN auth: {tok}");
+    let bar_y = 182;
+    let bar_h = 18;
+    fb.fill_rect(0, bar_y * s, 320 * s, bar_h * s, Color::rgba(8, 12, 18, 238));
+    fb.fill_rect(0, bar_y * s, 320 * s, s, Color::rgba(140, 112, 64, 220));
+
+    let label = format!("LAN: {tok}");
+    fonts.draw_text_outlined(
+        fb,
+        6 * s,
+        187 * s,
+        &label,
+        (7 * s) as u16,
+        Color::GOLD_HI,
+        Color::BLACK,
+    );
+    ui.hit_rects.push(HitRect {
+        x: 0,
+        y: bar_y,
+        w: 240,
+        h: bar_h,
+        tag: HitTag::CopyAgentToken,
+    });
+
+    // [Copy] button
+    let copy_x = 242;
+    let btn_y = 184;
+    let btn_w = 34;
+    let btn_h = 14;
+    fb.fill_rect(
+        copy_x * s,
+        btn_y * s,
+        btn_w * s,
+        btn_h * s,
+        Color::rgba(36, 72, 108, 245),
+    );
+    fb.stroke_rect(
+        copy_x * s,
+        btn_y * s,
+        btn_w * s,
+        btn_h * s,
+        s.max(1),
+        Color::rgba(140, 200, 255, 255),
+    );
+    let copy_lbl = tr(ui, "複製", "复制", "Copy");
     fonts.draw_text_centered(
         fb,
-        160 * s,
-        188 * s,
-        &label,
-        (8 * s) as u16,
-        Color::GOLD_HI,
+        (copy_x + btn_w / 2) * s,
+        187 * s,
+        copy_lbl,
+        (7 * s) as u16,
+        Color::WHITE,
         Some(Color::BLACK),
     );
+    ui.hit_rects.push(HitRect {
+        x: copy_x,
+        y: btn_y,
+        w: btn_w,
+        h: btn_h,
+        tag: HitTag::CopyAgentToken,
+    });
+
+    // [Refresh] button
+    let ref_x = 280;
+    fb.fill_rect(
+        ref_x * s,
+        btn_y * s,
+        btn_w * s,
+        btn_h * s,
+        Color::rgba(88, 48, 36, 245),
+    );
+    fb.stroke_rect(
+        ref_x * s,
+        btn_y * s,
+        btn_w * s,
+        btn_h * s,
+        s.max(1),
+        Color::rgba(245, 180, 120, 255),
+    );
+    let ref_lbl = tr(ui, "刷新", "刷新", "Reset");
+    fonts.draw_text_centered(
+        fb,
+        (ref_x + btn_w / 2) * s,
+        187 * s,
+        ref_lbl,
+        (7 * s) as u16,
+        Color::rgba(255, 232, 190, 255),
+        Some(Color::BLACK),
+    );
+    ui.hit_rects.push(HitRect {
+        x: ref_x,
+        y: btn_y,
+        w: btn_w,
+        h: btn_h,
+        tag: HitTag::RefreshAgentToken,
+    });
 }
 
 /// Centered ornate scroll overlay shown when a `.repal` replay finishes playing.

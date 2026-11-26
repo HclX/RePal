@@ -669,6 +669,23 @@ mod tests {
             "TitleOptions must not expose Title buttons underneath"
         );
 
+        // LAN Agent Mode exposes clickable Copy + Refresh buttons in the bottom token bar.
+        ui.agent_mode = 2;
+        ui.agent_token = Some("0123456789abcdef0123456789abcdef".into());
+        draw_ui(&mut fb, &mut cache, &mut fonts, &mut ui, &state, None, false);
+        assert!(ui.hit_rects.iter().any(|r| r.tag == HitTag::CopyAgentToken));
+        assert!(ui.hit_rects.iter().any(|r| r.tag == HitTag::RefreshAgentToken));
+        assert_eq!(
+            ui.on_pointer(PointerEvent { kind: PointerKind::Down, x: 255, y: 190 }, &state, None),
+            UiAction::CopyAgentToken
+        );
+        assert_eq!(
+            ui.on_pointer(PointerEvent { kind: PointerKind::Down, x: 295, y: 190 }, &state, None),
+            UiAction::RefreshAgentToken
+        );
+        ui.agent_mode = 0;
+        ui.agent_token = None;
+
         let battle = BattleVisuals {
             active: true,
             prompting: true,

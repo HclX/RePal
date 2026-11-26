@@ -32,6 +32,14 @@ impl DesktopApp {
         .save(&self.cfg.config_path);
     }
 
+    pub(crate) fn load_or_create_lan_token(&self) -> String {
+        load_or_create_lan_token_at(&self.cfg.user_dir.join("agent_lan_token.txt"))
+    }
+
+    pub(crate) fn rotate_lan_token(&self) -> String {
+        rotate_lan_token_at(&self.cfg.user_dir.join("agent_lan_token.txt"))
+    }
+
     pub(crate) fn save_screenshot(&mut self) -> Option<PathBuf> {
         self.save_screenshot_to(None)
     }
@@ -727,6 +735,102 @@ pub(crate) fn is_ui_action_blocked_in_untrusted_replay(action: &pal_ui::UiAction
     !is_ui_action_allowed_in_untrusted_replay(action)
 }
 
+fn is_valid_lan_token(s: &str) -> bool {
+    s.len() >= 16
+        && s.len() <= 128
+        && s.bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+}
+
+pub(crate) fn write_lan_token_file(path: &Path, tok: &str) {
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    #[cfg(unix)]
+    {
+        use std::io::Write as _;
+        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+        if let Ok(mut f) = fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .mode(0o600)
+            .open(path)
+        {
+            let _ = f.write_all(tok.as_bytes());
+            let _ = f.write_all(b"\n");
+            let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
+            return;
+        }
+    }
+    let _ = fs::write(path, format!("{tok}\n"));
+}
+
+pub(crate) fn load_or_create_lan_token_at(path: &Path) -> String {
+    if let Ok(raw) = fs::read_to_string(path) {
+        let trimmed = raw.trim();
+        if is_valid_lan_token(trimmed) {
+            return trimmed.to_string();
+        }
+    }
+    rotate_lan_token_at(path)
+}
+
+pub(crate) fn rotate_lan_token_at(path: &Path) -> String {
+    let tok = pal_headless::text_mode::transport::generate_session_token();
+    write_lan_token_file(path, &tok);
+    tok
+}
+
+/// Zero-dependency cross-platform system clipboard writer (`pbcopy` / `clip.exe` / `wl-copy` / `xclip` / `xsel`).
+pub(crate) fn copy_text_to_clipboard(text: &str) -> bool {
+    use std::io::Write as _;
+    use std::process::{Command, Stdio};
+
+    fn run_clip(bin: &str, args: &[&str], text: &str) -> bool {
+        let Ok(mut child) = Command::new(bin)
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+        else {
+            return false;
+        };
+        if let Some(mut stdin) = child.stdin.take() {
+            if stdin.write_all(text.as_bytes()).is_err() {
+                let _ = child.kill();
+                let _ = child.wait();
+                return false;
+            }
+        }
+        child.wait().map(|s| s.success()).unwrap_or(false)
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        run_clip("pbcopy", &[], text)
+    }
+    #[cfg(target_os = "windows")]
+    {
+        run_clip("clip", &[], text)
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        let on_wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
+        if on_wayland && run_clip("wl-copy", &[], text) {
+            return true;
+        }
+        if run_clip("xclip", &["-selection", "clipboard"], text) {
+            return true;
+        }
+        if run_clip("xsel", &["--clipboard", "--input"], text) {
+            return true;
+        }
+        !on_wayland && run_clip("wl-copy", &[], text)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -762,6 +866,8 @@ quit
     fn untrusted_cmd_replay_blocks_privileged_ui_actions() {
         use pal_ui::UiAction;
         assert!(is_ui_action_blocked_in_untrusted_replay(&UiAction::ToggleAgentMode));
+        assert!(is_ui_action_blocked_in_untrusted_replay(&UiAction::CopyAgentToken));
+        assert!(is_ui_action_blocked_in_untrusted_replay(&UiAction::RefreshAgentToken));
         assert!(is_ui_action_blocked_in_untrusted_replay(&UiAction::SaveSlot(0)));
         assert!(is_ui_action_blocked_in_untrusted_replay(&UiAction::CheckForUpdate));
         assert!(is_ui_action_blocked_in_untrusted_replay(&UiAction::ExportSave));
@@ -787,5 +893,36 @@ quit
             versioned_replays_dir(base, "v0.3.11"),
             PathBuf::from("/tmp/repal_user/replays/v0.3.11")
         );
+    }
+
+    #[test]
+    fn lan_token_persists_until_explicit_rotate() {
+        let dir = std::env::temp_dir().join(format!(
+            "repal_lan_tok_test_{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&dir);
+        let path = dir.join("agent_lan_token.txt");
+
+        let t1 = load_or_create_lan_token_at(&path);
+        assert_eq!(t1.len(), 32);
+        // Second load must reuse the exact same persisted token.
+        let t2 = load_or_create_lan_token_at(&path);
+        assert_eq!(t1, t2);
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+            assert_eq!(mode, 0o600);
+        }
+
+        // Explicit rotate produces a fresh token and persists it.
+        let t3 = rotate_lan_token_at(&path);
+        assert_eq!(t3.len(), 32);
+        assert_ne!(t3, t1);
+        assert_eq!(load_or_create_lan_token_at(&path), t3);
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }

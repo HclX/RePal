@@ -420,20 +420,22 @@ impl DesktopApp {
         }
 
         if let Some(addr) = self.cfg.listen_addr.clone() {
-            match ChannelServer::start_tcp(
+            let is_loopback = addr.starts_with("127.0.0.1") || addr.starts_with("localhost");
+            let preset_tok = if is_loopback {
+                None
+            } else {
+                Some(self.load_or_create_lan_token())
+            };
+            match ChannelServer::start_tcp_with_token(
                 &addr,
                 self.cfg.json_mode,
                 self.cfg.record_file.clone(),
+                preset_tok,
             ) {
                 Ok(srv) => {
                     rt.ui.agent_token = srv.auth_token().map(str::to_string);
                     self.channel_server = Some(srv);
-                    rt.ui.agent_mode =
-                        if addr.starts_with("127.0.0.1") || addr.starts_with("localhost") {
-                            1
-                        } else {
-                            2
-                        };
+                    rt.ui.agent_mode = if is_loopback { 1 } else { 2 };
                 }
                 Err(e) => {
                     eprintln!("[repal] Failed to start GUI+Text socket server: {e}");
@@ -635,7 +637,43 @@ impl DesktopApp {
     }
 
     pub(crate) fn set_agent_mode(&mut self, mode: u8) {
-        // Stop any existing server first so switching Local <-> LAN releases the socket cleanly.
+        self.set_agent_mode_inner(mode, false);
+    }
+
+    pub(crate) fn copy_agent_token(&mut self) {
+        let Some((tok, lang)) = self.rt.as_ref().and_then(|rt| {
+            rt.ui
+                .agent_token
+                .as_deref()
+                .filter(|t| !t.is_empty())
+                .map(|t| (t.to_string(), rt.ui.lang))
+        }) else {
+            return;
+        };
+        let copied = session_io::copy_text_to_clipboard(&tok);
+        if let Some(rt) = self.rt.as_mut() {
+            let msg = match (copied, lang) {
+                (true, pal_core::Language::En) => "LAN token copied to clipboard",
+                (true, pal_core::Language::ZhHans) => "LAN token 已复制到剪贴板",
+                (true, pal_core::Language::ZhHant) => "LAN token 已複製到剪貼簿",
+                (false, pal_core::Language::En) => "Clipboard unavailable; see agent_lan_token.txt",
+                (false, pal_core::Language::ZhHans) => "无法访问剪贴板，请查看 agent_lan_token.txt",
+                (false, pal_core::Language::ZhHant) => "無法存取剪貼簿，請查看 agent_lan_token.txt",
+            };
+            rt.show_toast(msg, 150);
+        }
+    }
+
+    pub(crate) fn refresh_agent_token(&mut self) {
+        if self.untrusted_cmd_active {
+            return;
+        }
+        let _ = self.rotate_lan_token();
+        self.set_agent_mode_inner(2, true);
+    }
+
+    fn set_agent_mode_inner(&mut self, mode: u8, refreshed: bool) {
+        // Stop any existing server first so switching Local <-> LAN or refreshing releases the socket cleanly.
         if self.channel_server.is_some() {
             self.channel_server = None;
             self.cancel_text_task();
@@ -647,41 +685,78 @@ impl DesktopApp {
         match mode {
             1 | 2 => {
                 let host = if mode == 2 { "0.0.0.0" } else { "127.0.0.1" };
-                match ChannelServer::start_tcp(
+                let preset_tok = if mode == 2 {
+                    Some(self.load_or_create_lan_token())
+                } else {
+                    None
+                };
+                match ChannelServer::start_tcp_with_token(
                     &format!("{host}:{port}"),
                     self.cfg.json_mode,
                     self.cfg.record_file.clone(),
+                    preset_tok,
                 ) {
                     Ok(srv) => {
                         let tok_opt = srv.auth_token().map(str::to_string);
-                        let tok_suffix = tok_opt
-                            .as_deref()
-                            .map(|t| format!(" | token:{t}"))
-                            .unwrap_or_default();
+                        let copied = if mode == 2 {
+                            tok_opt
+                                .as_deref()
+                                .map(session_io::copy_text_to_clipboard)
+                                .unwrap_or(false)
+                        } else {
+                            false
+                        };
                         self.channel_server = Some(srv);
                         if let Some(rt) = self.rt.as_mut() {
                             rt.ui.agent_mode = mode;
                             rt.ui.agent_token = tok_opt;
                             rt.compositor.mark_ui_dirty();
-                            let msg = match (mode, rt.ui.lang) {
-                                (2, pal_core::Language::En) => {
-                                    format!("Agent Mode: LAN (0.0.0.0:{port}{tok_suffix})")
+                            let msg = match (mode, refreshed, copied, rt.ui.lang) {
+                                (2, true, true, pal_core::Language::En) => {
+                                    "LAN token refreshed & copied to clipboard".to_string()
                                 }
-                                (1, pal_core::Language::En) => {
+                                (2, true, true, pal_core::Language::ZhHans) => {
+                                    "LAN token 已刷新并复制到剪贴板".to_string()
+                                }
+                                (2, true, true, pal_core::Language::ZhHant) => {
+                                    "LAN token 已刷新並複製到剪貼簿".to_string()
+                                }
+                                (2, true, false, pal_core::Language::En) => {
+                                    "LAN token refreshed (saved in agent_lan_token.txt)".to_string()
+                                }
+                                (2, true, false, pal_core::Language::ZhHans) => {
+                                    "LAN token 已刷新（已写入 agent_lan_token.txt）".to_string()
+                                }
+                                (2, true, false, pal_core::Language::ZhHant) => {
+                                    "LAN token 已刷新（已寫入 agent_lan_token.txt）".to_string()
+                                }
+                                (2, false, true, pal_core::Language::En) => {
+                                    format!("Agent LAN (0.0.0.0:{port}) — token copied")
+                                }
+                                (2, false, true, pal_core::Language::ZhHans) => {
+                                    format!("AI 旁观：局域网 (:{port}) — token 已复制")
+                                }
+                                (2, false, true, pal_core::Language::ZhHant) => {
+                                    format!("AI 旁觀：區網 (:{port}) — token 已複製")
+                                }
+                                (2, false, false, pal_core::Language::En) => {
+                                    format!("Agent LAN (0.0.0.0:{port}) — see agent_lan_token.txt")
+                                }
+                                (2, false, false, pal_core::Language::ZhHans) => {
+                                    format!("AI 旁观：局域网 (:{port}) — 见 agent_lan_token.txt")
+                                }
+                                (2, false, false, pal_core::Language::ZhHant) => {
+                                    format!("AI 旁觀：區網 (:{port}) — 見 agent_lan_token.txt")
+                                }
+                                (1, _, _, pal_core::Language::En) => {
                                     format!("Agent Mode: Local (127.0.0.1:{port})")
                                 }
-                                (2, pal_core::Language::ZhHans) => {
-                                    format!("AI 旁观模式：局域网 (0.0.0.0:{port}{tok_suffix})")
-                                }
-                                (1, pal_core::Language::ZhHans) => {
+                                (1, _, _, pal_core::Language::ZhHans) => {
                                     format!("AI 旁观模式：本机 (127.0.0.1:{port})")
-                                }
-                                (2, pal_core::Language::ZhHant) => {
-                                    format!("AI 旁觀模式：區網 (0.0.0.0:{port}{tok_suffix})")
                                 }
                                 _ => format!("AI 旁觀模式：本機 (127.0.0.1:{port})"),
                             };
-                            rt.show_toast(msg, if mode == 2 { 300 } else { 150 });
+                            rt.show_toast(msg, if mode == 2 { 220 } else { 150 });
                         }
                     }
                     Err(e) => {

@@ -167,6 +167,7 @@ fn encode_ui_action(action: &UiAction) -> (u32, u32, u32) {
         UiAction::TakeScreenshot => (24, 0, 0),
         UiAction::ToggleFullscreen => (25, 0, 0),
         UiAction::ToggleAgentMode => (26, 0, 0),
+        UiAction::CopyAgentToken | UiAction::RefreshAgentToken => (0, 0, 0),
         UiAction::CheckForUpdate => (37, 0, 0),
         UiAction::RestartRecording => (27, 0, 0),
         UiAction::ExportReplay => (28, 0, 0),

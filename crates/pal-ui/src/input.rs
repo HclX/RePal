@@ -105,6 +105,8 @@ pub enum HitTag {
     BattleVictoryConfirm,
     ShopRow(usize),
     ReplayChapter(usize),
+    CopyAgentToken,
+    RefreshAgentToken,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -136,6 +138,8 @@ pub enum UiAction {
     ToggleLanguage,
     ToggleFullscreen,
     ToggleAgentMode,
+    CopyAgentToken,
+    RefreshAgentToken,
     CheckForUpdate,
     RestartRecording,
     ExportReplay,
