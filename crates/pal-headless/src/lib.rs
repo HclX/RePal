@@ -6,8 +6,18 @@
 #[cfg(feature = "disk")]
 pub mod capture;
 #[cfg(feature = "disk")]
+pub mod offline_audio;
+#[cfg(feature = "disk")]
 pub mod replay;
 pub mod text_mode;
+
+/// Platform-agnostic audio command captured during headless ticks for offline video muxing (#11).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AudioEvent {
+    PlayMusic { track: i32, looped: bool },
+    StopMusic,
+    PlaySfx(i32),
+}
 
 #[cfg(feature = "disk")]
 mod native_app {
@@ -33,6 +43,7 @@ pub struct HeadlessApp {
     chapters_loaded: bool,
     collision_map_id: u16,
     collision_grid: Option<CollisionGrid>,
+    audio_events: Vec<crate::AudioEvent>,
 }
 
 impl Deref for HeadlessApp {
@@ -66,6 +77,7 @@ impl HeadlessApp {
             chapters_loaded: false,
             collision_map_id: 0,
             collision_grid: None,
+            audio_events: Vec::new(),
         }
     }
 
@@ -91,6 +103,7 @@ impl HeadlessApp {
             chapters_loaded: false,
             collision_map_id: 0,
             collision_grid: None,
+            audio_events: Vec::new(),
         })
     }
 
@@ -138,12 +151,33 @@ impl HeadlessApp {
                     let _ = self.vfs.ensure_rng_pack(id.max(0) as u16);
                     self.rt.reply(HostReply::Done);
                 }
+                HostCmd::PlayMusic { track, looped } => {
+                    if self.audio_events.len() < 256 {
+                        self.audio_events
+                            .push(crate::AudioEvent::PlayMusic { track, looped });
+                    }
+                }
+                HostCmd::StopMusic => {
+                    if self.audio_events.len() < 256 {
+                        self.audio_events.push(crate::AudioEvent::StopMusic);
+                    }
+                }
+                HostCmd::PlaySfx(id) => {
+                    if self.audio_events.len() < 256 {
+                        self.audio_events.push(crate::AudioEvent::PlaySfx(id));
+                    }
+                }
                 HostCmd::ReturnToTitle | HostCmd::GameOver => {
                     self.rt.set_in_title(true);
                 }
                 _ => {}
             }
         }
+    }
+
+    /// Drain queued audio events emitted since the previous call (used by offline video muxing).
+    pub fn drain_audio_events(&mut self) -> Vec<crate::AudioEvent> {
+        std::mem::take(&mut self.audio_events)
     }
 
     pub fn active_map_id(&self) -> u16 {

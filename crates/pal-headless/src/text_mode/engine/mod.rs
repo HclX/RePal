@@ -301,22 +301,29 @@ impl TextEngine {
         }
     }
 
-    /// Capture one rendered frame into the active [`FrameRecorder`] (if `capture start` is running).
+    /// Capture one rendered frame + tick audio into the active [`FrameRecorder`] (if `capture start` is running).
     #[cfg(feature = "disk")]
     pub fn capture_tick_if_active<H: TextHost>(&mut self, host: &mut H) {
         if self.capture.is_none() {
             return;
         }
         host.render_settled_frame();
+        let audio_events = host.drain_audio_events();
+        let hd_mode = host.runtime().ui.hd_mode;
         let with_thought = self.capture.as_ref().is_some_and(|c| c.with_thought());
-        let res = if with_thought && host.runtime().has_visible_ai_thought_overlay() {
+        let fb_owned = if with_thought && host.runtime().has_visible_ai_thought_overlay() {
             let mut fb_copy = host.runtime().compositor.fb.clone();
             host.runtime_mut().draw_ai_thought_overlay_onto(&mut fb_copy);
-            self.capture.as_mut().unwrap().push_tick(&fb_copy)
+            fb_copy
         } else {
-            let fb = &host.runtime().compositor.fb;
-            self.capture.as_mut().unwrap().push_tick(fb)
+            host.runtime().compositor.fb.clone()
         };
+        let res = self.capture.as_mut().unwrap().push_tick_with_audio(
+            &fb_owned,
+            &audio_events,
+            hd_mode,
+            |k| host.read_audio_asset(k),
+        );
         if let Err(e) = res {
             eprintln!("[repal] capture error (stopping capture): {e}");
             let _ = self.capture.take().map(|c| c.finish());

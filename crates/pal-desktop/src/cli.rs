@@ -380,6 +380,10 @@ pub(crate) fn parse_cli_from(args: &[String]) -> Result<LaunchMode, CliExit> {
                             opts.with_thought = true;
                             j += 1;
                         }
+                        "--no-audio" | "--mute" => {
+                            opts.with_audio = false;
+                            j += 1;
+                        }
                         "--stride" => {
                             let v = next_arg(args, &mut j, "--stride")?;
                             opts.stride = v

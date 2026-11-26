@@ -847,14 +847,15 @@ fn main() {
             match pal_headless::capture::export_repal_video(&mut app, &input, &output, &opts) {
                 Ok(sum) => {
                     println!(
-                        "[repal] Exported {} ({} frames / {} ticks, {}x{} @ {}fps, format={})",
+                        "[repal] Exported {} ({} frames / {} ticks, {}x{} @ {}fps, format={}, audio={})",
                         sum.path.display(),
                         sum.frames,
                         sum.ticks,
                         sum.width,
                         sum.height,
                         sum.fps,
-                        sum.format
+                        sum.format,
+                        sum.has_audio
                     );
                     std::process::exit(0);
                 }

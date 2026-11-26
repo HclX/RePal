@@ -171,6 +171,16 @@ pub trait TextHost {
 
     /// Export a diagnostic bug report bundle and return structured artifact JSON.
     fn export_bugreport(&mut self, desc: &str) -> Result<serde_json::Value, String>;
+
+    /// Drain queued BGM/SFX events since the last tick (used by audio-muxed `capture`).
+    fn drain_audio_events(&mut self) -> Vec<crate::AudioEvent> {
+        Vec::new()
+    }
+
+    /// Read an audio asset key (`audio/bgm_hd/...`, `audio/midi/...`, `audio/sfx/...`) for offline capture.
+    fn read_audio_asset(&mut self, _key: &str) -> Option<Vec<u8>> {
+        None
+    }
 }
 
 /// Configuration for headless Text Mode (`repal --text ...`).
@@ -307,6 +317,14 @@ impl TextHost for HeadlessTextHost {
 
     fn runtime_mut(&mut self) -> &mut PalRuntime {
         &mut self.app.rt
+    }
+
+    fn drain_audio_events(&mut self) -> Vec<crate::AudioEvent> {
+        self.app.drain_audio_events()
+    }
+
+    fn read_audio_asset(&mut self, key: &str) -> Option<Vec<u8>> {
+        self.app.vfs.read_bytes(key).ok()
     }
 
     fn assets_root(&self) -> &Path {

@@ -540,11 +540,25 @@ impl TextEngine {
                     host.runtime().compositor.fb.width,
                     host.runtime().compositor.fb.height,
                 );
-                match crate::capture::FrameRecorder::open(&out_path, w, h, stride, with_thought) {
+                let hd_mode = host.runtime().ui.hd_mode;
+                match crate::capture::FrameRecorder::open_with_audio(
+                    &out_path,
+                    w,
+                    h,
+                    stride,
+                    with_thought,
+                    true,
+                    hd_mode,
+                ) {
                     Ok(mut rec) => {
-                        let _ = rec.push_tick(&host.runtime().compositor.fb);
+                        let audio_events = host.drain_audio_events();
+                        let fb_owned = host.runtime().compositor.fb.clone();
+                        let _ = rec.push_tick_with_audio(&fb_owned, &audio_events, hd_mode, |k| {
+                            host.read_audio_asset(k)
+                        });
                         let fmt = rec.format();
                         let fps = rec.fps();
+                        let has_audio = rec.has_audio();
                         self.capture = Some(rec);
                         let artifacts = serde_json::json!({
                             "capture": {
@@ -556,10 +570,11 @@ impl TextEngine {
                                 "fps": fps,
                                 "stride": stride,
                                 "with_thought": with_thought,
+                                "audio": has_audio,
                             }
                         });
                         let log = vec![format!(
-                            "[capture] started {} ({w}x{h}, {fps}fps, stride={stride}, format={fmt})",
+                            "[capture] started {} ({w}x{h}, {fps}fps, stride={stride}, format={fmt}, audio={has_audio})",
                             out_path.display()
                         )];
                         ExecOutcome::Done(self.ok_reply(host, trimmed, false, artifacts, log))
