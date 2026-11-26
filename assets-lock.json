@@ -1,13 +1,13 @@
 {
   "format": "repal-packs/1",
   "schema_version": 1,
-  "version": "packs-v4",
+  "version": "packs-v5",
   "manifest": {
     "urls": [
-      "https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@packs-v4/pack-manifest.json",
-      "https://raw.githubusercontent.com/HclX/RePal_Packs/packs-v4/pack-manifest.json"
+      "https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@packs-v5/pack-manifest.json",
+      "https://raw.githubusercontent.com/HclX/RePal_Packs/packs-v5/pack-manifest.json"
     ],
-    "sha256": "0bd682f69d104644ba54e21a88bd640e0aea406d498d72f2a0e90bbb39c45b2f",
-    "size_bytes": 77952
+    "sha256": "21521f37ac00508da12c873201ff7a5a36029a3b14f367f91fe9c52aaf0efddf",
+    "size_bytes": 33306
   }
 }
