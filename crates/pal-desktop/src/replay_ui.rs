@@ -265,7 +265,13 @@ impl CoreReplayPlayer {
                         || (lead.x - exp_x).abs() > 24
                         || (lead.y - exp_y).abs() > 24
                     {
-                        Some(format!("章节同步 #{:02} · {}", next_idx + 1, ns.label))
+                        let n = next_idx + 1;
+                        Some(crate::tl(
+                            rt.ui.lang,
+                            &format!("章节同步 #{n:02} · {}", ns.label),
+                            &format!("章節同步 #{n:02} · {}", ns.label),
+                            &format!("Chapter sync #{n:02} · {}", ns.label),
+                        ))
                     } else {
                         None
                     }
@@ -288,11 +294,16 @@ impl CoreReplayPlayer {
 /// Format a concise high-level command label for replay & spectator on-screen notifications.
 pub fn format_high_level_action_toast(rt: &PalRuntime, ev: &ReplayEvent) -> Option<String> {
     let g = rt.game.as_ref()?;
+    let l = |hans: &str, hant: &str, en: &str| crate::tl(rt.ui.lang, hans, hant, en);
     match *ev {
-        ReplayEvent::UseItem { item_id, .. } => Some(format!("使用 · {}", g.item_display_name(item_id))),
-        ReplayEvent::EquipItem { item_id, .. } => Some(format!("装备 · {}", g.item_display_name(item_id))),
+        ReplayEvent::UseItem { item_id, .. } => {
+            Some(format!("{} · {}", l("使用", "使用", "Use"), g.item_display_name(item_id)))
+        }
+        ReplayEvent::EquipItem { item_id, .. } => {
+            Some(format!("{} · {}", l("装备", "裝備", "Equip"), g.item_display_name(item_id)))
+        }
         ReplayEvent::CastFieldMagic { magic_id, .. } => {
-            Some(format!("施放 · {}", g.magic_display_name(magic_id)))
+            Some(format!("{} · {}", l("施放", "施放", "Cast"), g.magic_display_name(magic_id)))
         }
         ReplayEvent::BattleAttack(target) => {
             let ename = g
@@ -301,20 +312,23 @@ pub fn format_high_level_action_toast(rt: &PalRuntime, ev: &ReplayEvent) -> Opti
                 .and_then(|b| b.enemies.get(target))
                 .map(|e| g.enemy_display_name(e.enemy_id, &e.name, &e.name_hant))
                 .unwrap_or_default();
-            Some(if ename.is_empty() {
-                "攻击".to_string()
-            } else {
-                format!("攻击 · {ename}")
-            })
+            let atk = l("攻击", "攻擊", "Attack");
+            Some(if ename.is_empty() { atk } else { format!("{atk} · {ename}") })
         }
         ReplayEvent::BattleMagic { magic, .. } => {
-            Some(format!("仙术 · {}", g.magic_display_name(magic)))
+            Some(format!("{} · {}", l("仙术", "仙術", "Magic"), g.magic_display_name(magic)))
         }
-        ReplayEvent::BattleItem(id) => Some(format!("道具 · {}", g.item_display_name(id))),
-        ReplayEvent::BattleDefend => Some("防御".to_string()),
-        ReplayEvent::BattleFlee => Some("逃跑".to_string()),
-        ReplayEvent::BuyItem { item_id, .. } => Some(format!("购入 · {}", g.item_display_name(item_id))),
-        ReplayEvent::SellItem { item_id, .. } => Some(format!("典当 · {}", g.item_display_name(item_id))),
+        ReplayEvent::BattleItem(id) => {
+            Some(format!("{} · {}", l("道具", "道具", "Item"), g.item_display_name(id)))
+        }
+        ReplayEvent::BattleDefend => Some(l("防御", "防禦", "Defend")),
+        ReplayEvent::BattleFlee => Some(l("逃跑", "逃跑", "Flee")),
+        ReplayEvent::BuyItem { item_id, .. } => {
+            Some(format!("{} · {}", l("购入", "購入", "Buy"), g.item_display_name(item_id)))
+        }
+        ReplayEvent::SellItem { item_id, .. } => {
+            Some(format!("{} · {}", l("典当", "典當", "Sell"), g.item_display_name(item_id)))
+        }
         _ => None,
     }
 }

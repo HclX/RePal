@@ -1,3 +1,4 @@
+import { L } from "./l10n.js";
 /**
  * HTML5 Gamepad API controller for Web & TV browsers (Xbox / PlayStation / Switch Pro / 8BitDo).
  *
@@ -32,7 +33,7 @@ export class GamepadController {
       this.connected = true;
       this.lastInputMode = "gamepad";
       const name = e.gamepad?.id?.split("(")[0]?.trim() || "Gamepad";
-      this.app.hud?.showToast?.(`🎮 已连接手柄：${name}`);
+      this.app.hud?.showToast?.(`🎮 ${L("已连接手柄", "已連接手把", "Gamepad connected")}: ${name}`);
     });
     window.addEventListener("gamepaddisconnected", () => {
       this.heldDir = -1;

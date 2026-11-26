@@ -15,7 +15,7 @@ impl Game {
                 let b = self.battle.as_mut().unwrap();
                 b.heroes[h].defending = true;
                 b.heroes[h].pose = HeroPose::Defend;
-                let t = self.world.t("防御", "防禦").to_string();
+                let t = self.world.t3("防御", "防禦", "Defend").to_string();
                 self.battle.as_mut().unwrap().float(hx, hy - 28, t, CYAN);
                 self.sleep_ms(250);
                 None

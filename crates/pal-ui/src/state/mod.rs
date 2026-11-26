@@ -186,7 +186,7 @@ impl UiCatalog {
 
     pub fn item_name(&self, item_id: u16) -> String {
         if item_id == 0 {
-            return "無".into();
+            return "—".into();
         }
         self.item_names
             .get(&item_id)

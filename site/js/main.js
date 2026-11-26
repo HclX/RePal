@@ -24,6 +24,7 @@ import { GamepadController } from "./host/gamepad.js";
 import { WebReplayTheater } from "./host/replay-theater.js";
 import { WebAgentHost } from "./host/web-agent.js";
 import { saveLocalReplay } from "./host/repal-loader.js";
+import { L } from "./host/l10n.js";
 
 const DEFAULT_PACK_MANIFEST_URL =
   "https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@packs-v5/pack-manifest.json"; // stamped from assets-lock.json on deploy
@@ -90,11 +91,11 @@ class PalRemakeApp {
 
   async boot() {
     try {
-      this.setBootProgress(0.1, "正在唤醒 Rust WebAssembly 引擎核心...");
+      this.setBootProgress(0.1, L(L("正在唤醒 Rust WebAssembly 引擎核心...", "正在喚醒 Rust WebAssembly 引擎核心...", "Starting the Rust WebAssembly engine..."), "正在喚醒 Rust WebAssembly 引擎核心...", "Starting the Rust WebAssembly engine..."));
       this.wasm = new PalWasmBridge();
       await this.wasm.init(withCodeVersion("./wasm/pal.wasm"));
 
-      this.setBootProgress(0.2, "正在挂载 YAML 剧情 Mod 扩展层...");
+      this.setBootProgress(0.2, L(L("正在挂载 YAML 剧情 Mod 扩展层...", "正在掛載 YAML 劇情 Mod 擴展層...", "Mounting YAML story mods..."), "正在掛載 YAML 劇情 Mod 擴展層...", "Mounting YAML story mods..."));
       this.modLoader = new ModLoader();
       await this.modLoader.init();
 
@@ -106,13 +107,13 @@ class PalRemakeApp {
       // Option A (#237): prefer local loose `./assets/` in dev; otherwise mount encrypted `.rpk` packs.
       await this._initPackManagerIfNeeded();
 
-      this.setBootProgress(0.3, "正在載入 WASM 字型引擎...");
+      this.setBootProgress(0.3, L("正在载入 WASM 字型引擎...", L("正在载入 WASM 字型引擎...", "正在載入 WASM 字型引擎...", "Loading fonts..."), "Loading fonts..."));
       await this.renderer.initFonts();
 
       this.core = new RustCoreHost(this);
-      await this.core.init((p, key) => this.setBootProgress(0.3 + p * 0.6, `正在载入游戏数据 (${key})...`));
+      await this.core.init((p, key) => this.setBootProgress(0.3 + p * 0.6, `${L("正在载入游戏数据", "正在載入遊戲資料", "Loading game data")} (${key})...`));
 
-      this.setBootProgress(0.95, "正在载入 4x 高清标题画卷...");
+      this.setBootProgress(0.95, L(L("正在载入 4x 高清标题画卷...", "正在載入 4x 高清標題畫卷...", "Loading the HD title screen..."), "正在載入 4x 高清標題畫卷...", "Loading the HD title screen..."));
       await this.renderer.ensureFbp(60);
       this.hud.refreshSaveSlotSummaries();
       this.hud.showTitleScreen();
@@ -126,13 +127,13 @@ class PalRemakeApp {
       this.wireInputs();
       this.audio.installGestureUnlock();
 
-      this.setBootProgress(1.0, "准备就绪！");
+      this.setBootProgress(1.0, L(L("准备就绪！", "準備就緒！", "Ready!"), "準備就緒！", "Ready!"));
       setTimeout(() => this.loadingOverlay?.classList.add("hidden"), 180);
       window.__pal = this;
 
       const activeAssets = resolveAssetBaseUrl();
       if (isCustomAssetOrigin(activeAssets)) {
-        this.hud.showToast(`使用自定义资源源：${activeAssets}`, 4200);
+        this.hud.showToast(`${L("使用自定义资源源", "使用自訂資源來源", "Using custom asset source")}: ${activeAssets}`, 4200);
       }
 
       if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
@@ -145,7 +146,7 @@ class PalRemakeApp {
               if (!nw) return;
               nw.addEventListener("statechange", () => {
                 if (nw.state === "installed" && navigator.serviceWorker.controller) {
-                  window.__pal?.hud?.showToast?.("发现新版本，刷新页面即可生效！");
+                  window.__pal?.hud?.showToast?.(L("发现新版本，刷新页面即可生效！", "發現新版本，重新整理頁面即可生效！", "New version available, reload the page to apply!"));
                 }
               });
             });
@@ -158,7 +159,7 @@ class PalRemakeApp {
       const replayParam = urlParams.get("replay");
       if (replayParam) {
         this.replayTheater.startFromUrl(replayParam).catch((err) => {
-          this.hud.showToast(`加载录像失败：${err.message}`);
+          this.hud.showToast(`${L("加载录像失败", "載入錄像失敗", "Failed to load replay")}: ${err.message}`);
         });
       }
       const agentWsParam = urlParams.get("agent_ws");
@@ -171,18 +172,18 @@ class PalRemakeApp {
       console.error("[PalRemake Boot Error]", err);
       if (this.loadingText) {
         const cur = resolveAssetBaseUrl();
-        this.loadingText.textContent = `启动失败: ${err.message} (当前资源源: ${cur})`;
+        this.loadingText.textContent = `${L("启动失败", "啟動失敗", "Startup failed")}: ${err.message} (${L("当前资源源", "目前資源來源", "asset source")}: ${cur})`;
         if (typeof document !== "undefined" && this.loadingOverlay && !document.getElementById("asset-url-setup")) {
           const box = document.createElement("div");
           box.id = "asset-url-setup";
           box.style.cssText = "margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;";
           const inp = document.createElement("input");
           inp.type = "text";
-          inp.placeholder = "输入资源基地址 (如 https://.../assets 或 ./assets)";
+          inp.placeholder = L(L("输入资源基地址 (如 https://.../assets 或 ./assets)", "輸入資源基底位址 (如 https://.../assets 或 ./assets)", "Asset base URL (e.g. https://.../assets or ./assets)"), "輸入資源基底位址 (如 https://.../assets 或 ./assets)", "Asset base URL (e.g. https://.../assets or ./assets)");
           inp.value = cur === "./assets" ? "" : cur;
           inp.style.cssText = "width:320px;padding:6px 10px;border-radius:6px;border:1px solid #56c2b1;background:#0d171c;color:#f3ecdc;font-size:13px;";
           const btn = document.createElement("button");
-          btn.textContent = "连接资源并重试";
+          btn.textContent = L(L("连接资源并重试", "連接資源並重試", "Connect and retry"), "連接資源並重試", "Connect and retry");
           btn.style.cssText = "padding:6px 14px;border-radius:6px;border:0;background:#e0b96b;color:#142026;font-weight:600;cursor:pointer;";
           btn.onclick = () => {
             const v = inp.value.trim().replace(/\/+$/, "");
@@ -192,7 +193,7 @@ class PalRemakeApp {
               } else {
                 const valid = validateAssetBaseUrl(v);
                 if (!valid) {
-                  this.loadingText.textContent = "无效资源地址：仅允许相对路径 (./assets) 或 https:// 地址";
+                  this.loadingText.textContent = L(L("无效资源地址：仅允许相对路径 (./assets) 或 https:// 地址", "無效資源位址：僅允許相對路徑 (./assets) 或 https:// 位址", "Invalid asset URL: only relative paths (./assets) or https:// are allowed"), "無效資源位址：僅允許相對路徑 (./assets) 或 https:// 位址", "Invalid asset URL: only relative paths (./assets) or https:// are allowed");
                   return;
                 }
                 localStorage.setItem(ASSET_URL_STORAGE_KEY, valid);
@@ -232,7 +233,7 @@ class PalRemakeApp {
     }
 
     const manifestUrl = explicitPacks || DEFAULT_PACK_MANIFEST_URL;
-    this.setBootProgress(0.24, "正在连接加密资产包清单 (jsDelivr CDN)...");
+    this.setBootProgress(0.24, L("正在连接资产包清单...", "正在連接資產包清單...", "Connecting to the asset pack manifest..."));
 
     let keyHex = "";
     try {
@@ -247,7 +248,7 @@ class PalRemakeApp {
           wasmMemory: this.wasm.exports.memory,
           masterKeyHex: keyHex || null,
           onManifestStale: () => {
-            this.hud?.showToast?.("资产包已更新，请刷新页面重新加载！", 6000);
+            this.hud?.showToast?.(L(L("资产包已更新，请刷新页面重新加载！", "資產包已更新，請重新整理頁面！", "Asset packs updated, please reload the page!"), "資產包已更新，請重新整理頁面！", "Asset packs updated, please reload the page!"), 6000);
           },
         });
         await pm.init();
@@ -280,15 +281,15 @@ class PalRemakeApp {
           localStorage.removeItem(PACK_KEY_STORAGE_KEY);
         } catch {}
         let promptMsg = keyHex
-          ? "口令或密钥校验失败，请重试 (Wrong passphrase or key, please retry)"
-          : "当前资产包已加密，请输入资源包口令或 64 位密钥（仅需输入一次）";
+          ? L("口令或密钥校验失败，请重试", "口令或金鑰校驗失敗，請重試", "Wrong passphrase or key, please retry")
+          : L(L("当前资产包已加密，请输入资源包口令或 64 位密钥（仅需输入一次）", "目前資產包已加密，請輸入資源包口令或 64 位金鑰（僅需輸入一次）", "Asset packs are encrypted: enter the pack passphrase or 64-hex key (only needed once)"), "目前資產包已加密，請輸入資源包口令或 64 位金鑰（僅需輸入一次）", "Asset packs are encrypted: enter the pack passphrase or 64-hex key (only needed once)");
         for (;;) {
           const entered = await promptPackKeyOverlay(this.loadingOverlay, this.loadingText, promptMsg);
           if (/^[0-9a-fA-F]{64}$/.test(entered)) {
             keyHex = entered.toLowerCase();
             break;
           }
-          this.setBootProgress(0.25, "正在验证口令... (Checking passphrase)");
+          this.setBootProgress(0.25, L("正在验证口令...", "正在驗證口令...", "Checking passphrase..."));
           let manifest = null;
           try {
             const r = await fetch(manifestUrl, { cache: "no-cache" });
@@ -299,9 +300,9 @@ class PalRemakeApp {
             keyHex = hex;
             break;
           }
-          promptMsg = "口令不正确，请重试 (Wrong passphrase, please retry)";
+          promptMsg = L("口令不正确，请重试", "口令不正確，請重試", "Wrong passphrase, please retry");
         }
-        this.setBootProgress(0.26, "正在解密启动资产包...");
+        this.setBootProgress(0.26, L(L("正在解密启动资产包...", "正在解密啟動資產包...", "Decrypting boot packs..."), "正在解密啟動資產包...", "Decrypting boot packs..."));
       }
     }
   }
@@ -423,7 +424,7 @@ class PalRemakeApp {
     hud.onImportSave = async () => {
       if (await core.importSaveFile()) this.inTitle = false;
     };
-    hud.onCopyReplayReport = () => core.openBugReportDialog("系統選單匯出錄像");
+    hud.onCopyReplayReport = () => core.openBugReportDialog(L("系统菜单导出录像", "系統選單匯出錄像", "Replay exported from system menu"));
     hud.onLanguageChanged = (lang) => core.setLang(lang);
     hud.onOpenReplay = () => this.replayTheater?.openLibrary();
     hud.onReplayJumpChapter = (idx) => this.replayTheater?.jumpToChapter(idx);
@@ -431,12 +432,12 @@ class PalRemakeApp {
     hud.onReplayRestart = () => this.replayTheater?.restartFromBeginning();
     hud.onRestartRecording = () => {
       this.wasm.exports.core_restart_recording?.();
-      hud.showToast("已从此刻重新开始录制！");
+      hud.showToast(L("已从此刻重新开始录制！", "已從此刻重新開始錄製！", "Recording restarted from here!"));
     };
     hud.onExportReplay = async () => {
       const len = this.wasm.exports.core_export_replay_v3?.() || 0;
       if (!len) {
-        hud.showToast("当前没有可导出的录像");
+        hud.showToast(L("当前没有可导出的录像", "目前沒有可匯出的錄像", "No replay to export yet"));
         return;
       }
       const bytes = core._buf(len).slice();
@@ -446,13 +447,13 @@ class PalRemakeApp {
       await saveLocalReplay({
         id: `local_${ts}`,
         savedAt: ts,
-        title: `本地录像 (${new Date(ts).toLocaleString()})`,
+        title: `${L("本地录像", "本地錄像", "Local replay")} (${new Date(ts).toLocaleString()})`,
         subtitle: lastSeg?.label || "",
         segments: doc.segments?.length || 1,
         ticks: doc.total_ticks || 0,
         bytes,
       });
-      hud.showToast("已保存录像至本地录像库（IndexedDB）！");
+      hud.showToast(L("已保存录像至本地录像库！", "已儲存錄像至本地錄像庫！", "Replay saved to the local library!"));
     };
   }
 
@@ -735,7 +736,7 @@ class PalRemakeApp {
         try {
           await this.replayTheater?.startFromBytes(file.name, new Uint8Array(await file.arrayBuffer()));
         } catch (err) {
-          this.hud.showToast(`加载录像失败：${err.message}`);
+          this.hud.showToast(`${L("加载录像失败", "載入錄像失敗", "Failed to load replay")}: ${err.message}`);
         }
       }
     });

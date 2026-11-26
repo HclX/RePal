@@ -67,7 +67,11 @@ impl DesktopApp {
         if let Some(img) = image::RgbaImage::from_raw(fb.width, fb.height, fb.pixels.clone()) {
             if img.save(&path).is_ok() {
                 eprintln!("[repal] Screenshot saved: {}", path.display());
-                rt.show_toast(format!("截圖已儲存：{}", path.display()), 120);
+                let p = path.display();
+                rt.show_toast(
+                    crate::tl(rt.ui.lang, &format!("截图已保存：{p}"), &format!("截圖已儲存：{p}"), &format!("Screenshot saved: {p}")),
+                    120,
+                );
                 return Some(path);
             }
         }
@@ -433,7 +437,11 @@ impl DesktopApp {
                     };
                 if let Some(lbl) = jumped {
                     self.service_host_cmds();
-                    self.show_transition_banner(format!("跳转章节 {lbl}"), 1500);
+                    let lang = self.rt.as_ref().map(|rt| rt.ui.lang).unwrap_or(pal_core::Language::ZhHans);
+                    self.show_transition_banner(
+                        crate::tl(lang, &format!("跳转章节 {lbl}"), &format!("跳轉章節 {lbl}"), &format!("Jump to chapter {lbl}")),
+                        1500,
+                    );
                 }
             }
             ReplayHudHit::NextSeg => {
@@ -445,7 +453,11 @@ impl DesktopApp {
                     };
                 if let Some(lbl) = jumped {
                     self.service_host_cmds();
-                    self.show_transition_banner(format!("跳转章节 {lbl}"), 1500);
+                    let lang = self.rt.as_ref().map(|rt| rt.ui.lang).unwrap_or(pal_core::Language::ZhHans);
+                    self.show_transition_banner(
+                        crate::tl(lang, &format!("跳转章节 {lbl}"), &format!("跳轉章節 {lbl}"), &format!("Jump to chapter {lbl}")),
+                        1500,
+                    );
                 }
             }
             ReplayHudHit::SeekRatio(ratio) => {
@@ -457,7 +469,11 @@ impl DesktopApp {
                     };
                 if let Some(lbl) = jumped {
                     self.service_host_cmds();
-                    self.show_transition_banner(format!("跳转章节 {lbl}"), 1500);
+                    let lang = self.rt.as_ref().map(|rt| rt.ui.lang).unwrap_or(pal_core::Language::ZhHans);
+                    self.show_transition_banner(
+                        crate::tl(lang, &format!("跳转章节 {lbl}"), &format!("跳轉章節 {lbl}"), &format!("Jump to chapter {lbl}")),
+                        1500,
+                    );
                 }
             }
         }
@@ -503,17 +519,28 @@ impl DesktopApp {
                             self.core_replay = Some(player);
                             self.service_host_cmds();
                             if let Some(rt) = self.rt.as_mut() {
+                                let lang = rt.ui.lang;
                                 let mut tags = Vec::new();
                                 if ver_warn {
-                                    tags.push("旧版录像(<v0.4.0)可能不同步");
+                                    tags.push(crate::tl(lang, "旧版录像(<v0.4.0)可能不同步", "舊版錄像(<v0.4.0)可能不同步", "pre-v0.4.0 replay may desync"));
                                 }
                                 if taint_warn {
-                                    tags.push("含调试指令");
+                                    tags.push(crate::tl(lang, "含调试指令", "含除錯指令", "contains debug commands"));
                                 }
                                 let msg = if tags.is_empty() {
-                                    format!("开始回放 {name}（{n_seg} 章节 | Esc菜单 Tab选章节）")
+                                    crate::tl(
+                                        lang,
+                                        &format!("开始回放 {name}（{n_seg} 章节 | Esc菜单 Tab选章节）"),
+                                        &format!("開始回放 {name}（{n_seg} 章節 | Esc選單 Tab選章節）"),
+                                        &format!("Playing {name} ({n_seg} chapters | Esc menu, Tab chapters)"),
+                                    )
                                 } else {
-                                    format!("回放 {name}（{n_seg} 章节 | {}）", tags.join(" / "))
+                                    crate::tl(
+                                        lang,
+                                        &format!("回放 {name}（{n_seg} 章节 | {}）", tags.join(" / ")),
+                                        &format!("回放 {name}（{n_seg} 章節 | {}）", tags.join(" / ")),
+                                        &format!("Playing {name} ({n_seg} chapters | {})", tags.join(" / ")),
+                                    )
                                 };
                                 rt.show_toast(msg, 180);
                             }
@@ -562,17 +589,20 @@ impl DesktopApp {
                         .file_name()
                         .and_then(|s| s.to_str())
                         .unwrap_or("save");
-                    rt.show_toast(format!("已載入存檔：{name}"), 140);
+                    rt.show_toast(
+                        crate::tl(rt.ui.lang, &format!("已载入存档：{name}"), &format!("已載入存檔：{name}"), &format!("Loaded save: {name}")),
+                        140,
+                    );
                 }
             } else if let Some(rt) = self.rt.as_mut() {
-                rt.show_toast("存檔載入失敗", 140);
+                rt.show_toast(crate::tl(rt.ui.lang, "存档载入失败", "存檔載入失敗", "Failed to load save"), 140);
             }
             return;
         }
 
         let Ok(raw) = fs::read_to_string(&path) else {
             if let Some(rt) = self.rt.as_mut() {
-                rt.show_toast("無法讀取回放檔案", 140);
+                rt.show_toast(crate::tl(rt.ui.lang, "无法读取回放文件", "無法讀取回放檔案", "Cannot read replay file"), 140);
             }
             return;
         };

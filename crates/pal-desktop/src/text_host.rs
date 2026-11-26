@@ -84,11 +84,10 @@ impl TextHost for DesktopApp {
             audio.set_hd_mode(hd);
         }
         if let Some(rt) = self.rt.as_mut() {
-            let msg = match (hd, rt.ui.traditional_chinese) {
-                (true, true) => "畫質切換：HD 高清",
-                (true, false) => "画质切换：HD 高清",
-                (false, true) => "畫質切換：1995 復古",
-                (false, false) => "画质切换：1995 复古",
+            let msg = if hd {
+                crate::tl(rt.ui.lang, "画质切换：HD 高清", "畫質切換：HD 高清", "Graphics: HD")
+            } else {
+                crate::tl(rt.ui.lang, "画质切换：1995 复古", "畫質切換：1995 復古", "Graphics: 1995 Retro")
             };
             rt.show_toast(msg, 110);
         }

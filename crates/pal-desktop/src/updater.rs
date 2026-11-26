@@ -16,6 +16,17 @@ use std::thread;
 const RELEASE_API_URL: &str = "https://api.github.com/repos/HclX/RePal/releases/latest";
 const RELEASE_REPO: &str = "HclX/RePal";
 
+/// UI language for updater messages (set by the spawn functions; read by the worker threads).
+static LANG: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(1);
+
+fn lang() -> pal_core::Language {
+    pal_core::Language::from_code(LANG.load(std::sync::atomic::Ordering::Relaxed) as u32)
+}
+
+fn m(hans: &str, hant: &str, en: &str) -> String {
+    crate::tl(lang(), hans, hant, en)
+}
+
 /// Current build version (CI tagged builds inject `REPAL_RELEASE_VERSION`, e.g. `0.3.9`).
 pub fn current_version() -> &'static str {
     option_env!("REPAL_RELEASE_VERSION")
@@ -207,12 +218,13 @@ fn fetch_latest_release_via_gh() -> Option<serde_json::Value> {
 
 /// Spawn a non-blocking background thread to check GitHub Releases for a newer version.
 /// If `silent_on_error` is true (boot check), offline/network failures produce no error toast.
-pub fn spawn_update_check(silent_on_error: bool) -> Receiver<UpdateMsg> {
+pub fn spawn_update_check(silent_on_error: bool, ui_lang: pal_core::Language) -> Receiver<UpdateMsg> {
+    LANG.store(ui_lang as u8, std::sync::atomic::Ordering::Relaxed);
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
         let Some(asset_name) = platform_asset_name() else {
             if !silent_on_error {
-                let _ = tx.send(UpdateMsg::Error("当前平台暂不支持自动更新".into()));
+                let _ = tx.send(UpdateMsg::Error(m("当前平台暂不支持自动更新", "當前平台暫不支援自動更新", "Auto-update is not supported on this platform")));
             }
             return;
         };
@@ -251,7 +263,7 @@ pub fn spawn_update_check(silent_on_error: bool) -> Receiver<UpdateMsg> {
 
             let Ok(mut child) = cmd.spawn() else {
                 if !silent_on_error {
-                    let _ = tx.send(UpdateMsg::Error("无法调用 curl 检查更新".into()));
+                    let _ = tx.send(UpdateMsg::Error(m("无法调用 curl 检查更新", "無法呼叫 curl 檢查更新", "Cannot run curl to check for updates")));
                 }
                 return;
             };
@@ -262,13 +274,13 @@ pub fn spawn_update_check(silent_on_error: bool) -> Receiver<UpdateMsg> {
             }
             let Ok(out) = child.wait_with_output() else {
                 if !silent_on_error {
-                    let _ = tx.send(UpdateMsg::Error("无法调用 curl 检查更新".into()));
+                    let _ = tx.send(UpdateMsg::Error(m("无法调用 curl 检查更新", "無法呼叫 curl 檢查更新", "Cannot run curl to check for updates")));
                 }
                 return;
             };
             if !out.status.success() {
                 if !silent_on_error {
-                    let _ = tx.send(UpdateMsg::Error("检查更新失败（网络不可达）".into()));
+                    let _ = tx.send(UpdateMsg::Error(m("检查更新失败（网络不可达）", "檢查更新失敗（網路不可達）", "Update check failed (network unreachable)")));
                 }
                 return;
             }
@@ -278,7 +290,8 @@ pub fn spawn_update_check(silent_on_error: bool) -> Receiver<UpdateMsg> {
                 Some(code @ (401 | 404)) => {
                     if !silent_on_error {
                         let _ = tx.send(UpdateMsg::Error(format!(
-                            "无法访问发布仓库：请运行 gh auth login 或设置 GITHUB_TOKEN (HTTP {code})"
+                            "{} (HTTP {code})",
+                            m("无法访问发布仓库：请运行 gh auth login 或设置 GITHUB_TOKEN", "無法存取發佈倉庫：請執行 gh auth login 或設定 GITHUB_TOKEN", "Cannot access the release repo: run gh auth login or set GITHUB_TOKEN")
                         )));
                     }
                     return;
@@ -286,7 +299,8 @@ pub fn spawn_update_check(silent_on_error: bool) -> Receiver<UpdateMsg> {
                 Some(403 | 429) => {
                     if !silent_on_error {
                         let _ = tx.send(UpdateMsg::Error(format!(
-                            "GitHub API 限流，请稍后再试 (HTTP {})",
+                            "{} (HTTP {})",
+                            m("GitHub API 限流，请稍后再试", "GitHub API 限流，請稍後再試", "GitHub API rate limited, try again later"),
                             http_code.unwrap()
                         )));
                     }
@@ -294,20 +308,20 @@ pub fn spawn_update_check(silent_on_error: bool) -> Receiver<UpdateMsg> {
                 }
                 Some(code) => {
                     if !silent_on_error {
-                        let _ = tx.send(UpdateMsg::Error(format!("检查更新失败 (HTTP {code})")));
+                        let _ = tx.send(UpdateMsg::Error(format!("{} (HTTP {code})", m("检查更新失败", "檢查更新失敗", "Update check failed"))));
                     }
                     return;
                 }
                 None => {
                     if !silent_on_error {
-                        let _ = tx.send(UpdateMsg::Error("检查更新失败（网络不可达）".into()));
+                        let _ = tx.send(UpdateMsg::Error(m("检查更新失败（网络不可达）", "檢查更新失敗（網路不可達）", "Update check failed (network unreachable)")));
                     }
                     return;
                 }
             }
             let Ok(v) = serde_json::from_slice::<serde_json::Value>(body) else {
                 if !silent_on_error {
-                    let _ = tx.send(UpdateMsg::Error("解析版本信息失败".into()));
+                    let _ = tx.send(UpdateMsg::Error(m("解析版本信息失败", "解析版本資訊失敗", "Failed to parse release info")));
                 }
                 return;
             };
@@ -332,9 +346,11 @@ pub fn spawn_update_check(silent_on_error: bool) -> Receiver<UpdateMsg> {
         });
         let Some(asset_obj) = found_asset else {
             if !silent_on_error {
-                let _ = tx.send(UpdateMsg::Error(format!(
-                    "发现 {tag}，但未找到 {asset_name}"
-                )));
+                let _ = tx.send(UpdateMsg::Error(match lang() {
+                    pal_core::Language::En => format!("Found {tag}, but {asset_name} is missing"),
+                    pal_core::Language::ZhHant => format!("發現 {tag}，但未找到 {asset_name}"),
+                    pal_core::Language::ZhHans => format!("发现 {tag}，但未找到 {asset_name}"),
+                }));
             }
             return;
         };
@@ -463,7 +479,8 @@ fn download_release_asset(
 }
 
 /// Download, verify, extract, and atomically swap the current `repal` executable in the background.
-pub fn spawn_self_update(info: AvailableUpdate) -> Receiver<UpdateMsg> {
+pub fn spawn_self_update(info: AvailableUpdate, ui_lang: pal_core::Language) -> Receiver<UpdateMsg> {
+    LANG.store(ui_lang as u8, std::sync::atomic::Ordering::Relaxed);
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
         let res = perform_self_update(&info, &tx);
@@ -481,10 +498,20 @@ fn require_update_checksum<'a>(info: &'a AvailableUpdate) -> Result<(&'a str, &'
         info.sha256_download_url.as_deref(),
     ) {
         (Some(name), Some(url)) if !name.is_empty() && !url.is_empty() => Ok((name, url)),
-        _ => Err(format!(
-            "发布版本 {} 未提供 SHA-256 校验文件，已拒绝自动更新（防篡改保护）",
-            info.version
-        )),
+        _ => Err(match lang() {
+            pal_core::Language::En => format!(
+                "Release {} has no SHA-256 checksum file; auto-update refused (tamper protection)",
+                info.version
+            ),
+            pal_core::Language::ZhHant => format!(
+                "發佈版本 {} 未提供 SHA-256 校驗檔案，已拒絕自動更新（防篡改保護）",
+                info.version
+            ),
+            pal_core::Language::ZhHans => format!(
+                "发布版本 {} 未提供 SHA-256 校验文件，已拒绝自动更新（防篡改保护）",
+                info.version
+            ),
+        }),
     }
 }
 
@@ -496,21 +523,21 @@ fn perform_self_update(
     let (sha_name, sha_url) = require_update_checksum(info)?;
 
     let version = &info.version;
-    let cur_exe = env::current_exe().map_err(|e| format!("无法定位当前程序: {e}"))?;
+    let cur_exe = env::current_exe().map_err(|e| format!("{}: {e}", m("无法定位当前程序", "無法定位當前程式", "Cannot locate the running program")))?;
     let exe_dir = cur_exe
         .parent()
-        .ok_or_else(|| "无法获取程序目录".to_string())?;
+        .ok_or_else(|| m("无法获取程序目录", "無法取得程式目錄", "Cannot determine the program directory"))?;
     let tmp_dir = exe_dir.join(".repal_update_tmp");
     if tmp_dir.exists() {
         let _ = fs::remove_dir_all(&tmp_dir);
     }
-    fs::create_dir_all(&tmp_dir).map_err(|e| format!("创建临时目录失败: {e}"))?;
+    fs::create_dir_all(&tmp_dir).map_err(|e| format!("{}: {e}", m("创建临时目录失败", "建立暫存目錄失敗", "Failed to create temp directory")))?;
     let _tmp_guard = TempDirGuard(tmp_dir.clone());
 
     let is_zip = info.asset_name.ends_with(".zip");
     let archive_path = tmp_dir.join(if is_zip { "update.zip" } else { "update.tar.gz" });
 
-    let _ = tx.send(UpdateMsg::Progress(format!("正在下载 {version}...")));
+    let _ = tx.send(UpdateMsg::Progress(format!("{} {version}...", m("正在下载", "正在下載", "Downloading"))));
     if !download_release_asset(
         version,
         &info.asset_name,
@@ -518,11 +545,11 @@ fn perform_self_update(
         &info.download_url,
         &archive_path,
     ) {
-        return Err("下载更新包失败（如为私有仓库请先运行 gh auth login 或设置 GITHUB_TOKEN）".into());
+        return Err(m("下载更新包失败（如为私有仓库请先运行 gh auth login 或设置 GITHUB_TOKEN）", "下載更新包失敗（如為私有倉庫請先執行 gh auth login 或設定 GITHUB_TOKEN）", "Failed to download the update (for a private repo run gh auth login or set GITHUB_TOKEN)"));
     }
 
     // Mandatory SHA-256 integrity verification against the release checksum sidecar (#166, #236).
-    let _ = tx.send(UpdateMsg::Progress(format!("正在校验 {version} SHA-256...")));
+    let _ = tx.send(UpdateMsg::Progress(format!("{} {version} SHA-256...", m("正在校验", "正在校驗", "Verifying"))));
     let sha_path = tmp_dir.join("checksum.sha256");
     if !download_release_asset(
         version,
@@ -531,23 +558,31 @@ fn perform_self_update(
         sha_url,
         &sha_path,
     ) {
-        return Err("下载 SHA-256 校验文件失败".into());
+        return Err(m("下载 SHA-256 校验文件失败", "下載 SHA-256 校驗檔案失敗", "Failed to download the SHA-256 checksum file"));
     }
     let manifest = fs::read_to_string(&sha_path)
-        .map_err(|e| format!("读取校验文件失败: {e}"))?;
+        .map_err(|e| format!("{}: {e}", m("读取校验文件失败", "讀取校驗檔案失敗", "Failed to read the checksum file")))?;
     let Some(expected) = parse_sha256_for_asset(&manifest, &info.asset_name) else {
-        return Err(format!("校验文件中未找到 {}", info.asset_name));
+        return Err(format!("{} {}", m("校验文件中未找到", "校驗檔案中未找到", "Checksum file has no entry for"), info.asset_name));
     };
-    let actual = sha256_file_hex(&archive_path).map_err(|e| format!("读取更新包失败: {e}"))?;
+    let actual = sha256_file_hex(&archive_path).map_err(|e| format!("{}: {e}", m("读取更新包失败", "讀取更新包失敗", "Failed to read the update package")))?;
     if actual != expected {
-        return Err(format!(
-            "更新包 SHA-256 校验失败（期望 {expected}，实际 {actual}）"
-        ));
+        return Err(match lang() {
+            pal_core::Language::En => {
+                format!("Update SHA-256 mismatch (expected {expected}, got {actual})")
+            }
+            pal_core::Language::ZhHant => {
+                format!("更新包 SHA-256 校驗失敗（期望 {expected}，實際 {actual}）")
+            }
+            pal_core::Language::ZhHans => {
+                format!("更新包 SHA-256 校验失败（期望 {expected}，实际 {actual}）")
+            }
+        });
     }
 
-    let _ = tx.send(UpdateMsg::Progress(format!("正在解压 {version}...")));
+    let _ = tx.send(UpdateMsg::Progress(format!("{} {version}...", m("正在解压", "正在解壓", "Extracting"))));
     let extract_dir = tmp_dir.join("extracted");
-    fs::create_dir_all(&extract_dir).map_err(|e| format!("创建解压目录失败: {e}"))?;
+    fs::create_dir_all(&extract_dir).map_err(|e| format!("{}: {e}", m("创建解压目录失败", "建立解壓目錄失敗", "Failed to create extraction directory")))?;
 
     let extract_ok = if is_zip {
         #[cfg(target_os = "windows")]
@@ -590,12 +625,12 @@ fn perform_self_update(
     };
 
     if !extract_ok {
-        return Err("解压更新包失败".into());
+        return Err(m("解压更新包失败", "解壓更新包失敗", "Failed to extract the update package"));
     }
 
     let bin_name = platform_binary_name();
     let new_exe = find_file_recursive(&extract_dir, bin_name)
-        .ok_or_else(|| format!("更新包内未找到 {bin_name}"))?;
+        .ok_or_else(|| format!("{} {bin_name}", m("更新包内未找到", "更新包內未找到", "Update package does not contain")))?;
     let new_lock = find_file_recursive(&extract_dir, "assets-lock.json");
 
     // Swap executable FIRST so a failed swap never leaves the old binary paired with a new assets-lock.json (#166).
@@ -603,16 +638,16 @@ fn perform_self_update(
     {
         use std::os::unix::fs::PermissionsExt;
         let _ = fs::set_permissions(&new_exe, fs::Permissions::from_mode(0o755));
-        fs::rename(&new_exe, &cur_exe).map_err(|e| format!("替换可执行文件失败: {e}"))?;
+        fs::rename(&new_exe, &cur_exe).map_err(|e| format!("{}: {e}", m("替换可执行文件失败", "替換可執行檔失敗", "Failed to replace the executable")))?;
     }
     #[cfg(windows)]
     {
         let old_exe = old_backup_path(&cur_exe);
         let _ = fs::remove_file(&old_exe);
-        fs::rename(&cur_exe, &old_exe).map_err(|e| format!("备份旧程序失败: {e}"))?;
+        fs::rename(&cur_exe, &old_exe).map_err(|e| format!("{}: {e}", m("备份旧程序失败", "備份舊程式失敗", "Failed to back up the old program")))?;
         if let Err(e) = fs::rename(&new_exe, &cur_exe) {
             let _ = fs::rename(&old_exe, &cur_exe);
-            return Err(format!("替换新程序失败: {e}"));
+            return Err(format!("{}: {e}", m("替换新程序失败", "替換新程式失敗", "Failed to install the new program")));
         }
     }
 

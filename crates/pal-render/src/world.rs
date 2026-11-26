@@ -1090,6 +1090,24 @@ fn render_gop_tiles(
 }
 
 /// Render authentic 1995 DOS PAL battle backdrop + ABC enemies + F heroes + fire VFX + floating damage text.
+/// Compact battle status badge `(label, colour)` for a status id (99 = poison, 0..=8 SDLPAL
+/// statuses, 255 = defending). English uses 3-letter codes; Chinese a single glyph.
+pub fn status_badge(status: u16, en: bool) -> Option<(&'static str, Color)> {
+    let (zh, code, col) = match status {
+        99 => ("毒", "PSN", Color::rgba(92, 232, 112, 255)),
+        0 => ("乱", "CNF", Color::rgba(232, 130, 255, 255)),
+        1 => ("定", "PAR", Color::rgba(255, 196, 86, 255)),
+        2 => ("眠", "SLP", Color::rgba(130, 196, 255, 255)),
+        3 => ("封", "SIL", Color::rgba(255, 118, 118, 255)),
+        5 => ("气", "BRV", Color::GOLD_HI),
+        6 => ("护", "PRT", Color::CYAN_SPEAKER),
+        8 => ("双", "x2", Color::rgba(255, 168, 92, 255)),
+        255 => ("防", "GRD", Color::CYAN_SPEAKER),
+        _ => return None,
+    };
+    Some((if en { code } else { zh }, col))
+}
+
 pub fn render_battle(
     fb: &mut Framebuffer,
     cache: &mut AssetCache,
@@ -1157,20 +1175,25 @@ pub fn render_battle(
 
         // Compact status badges above alive enemies (poison / sleep / silence / etc.)
         if enemy.alive && !enemy.statuses.is_empty() {
-            let mut bx = enemy.x * scale - ((enemy.statuses.len() as i32) * 7 * scale) + sh_x;
+            let en = fonts.prefers_latin();
+            let badges: Vec<(&str, Color)> = enemy
+                .statuses
+                .iter()
+                .take(3)
+                .filter(|&&st| st <= 3 || st == 99)
+                .filter_map(|&st| status_badge(st, en))
+                .collect();
+            let widths: Vec<i32> = badges
+                .iter()
+                .map(|(t, _)| (fonts.measure_text(t, (8 * scale) as u16) / scale).max(9) + 2)
+                .collect();
+            let total: i32 = widths.iter().map(|w| w + 2).sum();
+            let mut bx = enemy.x * scale - (total * scale) / 2 + sh_x;
             let by = (dy - 12 * scale).max(2 * scale);
-            for &st in enemy.statuses.iter().take(3) {
-                let (tag, col) = match st {
-                    99 => ("毒", Color::rgba(92, 232, 112, 255)),
-                    0 => ("乱", Color::rgba(232, 130, 255, 255)),
-                    1 => ("定", Color::rgba(255, 196, 86, 255)),
-                    2 => ("眠", Color::rgba(130, 196, 255, 255)),
-                    3 => ("封", Color::rgba(255, 118, 118, 255)),
-                    _ => continue,
-                };
-                fb.fill_rect(bx - scale, by - scale, 11 * scale, 10 * scale, Color::rgba(12, 12, 16, 185));
-                fonts.draw_text_outlined(fb, bx, by, tag, (8 * scale) as u16, col, Color::BLACK);
-                bx += 13 * scale;
+            for ((tag, col), w) in badges.iter().zip(widths) {
+                fb.fill_rect(bx - scale, by - scale, w * scale, 10 * scale, Color::rgba(12, 12, 16, 185));
+                fonts.draw_text_outlined(fb, bx, by, tag, (8 * scale) as u16, *col, Color::BLACK);
+                bx += (w + 2) * scale;
             }
         }
 

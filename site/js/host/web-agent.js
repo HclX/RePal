@@ -1,3 +1,4 @@
+import { L } from "./l10n.js";
 /**
  * Browser Web Agent Bridge (`window.repalAgent` + outbound WebSocket `?agent_ws=...`).
  *
@@ -122,7 +123,7 @@ export class WebAgentHost {
     while (this._queue.length > 0) {
       this._queue.shift().resolve(reply);
     }
-    this.app.hud?.showToast?.("已中断 AI 操作，恢复手动控制", 2200);
+    this.app.hud?.showToast?.(L("已中断 AI 操作，恢复手动控制", "已中斷 AI 操作，恢復手動控制", "AI control interrupted, manual control restored"), 2200);
     return true;
   }
 
@@ -132,7 +133,7 @@ export class WebAgentHost {
     const trimmed = String(url || "").trim();
     if (!trimmed) return;
     if (!/^wss?:\/\//i.test(trimmed)) {
-      this.app.hud?.showToast?.("Agent 地址必须以 ws:// 或 wss:// 开头", 3200);
+      this.app.hud?.showToast?.(L("Agent 地址必须以 ws:// 或 wss:// 开头", "Agent 位址必須以 ws:// 或 wss:// 開頭", "Agent URL must start with ws:// or wss://"), 3200);
       return;
     }
     this.disconnectWs(true);
@@ -141,7 +142,7 @@ export class WebAgentHost {
     try {
       ws = new WebSocket(trimmed);
     } catch (err) {
-      this.app.hud?.showToast?.(`连接 Agent 失败：${err.message}`, 3500);
+      this.app.hud?.showToast?.(`${L("连接 Agent 失败", "連接 Agent 失敗", "Agent connection failed")}: ${err.message}`, 3500);
       return;
     }
     this.ws = ws;
@@ -149,7 +150,7 @@ export class WebAgentHost {
       if (this.ws !== ws) return;
       this.wsConnected = true;
       this._updateMenuLabel();
-      this.app.hud?.showToast?.(`已连接 Agent：${trimmed}`, 2800);
+      this.app.hud?.showToast?.(`${L("已连接 Agent", "已連接 Agent", "Agent connected")}: ${trimmed}`, 2800);
       const greet = this.greeting();
       if (greet) ws.send(JSON.stringify(greet) + "\n");
     });
@@ -179,12 +180,12 @@ export class WebAgentHost {
       this.wsConnected = false;
       this._updateMenuLabel();
       if (wasConnected) {
-        this.app.hud?.showToast?.("Agent WebSocket 连接已断开", 2400);
+        this.app.hud?.showToast?.(L("Agent WebSocket 连接已断开", "Agent WebSocket 連線已中斷", "Agent WebSocket disconnected"), 2400);
       }
     });
     ws.addEventListener("error", () => {
       if (this.ws !== ws) return;
-      this.app.hud?.showToast?.(`无法连接 Agent：${trimmed}`, 3200);
+      this.app.hud?.showToast?.(`${L("无法连接 Agent", "無法連接 Agent", "Cannot connect to Agent")}: ${trimmed}`, 3200);
     });
   }
 
@@ -197,7 +198,7 @@ export class WebAgentHost {
         old.close();
       } catch {}
       this._updateMenuLabel();
-      if (!silent) this.app.hud?.showToast?.("已断开 Agent 连接", 2000);
+      if (!silent) this.app.hud?.showToast?.(L("已断开 Agent 连接", "已中斷 Agent 連線", "Agent disconnected"), 2000);
     }
   }
 
@@ -234,7 +235,7 @@ export class WebAgentHost {
       }
       const preset = this.wsUrl || "ws://127.0.0.1:9999";
       const entered = window.prompt(
-        "输入 AI Agent WebSocket 地址（本机用 ws://127.0.0.1:9999，远程/手机需用 wss://...）：",
+        L("输入 AI Agent WebSocket 地址（本机用 ws://127.0.0.1:9999，远程/手机需用 wss://...）：", "輸入 AI Agent WebSocket 位址（本機用 ws://127.0.0.1:9999，遠端/手機需用 wss://...）：", "AI Agent WebSocket URL (local: ws://127.0.0.1:9999, remote/phone: wss://...):"),
         preset
       );
       if (entered && entered.trim()) {
@@ -246,6 +247,6 @@ export class WebAgentHost {
 
   _updateMenuLabel() {
     if (!this._btn) return;
-    this._btn.textContent = this.wsConnected ? "🤖 断开 Agent" : "🤖 连接 Agent";
+    this._btn.textContent = this.wsConnected ? "🤖 " + L("断开 Agent", "中斷 Agent", "Disconnect Agent") : "🤖 " + L("连接 Agent", "連接 Agent", "Connect Agent");
   }
 }

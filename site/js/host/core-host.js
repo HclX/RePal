@@ -12,6 +12,7 @@ import { parseYaml } from "../vendor/yaml.js";
 import { resolveAssetBaseUrl, withAssetVersion } from "./asset-provider.js";
 import { mapDomKeyToUiKey, POINTER_KIND } from "./wasm-presenter.js";
 import { copyTextSafe, downloadBlob, pickFile, SAVE_PREFIX } from "./wasm-runtime.js";
+import { L } from "./l10n.js";
 
 export const TICK_MS = 20;
 const enc = new TextEncoder();
@@ -380,7 +381,7 @@ export class RustCoreHost {
             loadingEl.id = "repal-scene-loading";
             loadingEl.style.cssText =
               "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:45;padding:7px 16px;border-radius:999px;background:rgba(10,18,26,0.88);border:1px solid rgba(200,164,88,0.65);color:#f2e8d0;font-size:13px;letter-spacing:0.5px;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,0.5);font-family:'Noto Serif SC',system-ui,sans-serif;";
-            loadingEl.textContent = "正在载入场景…";
+            loadingEl.textContent = L("正在载入场景…", "正在載入場景…", "Loading scene…");
             document.body?.appendChild(loadingEl);
           }
           loadingEl.style.display = "block";
@@ -434,7 +435,7 @@ export class RustCoreHost {
         break;
       case "game_over":
         this._bumpSession();
-        app.hud.showToast(app.hud.t("胜败乃兵家常事，请重新来过", "勝敗乃兵家常事，請重新來過"), 4000);
+        app.hud.showToast(L("胜败乃兵家常事，请重新来过", "勝敗乃兵家常事，請重新來過", "Victory and defeat are part of war. Try again!"), 4000);
         app.hud.onReturnToTitle?.();
         break;
       default:
@@ -467,14 +468,14 @@ export class RustCoreHost {
     const len = this.w.core_save(this._key("export"), this._scratch(new Date().toISOString()));
     const blob = new Blob([this._bufText(len)], { type: "application/json;charset=utf-8" });
     downloadBlob(blob, `pal_remake_save_${Date.now()}.json`);
-    this.app.hud.showToast("已匯出存檔 JSON 至本地下載！");
+    this.app.hud.showToast(L("已导出存档 JSON 至本地下载！", "已匯出存檔 JSON 至本地下載！", "Save exported as JSON to your downloads!"));
   }
 
   async importSaveFile() {
     const file = await pickFile(".json,.rpg");
     if (!file) return false;
     const ok = file.name.toLowerCase().endsWith(".rpg") ? this.loadRpg(await file.arrayBuffer()) : this.loadSaveText(await file.text());
-    this.app.hud.showToast(ok ? `已匯入存檔：${file.name}` : "匯入失敗：無效的存檔檔案");
+    this.app.hud.showToast(ok ? `${L("已导入存档", "已匯入存檔", "Save imported")}: ${file.name}` : L("导入失败：无效的存档文件", "匯入失敗：無效的存檔檔案", "Import failed: invalid save file"));
     if (ok) this.app.hud.hideTitleScreen();
     return ok;
   }
@@ -488,7 +489,7 @@ export class RustCoreHost {
     const text = this.diagnosticReport(note);
     const ok = await copyTextSafe(text);
     if (!ok) console.log(text);
-    this.app.hud.showToast(ok ? "🐞 已复制确定性录像与状态快照" : "🐞 剪贴板不可用，已输出到控制台");
+    this.app.hud.showToast(ok ? "🐞 " + L("已复制确定性录像与状态快照", "已複製確定性錄像與狀態快照", "Copied replay and state snapshot") : "🐞 " + L("剪贴板不可用，已输出到控制台", "剪貼簿不可用，已輸出到主控台", "Clipboard unavailable, printed to the console"));
   }
 
   /**
@@ -591,9 +592,9 @@ export class RustCoreHost {
       this.app.hud.showToast(
         openGithub
           ? copiedImg
-            ? `已下载 ${pngFile} + ${jsonFile}（截图已复制，Ctrl+V 贴图）`
-            : `已下载 ${pngFile} + ${jsonFile} 并打开 GitHub Issue`
-          : `已下载 ${pngFile} + ${jsonFile}`
+            ? `${L("已下载", "已下載", "Downloaded")} ${pngFile} + ${jsonFile} (${L("截图已复制，Ctrl+V 贴图", "截圖已複製，Ctrl+V 貼上", "screenshot copied, Ctrl+V to paste")})`
+            : `${L("已下载", "已下載", "Downloaded")} ${pngFile} + ${jsonFile}, ${L("并打开 GitHub Issue", "並開啟 GitHub Issue", "opened a GitHub issue")}`
+          : `${L("已下载", "已下載", "Downloaded")} ${pngFile} + ${jsonFile}`
       );
     };
 
@@ -608,7 +609,7 @@ export class RustCoreHost {
         } catch {}
       }
       dlg.close();
-      this.app.hud.showToast(shotBlob ? `已下载截图 ${pngFile}` : "截图不可用");
+      this.app.hud.showToast(shotBlob ? `${L("已下载截图", "已下載截圖", "Screenshot downloaded")}: ${pngFile}` : L("截图不可用", "截圖不可用", "Screenshot unavailable"));
     };
 
     const closeBtn = document.getElementById("bug-close-btn");

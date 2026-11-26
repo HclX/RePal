@@ -43,6 +43,11 @@ impl FontEngine {
     }
 
     /// When enabled (English mode), prefer the proportional Latin TTF (`fallback_ttf`) before CJK.
+    /// True while the UI language is English (set via [`Self::set_prefer_latin`]).
+    pub fn prefers_latin(&self) -> bool {
+        self.prefer_latin
+    }
+
     pub fn set_prefer_latin(&mut self, prefer: bool) {
         if self.prefer_latin != prefer {
             self.prefer_latin = prefer;

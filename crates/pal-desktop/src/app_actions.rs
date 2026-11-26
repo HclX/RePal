@@ -62,11 +62,13 @@ impl DesktopApp {
                     if was_in_title {
                         rt.set_in_title(true);
                     }
-                    let msg = if rt.ui.traditional_chinese {
-                        format!("進度 {} 尚無存檔", slot + 1)
-                    } else {
-                        format!("进度 {} 尚无存档", slot + 1)
-                    };
+                    let n = slot + 1;
+                    let msg = tl(
+                        rt.ui.lang,
+                        &format!("进度 {n} 尚无存档"),
+                        &format!("進度 {n} 尚無存檔"),
+                        &format!("Slot {n} is empty"),
+                    );
                     rt.show_toast(msg, 110);
                 }
             }
@@ -79,17 +81,19 @@ impl DesktopApp {
                             g.split_segment_on_manual_save();
                         }
                         self.saves.refresh_slots_vfs(&self.vfs, rt);
-                        let msg = if rt.ui.traditional_chinese {
-                            format!("已儲存至進度 {}", slot + 1)
-                        } else {
-                            format!("已保存至进度 {}", slot + 1)
-                        };
+                        let n = slot + 1;
+                        let msg = tl(
+                            rt.ui.lang,
+                            &format!("已保存至进度 {n}"),
+                            &format!("已儲存至進度 {n}"),
+                            &format!("Saved to slot {n}"),
+                        );
                         rt.show_toast(msg, 110);
                     }
                     Err(e) => {
                         eprintln!("[repal] save failed: {e}");
                         if let Some(rt) = self.rt.as_mut() {
-                            rt.show_toast("儲存失敗", 110);
+                            rt.show_toast(tl(rt.ui.lang, "保存失败", "儲存失敗", "Save failed"), 110);
                         }
                     }
                 }
@@ -106,11 +110,10 @@ impl DesktopApp {
                 }
                 self.persist_user_config();
                 if let Some(rt) = self.rt.as_mut() {
-                    let msg = match (next, rt.ui.traditional_chinese) {
-                        (true, true) => "畫質切換：HD 高清",
-                        (true, false) => "画质切换：HD 高清",
-                        (false, true) => "畫質切換：1995 復古",
-                        (false, false) => "画质切换：1995 复古",
+                    let msg = if next {
+                        tl(rt.ui.lang, "画质切换：HD 高清", "畫質切換：HD 高清", "Graphics: HD")
+                    } else {
+                        tl(rt.ui.lang, "画质切换：1995 复古", "畫質切換：1995 復古", "Graphics: 1995 Retro")
                     };
                     rt.show_toast(msg, 110);
                 }
@@ -172,14 +175,18 @@ impl DesktopApp {
             UiAction::CheckForUpdate => {
                 if let Some(info) = self.pending_update.clone() {
                     if let Some(rt) = self.rt.as_mut() {
-                        rt.show_toast(format!("正在下载更新 {}...", info.version), 240);
+                        let v = &info.version;
+                        rt.show_toast(
+                            tl(rt.ui.lang, &format!("正在下载更新 {v}..."), &format!("正在下載更新 {v}..."), &format!("Downloading update {v}...")),
+                            240,
+                        );
                     }
-                    self.update_rx = Some(updater::spawn_self_update(info));
+                    self.update_rx = Some(updater::spawn_self_update(info, self.rt.as_ref().map(|r| r.ui.lang).unwrap_or_default()));
                 } else {
                     if let Some(rt) = self.rt.as_mut() {
-                        rt.show_toast("正在检查新版本...", 120);
+                        rt.show_toast(tl(rt.ui.lang, "正在检查新版本...", "正在檢查新版本...", "Checking for updates..."), 120);
                     }
-                    self.update_rx = Some(updater::spawn_update_check(false));
+                    self.update_rx = Some(updater::spawn_update_check(false, self.rt.as_ref().map(|r| r.ui.lang).unwrap_or_default()));
                 }
             }
             UiAction::ExportSave => self.export_save_to_folder(),
@@ -198,7 +205,8 @@ impl DesktopApp {
                     }
                 }
                 self.service_host_cmds();
-                self.show_transition_banner("重新播放录像", 1500);
+                let lang = self.rt.as_ref().map(|rt| rt.ui.lang).unwrap_or(pal_core::Language::ZhHans);
+                self.show_transition_banner(tl(lang, "重新播放录像", "重新播放錄像", "Replaying from the start"), 1500);
             }
             UiAction::ReplayJumpChapter(idx) => {
                 let jumped = if let (Some(p), Some(rt)) = (self.core_replay.as_mut(), self.rt.as_mut()) {
@@ -214,7 +222,11 @@ impl DesktopApp {
                 };
                 if let Some(lbl) = jumped {
                     self.service_host_cmds();
-                    self.show_transition_banner(format!("跳转章节 {lbl}"), 1500);
+                    let lang = self.rt.as_ref().map(|rt| rt.ui.lang).unwrap_or(pal_core::Language::ZhHans);
+                    self.show_transition_banner(
+                        tl(lang, &format!("跳转章节 {lbl}"), &format!("跳轉章節 {lbl}"), &format!("Jump to chapter {lbl}")),
+                        1500,
+                    );
                 }
             }
             UiAction::TakeScreenshot => {
@@ -273,14 +285,25 @@ impl DesktopApp {
                         self.splash.update_available = Some(version.clone());
                         if let Some(rt) = self.rt.as_mut() {
                             rt.ui.update_available = Some(version.clone());
-                            rt.show_toast(format!("发现新版本 {version}，可在更多选项中更新"), 180);
+                            rt.show_toast(
+                                tl(
+                                    rt.ui.lang,
+                                    &format!("发现新版本 {version}，可在更多选项中更新"),
+                                    &format!("發現新版本 {version}，可在更多選項中更新"),
+                                    &format!("Update {version} available — install it from Options"),
+                                ),
+                                180,
+                            );
                             rt.compositor.mark_ui_dirty();
                         }
                         clear_rx = true;
                     }
                     updater::UpdateMsg::UpToDate { version } => {
                         if let Some(rt) = self.rt.as_mut() {
-                            rt.show_toast(format!("已是最新版本 ({version})"), 120);
+                            rt.show_toast(
+                                tl(rt.ui.lang, &format!("已是最新版本 ({version})"), &format!("已是最新版本 ({version})"), &format!("You're up to date ({version})")),
+                                120,
+                            );
                         }
                         clear_rx = true;
                     }
@@ -293,7 +316,10 @@ impl DesktopApp {
                     updater::UpdateMsg::ReadyToRestart { version, exe_path } => {
                         self.splash.update_status = Some(format!("UPDATED TO {version} - RESTARTING..."));
                         if let Some(rt) = self.rt.as_mut() {
-                            rt.show_toast(format!("已更新至 {version}，正在重启..."), 120);
+                            rt.show_toast(
+                                tl(rt.ui.lang, &format!("已更新至 {version}，正在重启..."), &format!("已更新至 {version}，正在重新啟動..."), &format!("Updated to {version}, restarting...")),
+                                120,
+                            );
                         }
                         restart_exe = Some(exe_path);
                         clear_rx = true;
@@ -414,7 +440,10 @@ impl DesktopApp {
                     self.rng_play = None;
                     audio.stop_music();
                     rt.set_in_title(true);
-                    rt.show_toast("勝敗乃兵家常事，請重新來過", 180);
+                    rt.show_toast(
+                        tl(rt.ui.lang, "胜败乃兵家常事，请重新来过", "勝敗乃兵家常事，請重新來過", "Victory and defeat are common in battle. Try again!"),
+                        180,
+                    );
                 }
                 _ => {}
             }

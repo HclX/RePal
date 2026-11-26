@@ -69,6 +69,16 @@ fn load_window_icon() -> Option<Icon> {
     Icon::from_rgba(img.into_raw(), w, h).ok()
 }
 
+/// Localize a host-side message (toast / banner) for the current UI language.
+pub(crate) fn tl(lang: pal_core::Language, hans: &str, hant: &str, en: &str) -> String {
+    match lang {
+        pal_core::Language::En => en,
+        pal_core::Language::ZhHant => hant,
+        pal_core::Language::ZhHans => hans,
+    }
+    .to_string()
+}
+
 pub(crate) struct RngPlayback {
     id: u16,
     frame: u16,
@@ -210,7 +220,7 @@ impl DesktopApp {
             last_thought_at: None,
             file_picker_rx: None,
             bug_report_rx: None,
-            update_rx: Some(updater::spawn_update_check(true)),
+            update_rx: Some(updater::spawn_update_check(true, pal_core::Language::default())),
             pending_update: None,
             should_exit: false,
             exit_code: 0,

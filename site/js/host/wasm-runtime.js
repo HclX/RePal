@@ -10,6 +10,7 @@
 
 import { WasmCanvasPresenter } from "./wasm-presenter.js";
 import { resolveAssetBaseUrl, withAssetVersion } from "./asset-provider.js";
+import { L } from "./l10n.js";
 
 const enc = new TextEncoder();
 
@@ -387,8 +388,8 @@ export class WasmHudAdapter {
           ? "Graphics: 4x HD"
           : "Graphics: 1995 Retro"
         : next
-          ? "畫質切換：HD 高清"
-          : "畫質切換：1995 復古"
+          ? L("画质切换：HD 高清", "畫質切換：HD 高清", "")
+          : L("画质切换：1995 复古", "畫質切換：1995 復古", "")
     );
   }
 
@@ -490,25 +491,25 @@ export class WasmHudAdapter {
         break;
       case UI_ACTION.CheckForUpdate:
         if ("serviceWorker" in navigator) {
-          this.showToast("正在检查新版本...");
+          this.showToast(L("正在检查新版本...", "正在檢查新版本...", "Checking for updates..."));
           navigator.serviceWorker
             .getRegistration()
             .then((reg) => {
               if (!reg) {
-                this.showToast("当前为网页直连模式，刷新即最新");
+                this.showToast(L("当前为网页直连模式，刷新即最新", "目前為網頁直連模式，重新整理即最新", "Web mode: reloading always gets the latest"));
                 return;
               }
               return reg.update().then(() => {
                 if (reg.waiting || reg.installing) {
-                  this.showToast("发现新版本，刷新页面即可生效！");
+                  this.showToast(L("发现新版本，刷新页面即可生效！", "發現新版本，重新整理頁面即可生效！", "New version available, reload the page to apply!"));
                 } else {
-                  this.showToast("已是最新版本");
+                  this.showToast(L("已是最新版本", "已是最新版本", "Already up to date"));
                 }
               });
             })
-            .catch(() => this.showToast("检查更新失败"));
+            .catch(() => this.showToast(L("检查更新失败", "檢查更新失敗", "Update check failed")));
         } else {
-          this.showToast("当前为网页直连模式，刷新即最新");
+          this.showToast(L("当前为网页直连模式，刷新即最新", "目前為網頁直連模式，重新整理即最新", "Web mode: reloading always gets the latest"));
         }
         break;
       default:
@@ -520,7 +521,7 @@ export class WasmHudAdapter {
     try {
       const canvas = this.renderer?.canvas;
       if (!canvas || typeof canvas.toBlob !== "function") {
-        this.showToast("目前環境不支援畫面截圖");
+        this.showToast(L("当前环境不支持截图", "目前環境不支援畫面截圖", "Screenshots are not supported here"));
         return;
       }
       canvas.toBlob(async (blob) => {
@@ -537,10 +538,10 @@ export class WasmHudAdapter {
             copied = false;
           }
         }
-        this.showToast(copied ? `截圖已下載並複製到剪貼簿 (${filename})` : `截圖已儲存：${filename}`);
+        this.showToast(copied ? `${L("截图已下载并复制到剪贴板", "截圖已下載並複製到剪貼簿", "Screenshot downloaded and copied")} (${filename})` : `${L("截图已保存", "截圖已儲存", "Screenshot saved")}: ${filename}`);
       }, "image/png");
     } catch {
-      this.showToast("截圖失敗");
+      this.showToast(L("截图失败", "截圖失敗", "Screenshot failed"));
     }
   }
 }

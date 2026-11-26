@@ -10,6 +10,7 @@
 
 import { decodePngToRgba, loadReplayLibrary, parseRepalBytes } from "./repal-loader.js";
 import { pickFile } from "./wasm-runtime.js";
+import { L } from "./l10n.js";
 
 const IDLE_HIDE_MS = 3000;
 // Must stay in sync with `pal_core::game::replay_rec::MIN_COMPAT_REPLAY_VERSION`.
@@ -98,26 +99,26 @@ export class WebReplayTheater {
       <div id="repal-ctrl-strip" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 18px;background:rgba(10,20,30,0.86);backdrop-filter:blur(6px);border-top:1px solid rgba(200,164,88,0.55);color:#f2e8d0;font-size:13px;pointer-events:auto;transition:opacity 0.25s ease;">
         <div id="repal-mouse-btns" style="display:flex;align-items:center;justify-content:space-between;flex:1;gap:16px;min-width:0;">
           <div style="display:flex;align-items:center;gap:8px;">
-            <button data-act="prev" class="repal-hud-btn repal-icon-btn" title="上一章节 ([)">⏮</button>
-            <button data-act="play" class="repal-hud-btn repal-icon-btn repal-play-btn" id="repal-btn-play" title="暂停/播放 (Space)">⏸</button>
-            <button data-act="next" class="repal-hud-btn repal-icon-btn" title="下一章节 (])">⏭</button>
-            <button data-act="speed" class="repal-hud-btn" id="repal-btn-speed" style="margin-left:8px;min-width:42px;" title="切换倍速 (+/-)">1×</button>
+            <button data-act="prev" class="repal-hud-btn repal-icon-btn" title="${L("上一章节", "上一章節", "Previous chapter")} ([)">⏮</button>
+            <button data-act="play" class="repal-hud-btn repal-icon-btn repal-play-btn" id="repal-btn-play" title="${L("暂停/播放", "暫停/播放", "Pause/Play")} (Space)">⏸</button>
+            <button data-act="next" class="repal-hud-btn repal-icon-btn" title="${L("下一章节", "下一章節", "Next chapter")} (])">⏭</button>
+            <button data-act="speed" class="repal-hud-btn" id="repal-btn-speed" style="margin-left:8px;min-width:42px;" title="${L("切换倍速", "切換倍速", "Change speed")} (+/-)">1×</button>
           </div>
           <div id="repal-status-txt" style="color:#d8e8f4;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px;letter-spacing:0.5px;">00:00 / 00:00 · 1/1</div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <button data-act="thoughts" class="repal-hud-btn" id="repal-btn-thoughts" title="开关 AI 思考字幕 (F7)">字幕:开</button>
-            <button data-act="chapters" class="repal-hud-btn" title="章节列表 (Tab)">章节</button>
-            <button data-act="takeover" class="repal-hud-btn" style="border-color:#62d4a0;background:#1a3b2d;color:#dcf8ea;" title="从此处接管游玩 (F8)">接管</button>
-            <button data-act="exit" class="repal-hud-btn" style="border-color:#d96b6b;background:#4a1e24;color:#f6d8d8;" title="退出回放 (Esc)">退出</button>
+            <button data-act="thoughts" class="repal-hud-btn" id="repal-btn-thoughts" title="${L("开关 AI 思考字幕", "開關 AI 思考字幕", "Toggle AI thought captions")} (F7)">${L("字幕:开", "字幕:開", "Captions: on")}</button>
+            <button data-act="chapters" class="repal-hud-btn" title="${L("章节列表", "章節列表", "Chapter list")} (Tab)">${L("章节", "章節", "Chapters")}</button>
+            <button data-act="takeover" class="repal-hud-btn" style="border-color:#62d4a0;background:#1a3b2d;color:#dcf8ea;" title="${L("从此处接管游玩", "從此處接管遊玩", "Take over from here")} (F8)">${L("接管", "接管", "Take over")}</button>
+            <button data-act="exit" class="repal-hud-btn" style="border-color:#d96b6b;background:#4a1e24;color:#f6d8d8;" title="${L("退出回放", "退出回放", "Exit replay")} (Esc)">${L("退出", "退出", "Exit")}</button>
           </div>
         </div>
         <div id="repal-gp-hints" style="display:none;align-items:center;justify-content:space-between;flex:1;gap:14px;font-size:13px;color:#f2e8d0;">
           <div style="display:flex;align-items:center;gap:14px;">
-            <span><b style="color:#e0b96b;">[A]</b> 暂停/播放</span>
-            <span><b style="color:#e0b96b;">[LB/RB]</b> 上/下章</span>
-            <span><b style="color:#e0b96b;">[LT/RT]</b> 倍速</span>
-            <span><b style="color:#e0b96b;">[Y]</b> 章节</span>
-            <span><b style="color:#e0b96b;">[Start]</b> 菜单/接管</span>
+            <span><b style="color:#e0b96b;">[A]</b> ${L("暂停/播放", "暫停/播放", "Pause/Play")}</span>
+            <span><b style="color:#e0b96b;">[LB/RB]</b> ${L("上/下章", "上/下章", "Prev/Next")}</span>
+            <span><b style="color:#e0b96b;">[LT/RT]</b> ${L("倍速", "倍速", "Speed")}</span>
+            <span><b style="color:#e0b96b;">[Y]</b> ${L("章节", "章節", "Chapters")}</span>
+            <span><b style="color:#e0b96b;">[Start]</b> ${L("菜单/接管", "選單/接管", "Menu/Take over")}</span>
           </div>
           <div id="repal-gp-status-txt" style="color:#d8e8f4;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px;">00:00 / 00:00</div>
         </div>
@@ -168,13 +169,13 @@ export class WebReplayTheater {
     modal.innerHTML = `
       <div class="repal-lib-card">
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-size:18px;color:#f0cb72;font-weight:700;letter-spacing:2px;">录像回放 · RePal Replay Library</div>
-          <div style="font-size:12px;color:#9eb5c4;">↑/↓ 选择 · A/Enter 播放 · B/Esc 返回</div>
+          <div style="font-size:18px;color:#f0cb72;font-weight:700;letter-spacing:2px;">${L("录像回放", "錄像回放", "Replay Library")} · RePal</div>
+          <div style="font-size:12px;color:#9eb5c4;">↑/↓ ${L("选择", "選擇", "Select")} · A/Enter ${L("播放", "播放", "Play")} · B/Esc ${L("返回", "返回", "Back")}</div>
         </div>
         <div id="repal-lib-list" class="repal-lib-list"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px;">
-          <button id="repal-lib-pick-file" class="repal-hud-btn" style="padding:6px 12px;">打开本地 .repal / .json 文件...</button>
-          <button id="repal-lib-close" class="repal-hud-btn" style="padding:6px 14px;">关闭</button>
+          <button id="repal-lib-pick-file" class="repal-hud-btn" style="padding:6px 12px;">${L("打开本地 .repal / .json 文件...", "開啟本地 .repal / .json 檔案...", "Open a local .repal / .json file...")}</button>
+          <button id="repal-lib-close" class="repal-hud-btn" style="padding:6px 14px;">${L("关闭", "關閉", "Close")}</button>
         </div>
       </div>
     `;
@@ -246,7 +247,7 @@ export class WebReplayTheater {
   async openLibrary() {
     this.libraryOpen = true;
     this.elLibModal.style.display = "flex";
-    this.elLibList.innerHTML = `<div style="padding:18px;text-align:center;color:#9eb5c4;">正在加载录像列表...</div>`;
+    this.elLibList.innerHTML = `<div style="padding:18px;text-align:center;color:#9eb5c4;">${L("正在加载录像列表...", "正在載入錄像列表...", "Loading replays...")}</div>`;
     this.libraryItems = await loadReplayLibrary();
     this.libraryCursor = 0;
     this._renderLibraryList();
@@ -271,14 +272,14 @@ export class WebReplayTheater {
     try {
       let bytes = item.bytes;
       if (!bytes && item.url) {
-        this.app.hud.showToast(`正在加载录像：${item.title}...`, 2000);
+        this.app.hud.showToast(`${L("正在加载录像", "正在載入錄像", "Loading replay")}: ${item.title}...`, 2000);
         const resp = await fetch(item.url);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         bytes = new Uint8Array(await resp.arrayBuffer());
       }
       await this.startFromBytes(item.title, bytes);
     } catch (err) {
-      this.app.hud.showToast(`加载录像失败：${err.message}`);
+      this.app.hud.showToast(`${L("加载录像失败", "載入錄像失敗", "Failed to load replay")}: ${err.message}`);
     }
   }
 
@@ -289,7 +290,7 @@ export class WebReplayTheater {
     try {
       await this.startFromBytes(file.name, new Uint8Array(await file.arrayBuffer()));
     } catch (err) {
-      this.app.hud.showToast(`加载失败：${err.message}`);
+      this.app.hud.showToast(`${L("加载失败", "載入失敗", "Load failed")}: ${err.message}`);
     }
   }
 
@@ -298,7 +299,7 @@ export class WebReplayTheater {
     if (!this.libraryItems.length) {
       const empty = document.createElement("div");
       empty.style.cssText = "padding:20px;text-align:center;color:#9eb5c4;";
-      empty.textContent = "暂无可用录像，可点击下方按钮打开本地 .repal 文件，或将 .repal 拖入游戏窗口。";
+      empty.textContent = L("暂无可用录像，可点击下方按钮打开本地 .repal 文件，或将 .repal 拖入游戏窗口。", "暫無可用錄像，可點擊下方按鈕開啟本地 .repal 檔案，或將 .repal 拖入遊戲視窗。", "No replays yet. Open a local .repal file below, or drop one onto the game window.");
       this.elLibList.appendChild(empty);
       return;
     }
@@ -321,7 +322,7 @@ export class WebReplayTheater {
         badge.style.cssText = mismatch
           ? "display:inline-block;margin-left:6px;padding:1px 5px;border-radius:4px;background:rgba(255,170,102,0.18);color:#ffaa66;font-size:11px;font-weight:500;"
           : "display:inline-block;margin-left:6px;padding:1px 5px;border-radius:4px;background:rgba(200,164,88,0.18);color:#e8c97a;font-size:11px;font-weight:500;";
-        badge.textContent = mismatch ? `${String(item.version)} · 旧版` : String(item.version);
+        badge.textContent = mismatch ? `${String(item.version)} · ${L("旧版", "舊版", "old")}` : String(item.version);
         titleEl.appendChild(badge);
       }
       const subEl = document.createElement("div");
@@ -331,7 +332,7 @@ export class WebReplayTheater {
 
       const right = document.createElement("div");
       right.style.cssText = "text-align:right;font-size:12px;color:#c8a458;white-space:nowrap;";
-      const segPart = item.segments ? `${item.segments} 章节` : "";
+      const segPart = item.segments ? `${item.segments} ${L("章节", "章節", "chapters")}` : "";
       const durPart = dur ? `${segPart ? " · " : ""}${dur}` : "";
       right.textContent = `${segPart}${durPart}`;
 
@@ -355,7 +356,7 @@ export class WebReplayTheater {
 
   async startFromBytes(filename, rawBytes) {
     const bundle = await parseRepalBytes(rawBytes);
-    if (!bundle.segments.length) throw new Error("录像不含有效分段");
+    if (!bundle.segments.length) throw new Error(L("录像不含有效分段", "錄像不含有效分段", "Replay has no valid segments"));
     const core = this.app.core;
     const w = core.w;
 
@@ -399,7 +400,7 @@ export class WebReplayTheater {
     this.elOverlay.style.display = "block";
     if (this.elCompatBanner) {
       if (this.versionMismatch) {
-        this.elCompatBanner.textContent = `⚠ 旧版录像 v${recVer || "?"}（最低兼容 v${MIN_COMPAT_REPLAY_VERSION}）· 战斗/剧情可能不同步`;
+        this.elCompatBanner.textContent = `⚠ ${L("旧版录像", "舊版錄像", "Old replay")} v${recVer || "?"} (${L("最低兼容", "最低相容", "min compatible")} v${MIN_COMPAT_REPLAY_VERSION}) · ${L("战斗/剧情可能不同步", "戰鬥/劇情可能不同步", "battles/story may desync")}`;
         this.elCompatBanner.style.display = "block";
       } else {
         this.elCompatBanner.style.display = "none";
@@ -407,14 +408,14 @@ export class WebReplayTheater {
     }
     const tags = [];
     if (this.versionMismatch) {
-      tags.push(`旧版录像 v${recVer || "?"} < v${MIN_COMPAT_REPLAY_VERSION}，可能不同步`);
+      tags.push(`${L("旧版录像", "舊版錄像", "Old replay")} v${recVer || "?"} < v${MIN_COMPAT_REPLAY_VERSION}, ${L("可能不同步", "可能不同步", "may desync")}`);
     }
     if (bundle.debug_mode || bundle.tainted_by_debug) {
-      tags.push("含调试指令");
+      tags.push(L("含调试指令", "含除錯指令", "contains debug commands"));
     }
     const extra = tags.length ? ` | ${tags.join(" / ")}` : "";
     this.app.hud.showToast(
-      `开始回放：${filename}（${bundle.segments.length} 章节${extra}）`,
+      `${L("开始回放", "開始回放", "Playing")}: ${filename} (${bundle.segments.length} ${L("章节", "章節", "chapters")}${extra})`,
       this.versionMismatch ? 4200 : 2600,
     );
   }
@@ -424,10 +425,10 @@ export class WebReplayTheater {
     this.showThoughts = !this.showThoughts;
     this.app.core?.w?.core_set_show_ai_thought?.(this.showThoughts ? 1 : 0);
     if (this.elBtnThoughts) {
-      this.elBtnThoughts.textContent = this.showThoughts ? "字幕:开" : "字幕:关";
+      this.elBtnThoughts.textContent = this.showThoughts ? L("字幕:开", "字幕:開", "Captions: on") : L("字幕:关", "字幕:關", "Captions: off");
     }
     this.app.hud?.showToast?.(
-      this.showThoughts ? "AI 思考字幕：开 [F7]" : "AI 思考字幕：关 [F7]",
+      this.showThoughts ? L("AI 思考字幕：开 [F7]", "AI 思考字幕：開 [F7]", "AI thought captions: on [F7]") : L("AI 思考字幕：关 [F7]", "AI 思考字幕：關 [F7]", "AI thought captions: off [F7]"),
       1600
     );
   }
@@ -552,7 +553,7 @@ export class WebReplayTheater {
     if (this.loadSegment(0)) {
       this.paused = false;
       this.app.hud.closeSystemMenu();
-      this.showTransitionBanner("重新播放录像", 1500);
+      this.showTransitionBanner(L("重新播放录像", "重新播放錄像", "Replaying"), 1500);
     }
   }
 
@@ -561,7 +562,7 @@ export class WebReplayTheater {
     if (this.loadSegment(idx)) {
       this.paused = false;
       const seg = this.bundle.segments[idx];
-      this.showTransitionBanner(`跳转章节 #${String(idx + 1).padStart(2, "0")} · ${seg.label}`, 1500);
+      this.showTransitionBanner(`${L("跳转章节", "跳轉章節", "Chapter")} #${String(idx + 1).padStart(2, "0")} · ${seg.label}`, 1500);
     }
   }
 
@@ -630,7 +631,7 @@ export class WebReplayTheater {
       w.core_restart_recording();
     }
     this.app.hud.closeSystemMenu();
-    this.app.hud.showToast("已停止回放，你可以从此处接管继续游玩！", 2400);
+    this.app.hud.showToast(L("已停止回放，你可以从此处接管继续游玩！", "已停止回放，你可以從此處接管繼續遊玩！", "Replay stopped. You can take over and keep playing from here!"), 2400);
   }
 
   exitToTitle() {
@@ -749,7 +750,7 @@ export class WebReplayTheater {
         } catch {}
         this.loadSegment(nextIdx);
         if (drifted) {
-          this.showTransitionBanner(`章节同步 #${String(nextIdx + 1).padStart(2, "0")} · ${ns.label}`, 1500);
+          this.showTransitionBanner(`${L("章节同步", "章節同步", "Chapter sync")} #${String(nextIdx + 1).padStart(2, "0")} · ${ns.label}`, 1500);
         }
       } else {
         this.finished = true;
@@ -760,16 +761,16 @@ export class WebReplayTheater {
   }
 
   _formatActionToast(kind, ev) {
-    if (kind === "use") return `使用物品 #${ev.id}`;
-    if (kind === "equip") return `装备物品 #${ev.id}`;
-    if (kind === "cast") return `施放仙术 #${ev.id}`;
-    if (kind === "b_atk") return "攻击";
-    if (kind === "b_mag") return `仙术 #${ev.id}`;
-    if (kind === "b_item") return `道具 #${ev.id}`;
-    if (kind === "b_def") return "防御";
-    if (kind === "b_flee") return "逃跑";
-    if (kind === "buy") return `购入 #${ev.id}`;
-    if (kind === "sell") return `典当 #${ev.id}`;
+    if (kind === "use") return `${L("使用物品", "使用物品", "Use item")} #${ev.id}`;
+    if (kind === "equip") return `${L("装备物品", "裝備物品", "Equip item")} #${ev.id}`;
+    if (kind === "cast") return `${L("施放仙术", "施放仙術", "Cast spell")} #${ev.id}`;
+    if (kind === "b_atk") return L("攻击", "攻擊", "Attack");
+    if (kind === "b_mag") return `${L("仙术", "仙術", "Magic")} #${ev.id}`;
+    if (kind === "b_item") return `${L("道具", "道具", "Item")} #${ev.id}`;
+    if (kind === "b_def") return L("防御", "防禦", "Defend");
+    if (kind === "b_flee") return L("逃跑", "逃跑", "Flee");
+    if (kind === "buy") return `${L("购入", "購入", "Buy")} #${ev.id}`;
+    if (kind === "sell") return `${L("典当", "典當", "Sell")} #${ev.id}`;
     return null;
   }
 
@@ -806,10 +807,10 @@ export class WebReplayTheater {
     this.elStatus.textContent = statusText;
     if (this.elGpStatus) this.elGpStatus.textContent = statusText;
     this.elBtnPlay.textContent = this.finished ? "↻" : this.paused ? "▶" : "⏸";
-    this.elBtnPlay.title = this.finished ? "重新播放 (Space)" : this.paused ? "播放 (Space)" : "暂停 (Space)";
+    this.elBtnPlay.title = `${this.finished ? L("重新播放", "重新播放", "Replay") : this.paused ? L("播放", "播放", "Play") : L("暂停", "暫停", "Pause")} (Space)`;
     this.elBtnSpeed.textContent = `${this.speed}×`;
     if (this.elBtnThoughts) {
-      this.elBtnThoughts.textContent = this.showThoughts ? "字幕:开" : "字幕:关";
+      this.elBtnThoughts.textContent = this.showThoughts ? L("字幕:开", "字幕:開", "Captions: on") : L("字幕:关", "字幕:關", "Captions: off");
     }
     if (this.hasActiveThought) {
       this.app.core?.w?.core_set_ai_thought_dimmed?.(now - this.lastThoughtAt >= 12000 ? 1 : 0);

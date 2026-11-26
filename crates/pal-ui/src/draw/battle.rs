@@ -35,34 +35,21 @@ pub(super) fn draw_battle_party_strip(
         // Compact status pills along the top edge of the card (poison/sleep/silence/defend/bravery/dual)
         let mut sx = hx + 2;
         let sy = 155;
+        let en = fonts.prefers_latin();
+        let mut ids: Vec<u16> = Vec::new();
         if hero.defending {
-            fb.fill_rect(sx * s, sy * s, 11 * s, 9 * s, Color::rgba(18, 38, 56, 215));
-            fonts.draw_text_outlined(
-                fb,
-                (sx + 1) * s,
-                sy * s,
-                "防",
-                (8 * s) as u16,
-                Color::CYAN_SPEAKER,
-                Color::BLACK,
-            );
-            sx += 12;
+            ids.push(255);
         }
-        for &st in hero.statuses.iter().take(4) {
-            let (tag, col) = match st {
-                99 => ("毒", Color::rgba(92, 232, 112, 255)),
-                0 => ("乱", Color::rgba(232, 130, 255, 255)),
-                1 => ("定", Color::rgba(255, 196, 86, 255)),
-                2 => ("眠", Color::rgba(130, 196, 255, 255)),
-                3 => ("封", Color::rgba(255, 118, 118, 255)),
-                5 => ("气", Color::GOLD_HI),
-                6 => ("护", Color::CYAN_SPEAKER),
-                8 => ("双", Color::rgba(255, 168, 92, 255)),
-                _ => continue,
+        ids.extend(hero.statuses.iter().take(4).copied());
+        for st in ids {
+            let Some((tag, col)) = pal_render::world::status_badge(st, en) else {
+                continue;
             };
-            fb.fill_rect(sx * s, sy * s, 11 * s, 9 * s, Color::rgba(14, 14, 20, 210));
+            let w = (fonts.measure_text(tag, (8 * s) as u16) / s).max(9) + 2;
+            let bg = if st == 255 { Color::rgba(18, 38, 56, 215) } else { Color::rgba(14, 14, 20, 210) };
+            fb.fill_rect(sx * s, sy * s, w * s, 9 * s, bg);
             fonts.draw_text_outlined(fb, (sx + 1) * s, sy * s, tag, (8 * s) as u16, col, Color::BLACK);
-            sx += 12;
+            sx += w + 1;
         }
     }
 }

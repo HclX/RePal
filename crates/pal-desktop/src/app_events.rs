@@ -150,7 +150,7 @@ impl ApplicationHandler for DesktopApp {
                             if let Some(info) = self.pending_update.clone() {
                                 self.splash.update_status =
                                     Some(format!("DOWNLOADING {}...", info.version));
-                                self.update_rx = Some(updater::spawn_self_update(info));
+                                self.update_rx = Some(updater::spawn_self_update(info, self.rt.as_ref().map(|r| r.ui.lang).unwrap_or_default()));
                             }
                         }
                     }

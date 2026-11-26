@@ -172,7 +172,11 @@ impl Game {
             if self.world.lang.is_en() {
                 Ok(format!("{rname} equipped {iname}"))
             } else {
-                Ok(format!("{} {}「{}」", rname, self.world.t("已装备", "已裝備"), iname))
+                Ok(if self.world.lang.is_en() {
+                    format!("{rname} equipped [{iname}]")
+                } else {
+                    format!("{} {}「{}」", rname, self.world.t("已装备", "已裝備"), iname)
+                })
             }
         };
         let (ok, text) = match result {
@@ -385,7 +389,11 @@ impl Game {
         let text = if self.world.lang.is_en() {
             format!("{cn} cast {mn} -> {tn}")
         } else {
-            format!("{} {}「{}」→ {}", cn, self.world.t("施展", "施展"), mn, tn)
+            if self.world.lang.is_en() {
+                format!("{cn} casts [{mn}] → {tn}")
+            } else {
+                format!("{} {}「{}」→ {}", cn, self.world.t("施展", "施展"), mn, tn)
+            }
         };
         Ok((if m.sfx_id != 0 { m.sfx_id as i32 } else { 138 }, text))
     }
@@ -425,7 +433,11 @@ impl Game {
             let msg = if self.world.lang.is_en() {
                 format!("Sold for {canonical} Wen!")
             } else {
-                format!("{}{canonical}{}", self.world.t("售出获得 ", "售出獲得 "), self.world.t(" 文！", " 文！"))
+                if self.world.lang.is_en() {
+                    format!("Sold for {canonical} Wen!")
+                } else {
+                    format!("{}{canonical}{}", self.world.t("售出获得 ", "售出獲得 "), self.world.t(" 文！", " 文！"))
+                }
             };
             self.emit(HostCmd::Toast(msg));
             true

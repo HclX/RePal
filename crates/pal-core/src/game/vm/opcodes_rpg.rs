@@ -58,7 +58,11 @@ impl Game {
                 } else {
                     self.world.add_cash(amt);
                     if amt > 0 && !auto && self.battle.is_none() {
-                        let s = format!("{}{amt} 文钱", self.world.t("获得金钱：", "獲得金錢："));
+                        let s = if self.world.lang.is_en() {
+                            format!("Obtained {amt} Wen")
+                        } else {
+                            format!("{}{amt} 文钱", self.world.t("获得金钱：", "獲得金錢："))
+                        };
                         self.emit(HostCmd::Toast(s));
                     }
                 }
@@ -134,7 +138,7 @@ impl Game {
                     let s = format!(
                         "{} {}「{}」！",
                         self.world.t(&rn, &rnh),
-                        self.world.t("领悟了仙术", "領悟了仙術"),
+                        self.world.t3("领悟了仙术", "領悟了仙術", "learned"),
                         self.world.t(&mn, &mnh)
                     );
                     self.emit(HostCmd::Toast(s));
@@ -868,7 +872,11 @@ impl Game {
                         let msg = if self.world.lang.is_en() {
                             format!("Stole {item_name}!")
                         } else {
-                            format!("{}「{item_name}」", self.world.t("偷得", "偷得"))
+                            if self.world.lang.is_en() {
+                                format!("Stole [{item_name}]!")
+                            } else {
+                                format!("{}「{item_name}」", self.world.t("偷得", "偷得"))
+                            }
                         };
                         if let Some(b) = &mut self.battle {
                             b.spell_banner = Some(msg.clone());
@@ -1081,7 +1089,7 @@ impl Game {
             "ending_animation" => {
                 self.world.ending_triggered = true;
                 if !auto {
-                    self.toast("全剧终", "全劇終");
+                    self.toast("全剧终", "全劇終", "The End");
                 }
                 Flow::Next
             }

@@ -471,12 +471,12 @@ impl Game {
                                     let b = self.battle.as_mut().unwrap();
                                     b.outcome = Some(BattleOutcome::Flee);
                                     b.active = false;
-                                    self.toast("成功脱离战场！", "成功脫離戰場！");
+                                    self.toast("成功脱离战场！", "成功脫離戰場！", "Escaped successfully!");
                                     self.sleep_ms(450);
                                     self.set_phase(Phase::Finish);
                                     return None;
                                 }
-                                self.toast("逃跑失败！", "逃跑失敗！");
+                                self.toast("逃跑失败！", "逃跑失敗！", "Couldn't escape!");
                                 self.sleep_ms(400);
                                 self.set_phase(Phase::ActQueue(qi + 1, 0));
                                 return None;
@@ -517,6 +517,7 @@ impl Game {
                     self.world.roles[role].exp += total_exp;
                     let mut gained = 0;
                     let mut learned = Vec::new();
+                    let magics_before = self.world.roles[role].magics.len();
                     loop {
                         let lv = self.world.roles[role].level;
                         let need = self
@@ -534,14 +535,23 @@ impl Game {
                         gained += 1;
                     }
                     if gained > 0 {
-                        let r = &self.world.roles[role];
-                        let nm = self.world.t(&r.name, &r.name_hant).to_string();
-                        let suffix = if learned.is_empty() {
+                        let _ = &learned;
+                        let nm = self.role_display_name(role);
+                        let new_magics: Vec<u16> = self.world.roles[role]
+                            .magics
+                            .get(magics_before..)
+                            .map(|m| m.to_vec())
+                            .unwrap_or_default();
+                        let names: Vec<String> =
+                            new_magics.iter().map(|&m| self.magic_display_name(m)).collect();
+                        let suffix = if names.is_empty() {
                             String::new()
+                        } else if self.world.lang.is_en() {
+                            format!(" — learned {}", names.join(", "))
                         } else {
-                            format!(" 習得{}", learned.join("、"))
+                            format!(" {}{}", self.world.t("习得", "習得"), names.join("、"))
                         };
-                        level_ups.push(format!("{nm} Lv.{}{suffix}", r.level));
+                        level_ups.push(format!("{nm} Lv.{}{suffix}", self.world.roles[role].level));
                     }
                 }
                 self.emit(HostCmd::BattleVictory { exp: total_exp, cash: total_cash, level_ups });
@@ -888,7 +898,7 @@ impl Game {
                     return None;
                 }
                 if cur_mp < cost_mp {
-                    self.toast("真气不足！", "真氣不足！");
+                    self.toast("真气不足！", "真氣不足！", "Not enough MP!");
                 }
                 let b = self.battle.as_mut().unwrap();
                 b.actions.push((h, BattleCmd::Attack { target }));

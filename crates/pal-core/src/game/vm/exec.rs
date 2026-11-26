@@ -291,8 +291,8 @@ impl Game {
         }
     }
 
-    pub(crate) fn toast(&mut self, hans: &str, hant: &str) {
-        let s = self.world.t(hans, hant).to_string();
+    pub(crate) fn toast(&mut self, hans: &str, hant: &str, en: &str) {
+        let s = self.world.t3(hans, hant, en).to_string();
         self.emit(HostCmd::Toast(s));
     }
 
@@ -337,15 +337,15 @@ impl Game {
         if self.vmc.using_item && (hp > 0 || mp > 0) {
             if !changed {
                 self.vmc.item_script_failed = true;
-                self.toast("体力真气已满，无需使用", "體力真氣已滿，無需使用");
+                self.toast("体力真气已满，无需使用", "體力真氣已滿，無需使用", "HP and MP are already full");
             } else {
                 self.emit(HostCmd::PlaySfx(138));
                 let mut parts = Vec::new();
                 if hp_gain > 0 {
-                    parts.push(format!("{} +{hp_gain}", self.world.t("体力", "體力")));
+                    parts.push(format!("{} +{hp_gain}", self.world.t3("体力", "體力", "HP")));
                 }
                 if mp_gain > 0 {
-                    parts.push(format!("{} +{mp_gain}", self.world.t("真气", "真氣")));
+                    parts.push(format!("{} +{mp_gain}", self.world.t3("真气", "真氣", "MP")));
                 }
                 if !parts.is_empty() {
                     self.emit(HostCmd::Toast(parts.join("  ")));
