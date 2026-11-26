@@ -102,24 +102,137 @@ pub(crate) fn mb(bytes: u64) -> f64 {
     bytes as f64 / (1024.0 * 1024.0)
 }
 
-/// Localized loading-overlay line for a pending chapter download.
-pub(crate) fn loading_text(p: &PendingSceneLoad, lang: pal_core::Language) -> String {
+/// Text content of the chapter-download loading overlay.
+pub(crate) struct LoadingView {
+    pub(crate) title: String,
+    pub(crate) detail: String,
+    /// `Some(0.0..=1.0)` draws a progress bar; `None` while showing an error.
+    pub(crate) fraction: Option<f32>,
+}
+
+/// Loading-overlay content for a pending chapter download.
+pub(crate) fn loading_view_for(p: &PendingSceneLoad, lang: pal_core::Language) -> LoadingView {
+    loading_view(
+        p.job.done_bytes,
+        p.job.total_bytes,
+        p.error.as_deref(),
+        lang,
+    )
+}
+
+/// Loading-overlay content from raw progress (`error` takes precedence while auto-retrying).
+pub(crate) fn loading_view(
+    done_bytes: u64,
+    total_bytes: u64,
+    error: Option<&str>,
+    lang: pal_core::Language,
+) -> LoadingView {
     use pal_core::Language;
-    if let Some(err) = &p.error {
-        let short: String = err.lines().next().unwrap_or("").chars().take(48).collect();
-        return match lang {
-            Language::En => format!("Download failed, retrying… ({short})"),
-            Language::ZhHant => format!("下載失敗，正在重試…（{short}）"),
-            Language::ZhHans => format!("下载失败，正在重试…（{short}）"),
+    if let Some(err) = error {
+        let title = match lang {
+            Language::En => "Download failed — retrying…",
+            Language::ZhHant => "下載失敗，正在重試…",
+            Language::ZhHans => "下载失败，正在重试…",
+        };
+        return LoadingView {
+            title: title.to_string(),
+            detail: err.lines().next().unwrap_or("").trim().to_string(),
+            fraction: None,
         };
     }
-    let pct = (p.job.fraction() * 100.0).round() as u32;
-    let (d, t) = (mb(p.job.done_bytes), mb(p.job.total_bytes));
-    match lang {
-        Language::En => format!("Downloading chapter assets {d:.1} / {t:.1} MB ({pct}%)"),
-        Language::ZhHant => format!("下載章節資源 {d:.1} / {t:.1} MB（{pct}%）"),
-        Language::ZhHans => format!("下载章节资源 {d:.1} / {t:.1} MB（{pct}%）"),
+    let f = if total_bytes == 0 {
+        0.0
+    } else {
+        (done_bytes as f64 / total_bytes as f64).clamp(0.0, 1.0) as f32
+    };
+    let title = match lang {
+        Language::En => "Downloading chapter assets",
+        Language::ZhHant => "正在下載章節資源",
+        Language::ZhHans => "正在下载章节资源",
+    };
+    LoadingView {
+        title: title.to_string(),
+        detail: format!(
+            "{:.1} / {:.1} MB · {}%",
+            mb(done_bytes),
+            mb(total_bytes),
+            (f * 100.0).round() as u32
+        ),
+        fraction: Some(f),
     }
+}
+
+/// Draw the loading overlay (full-screen dim, centered panel with title, progress bar and a
+/// one-line detail truncated to fit) onto `rt.compositor.fb`.
+pub(crate) fn render_loading_overlay(rt: &mut pal_runtime::PalRuntime, view: &LoadingView) {
+    use pal_render::framebuffer::Color;
+    let s = if rt.ui.hd_mode { 4 } else { 1 };
+    let fonts = &mut rt.compositor.fonts;
+    let fb = &mut rt.compositor.fb;
+    let (w, h) = (fb.width as i32, fb.height as i32);
+    let (title_px, detail_px) = ((11 * s) as u16, (9 * s) as u16);
+    fb.fill_rect(0, 0, w, h, Color::rgba(6, 10, 16, 205));
+
+    let max_bw = 280 * s;
+    let pad = 14 * s;
+    let content_w = fonts
+        .measure_text(&view.title, title_px)
+        .max(fonts.measure_text(&view.detail, detail_px))
+        .max(150 * s);
+    let bw = (content_w + pad * 2).min(max_bw);
+    let bh = 58 * s;
+    let (bx, by) = ((w - bw) / 2, (h - bh) / 2);
+    fb.fill_rect(bx, by, bw, bh, Color::rgba(14, 22, 32, 235));
+    fb.stroke_rect(bx, by, bw, bh, s.max(1), Color::rgba(216, 178, 92, 230));
+
+    fonts.draw_text_centered(
+        fb,
+        w / 2,
+        by + 9 * s,
+        &view.title,
+        title_px,
+        Color::GOLD_HI,
+        Some(Color::BLACK),
+    );
+
+    // Progress bar (or a muted divider while showing an error).
+    let (px, py, pw, ph) = (bx + pad, by + 27 * s, bw - pad * 2, 5 * s);
+    fb.fill_rect(px, py, pw, ph, Color::rgba(40, 48, 60, 255));
+    if let Some(f) = view.fraction {
+        let fill = ((pw as f32) * f).round() as i32;
+        if fill > 0 {
+            fb.fill_rect(px, py, fill, ph, Color::rgba(216, 178, 92, 255));
+        }
+    }
+
+    // Detail line, truncated with an ellipsis to the panel width.
+    let mut detail = view.detail.clone();
+    let max_dw = bw - pad * 2;
+    if fonts.measure_text(&detail, detail_px) > max_dw {
+        let mut chars: Vec<char> = detail.chars().collect();
+        while !chars.is_empty() {
+            chars.pop();
+            let cand: String = chars.iter().collect::<String>() + "…";
+            if fonts.measure_text(&cand, detail_px) <= max_dw {
+                detail = cand;
+                break;
+            }
+        }
+    }
+    let detail_color = if view.fraction.is_some() {
+        Color::PAPER_TEXT
+    } else {
+        Color::rgba(232, 140, 120, 255)
+    };
+    fonts.draw_text_centered(
+        fb,
+        w / 2,
+        by + 38 * s,
+        &detail,
+        detail_px,
+        detail_color,
+        Some(Color::BLACK),
+    );
 }
 
 /// Title Options label for the "download all assets" item given the remaining bytes / job.
@@ -128,9 +241,18 @@ pub(crate) fn download_all_label(
     job: Option<&PackDownloadJob>,
     lang: pal_core::Language,
 ) -> String {
+    download_all_label_at(remaining_bytes, job.map(PackDownloadJob::fraction), lang)
+}
+
+/// [`download_all_label`] from raw state: `progress` is `Some(0.0..=1.0)` while downloading.
+pub(crate) fn download_all_label_at(
+    remaining_bytes: u64,
+    progress: Option<f32>,
+    lang: pal_core::Language,
+) -> String {
     use pal_core::Language;
-    if let Some(j) = job {
-        let pct = (j.fraction() * 100.0).round() as u32;
+    if let Some(f) = progress {
+        let pct = (f * 100.0).round() as u32;
         return match lang {
             Language::En => format!("Downloading all… {pct}%"),
             Language::ZhHant => format!("下載全部資源… {pct}%"),
@@ -139,14 +261,14 @@ pub(crate) fn download_all_label(
     }
     if remaining_bytes == 0 {
         return match lang {
-            Language::En => "All assets downloaded ✓".to_string(),
+            Language::En => "All downloaded ✓".to_string(),
             Language::ZhHant => "資源已全部下載 ✓".to_string(),
             Language::ZhHans => "资源已全部下载 ✓".to_string(),
         };
     }
     let m = mb(remaining_bytes);
     match lang {
-        Language::En => format!("Download all assets ({m:.0} MB)"),
+        Language::En => format!("Download all ({m:.0} MB)"),
         Language::ZhHant => format!("下載全部資源 ({m:.0} MB)"),
         Language::ZhHans => format!("下载全部资源 ({m:.0} MB)"),
     }
@@ -224,5 +346,11 @@ mod tests {
         use pal_core::Language;
         assert!(download_all_label(0, None, Language::ZhHans).contains('✓'));
         assert!(download_all_label(300 * 1024 * 1024, None, Language::En).contains("300 MB"));
+        let v = loading_view(5 * 1024 * 1024, 10 * 1024 * 1024, None, Language::ZhHans);
+        assert_eq!(v.fraction, Some(0.5));
+        assert!(v.detail.contains("50%"));
+        assert!(loading_view(0, 1, Some("boom"), Language::En)
+            .fraction
+            .is_none());
     }
 }

@@ -318,8 +318,8 @@ impl DesktopApp {
             if p.error.is_some()
                 || p.job.started.elapsed() >= crate::pack_download::LOADING_OVERLAY_DELAY
             {
-                let text = crate::pack_download::loading_text(p, rt.ui.lang);
-                render_transition_banner(rt, &text, 205);
+                let view = crate::pack_download::loading_view_for(p, rt.ui.lang);
+                crate::pack_download::render_loading_overlay(rt, &view);
             }
         }
 
