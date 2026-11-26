@@ -256,6 +256,85 @@ def scan_all_assets(assets_root: Path) -> Dict[str, Path]:
     return files
 
 
+# FBP backdrops referenced by engine/UI code rather than scripts; must ship in `boot`.
+ENGINE_FBP_IDS = (0, 1, 2, 3, 4, 60, 68, 69)
+
+
+def team_enemy_ids(team: dict) -> List[int]:
+    """Enemy IDs of an `enemies.yaml` team.
+
+    Teams list their roster as `members: [{obj_id, enemy_id, name}]`; a bare `enemies: [id, ...]`
+    list is also accepted for older/hand-written data.
+    """
+    out: List[int] = []
+    for m in team.get("members") or []:
+        if isinstance(m, dict) and m.get("enemy_id") is not None:
+            eid = int(m["enemy_id"])
+            if eid >= 0:
+                out.append(eid)
+    if not out:
+        out = [int(x) for x in team.get("enemies") or [] if int(x) > 0]
+    return out
+
+
+def load_script_blocks(assets_root: Path) -> Dict[str, list]:
+    """All script blocks `label -> [step, ...]` across chapters, in file order (fall-through order)."""
+    blocks: Dict[str, list] = {}
+    for spath in sorted((assets_root / "data/scripts").glob("scripts_*.yaml")):
+        sdoc = yaml.safe_load(spath.read_text("utf-8")) or {}
+        scripts_map = sdoc.get("scripts", sdoc)
+        if not isinstance(scripts_map, dict):
+            continue
+        for lbl, steps in scripts_map.items():
+            if isinstance(steps, list):
+                blocks[lbl] = steps
+    return blocks
+
+
+def iter_script_steps(assets_root: Path):
+    """Yield `(label, step_dict)` for every step of every `data/scripts/scripts_*.yaml` chapter."""
+    for lbl, steps in load_script_blocks(assets_root).items():
+        for st in steps:
+            if isinstance(st, dict):
+                yield lbl, st
+
+
+_LABEL_RE = re.compile(r"^s_[0-9a-fA-F]+$")
+# Ops after which execution never falls through into the next block.
+_TERMINAL_OPS = {"end", "jump", "replace_and_yield"}
+
+
+def script_label_edges(blocks: Dict[str, list]) -> Dict[str, Set[str]]:
+    """Control-flow-ish edges `label -> {labels it can reach}`: every label-valued operand
+    (jump/call/branch/else targets, trigger & auto-script rebinding) plus fall-through into the
+    next block when a block does not end with a terminal op."""
+
+    def label_refs(v, out: Set[str]) -> None:
+        if isinstance(v, str):
+            if _LABEL_RE.match(v) and v in blocks:
+                out.add(v)
+        elif isinstance(v, list):
+            for x in v:
+                label_refs(x, out)
+        elif isinstance(v, dict):
+            for x in v.values():
+                label_refs(x, out)
+
+    edges: Dict[str, Set[str]] = collections.defaultdict(set)
+    order = list(blocks.keys())
+    for i, lbl in enumerate(order):
+        steps = blocks[lbl]
+        for st in steps:
+            if isinstance(st, dict):
+                label_refs({k: v for k, v in st.items() if k != "op"}, edges[lbl])
+        last = steps[-1] if steps else None
+        last_op = last.get("op", "") if isinstance(last, dict) else ""
+        if last_op not in _TERMINAL_OPS and i + 1 < len(order):
+            edges[lbl].add(order[i + 1])
+        edges[lbl].discard(lbl)
+    return edges
+
+
 def analyze_dependencies(
     assets_root: Path, all_files: Dict[str, Path], include_dev_saves: bool
 ) -> Tuple[Dict[str, Set[str]], Dict[str, List[str]], Dict[str, str], Dict[str, str], Dict[str, List[str]], Dict[str, int]]:
@@ -321,7 +400,10 @@ def analyze_dependencies(
             or k == "orig_saves/10.rpg"
         ):
             put_boot(k)
-    for fid in (0, 1, 2, 3, 4, 68, 69):
+    # FBPs drawn directly by the engine/UI (never via a script `fbp_show`, so the script scan below
+    # cannot discover them): 0 status, 1 equip, 2-4 menus, 60 title screen backdrop
+    # (`fbp_override = Some(60)` in pal-runtime), 68/69 title/system art.
+    for fid in ENGINE_FBP_IDS:
         for k in fbp_files.get(fid, []):
             put_boot(k)
     # Title screen HD BGM (track #4) in boot so opening screen plays HD audio immediately
@@ -340,6 +422,24 @@ def analyze_dependencies(
     for mid in range(1, 16):
         for k in mgo_files.get(mid, []):
             put_shared(k)
+    # Party walk sprites swapped at runtime by `role_set_sprite` (0x0065: costume/pose changes) and
+    # battle backgrounds chosen by the persistent `battlefield_set` (0x004A) state are save-dependent
+    # (they survive scene/region changes), so they must live in `shared`, never in on-demand `extra`.
+    battlefield_fbp: Dict[int, int] = {
+        int(bf["id"]): int(bf.get("fbp_id", bf["id"]) or 0)
+        for bf in enemies_doc.get("battlefields", [])
+        if "id" in bf
+    }
+    for _lbl, steps in iter_script_steps(assets_root):
+        op = steps.get("op", "")
+        args = steps.get("args") or []
+        if op == "role_set_sprite" and len(args) >= 2:
+            for k in mgo_files.get(int(args[1] or 0), []):
+                put_shared(k)
+        elif op == "battlefield_set":
+            bid = int(steps.get("battlefield_id", args[0] if args else 0) or 0)
+            for k in fbp_files.get(battlefield_fbp.get(bid, bid), []):
+                put_shared(k)
 
     # 3. Per-map Track-B HD packs (`map-hd-XXX`) & per-cutscene RNG packs (`rng-XX`)
     map_hd_packs: Dict[str, str] = {}
@@ -412,7 +512,7 @@ def analyze_dependencies(
     team_enemies: Dict[int, List[int]] = {}
     for t in enemies_doc.get("teams", []):
         tid = int(t.get("team_id", 0) or 0)
-        team_enemies[tid] = [int(x) for x in t.get("enemies", []) if int(x) > 0]
+        team_enemies[tid] = team_enemy_ids(t)
 
     # Map script labels to owning scene regions via scene enter/teleport & event triggers
     label_regions: Dict[str, Set[str]] = collections.defaultdict(set)
@@ -431,48 +531,61 @@ def analyze_dependencies(
                 if lbl:
                     label_regions[lbl].add(reg)
 
+    # Propagate regions along script control flow (jump/call/branch targets, trigger/auto-script
+    # rebinding, and fall-through into the next block) so assets referenced by blocks that are only
+    # reached indirectly — e.g. boss `battle_start` behind a branch — land in the right region pack
+    # instead of the on-demand `extra` pack.
+    scripts_all = load_script_blocks(assets_root)
+    edges = script_label_edges(scripts_all)
+    # Prefetch adjacency stays based on direct scene/event bindings only (shared subroutines would
+    # otherwise make every region "adjacent" to every other).
+    direct_label_regions = {lbl: set(regs) for lbl, regs in label_regions.items()}
+    work = [lbl for lbl in label_regions if lbl in scripts_all]
+    while work:
+        lbl = work.pop()
+        regs = label_regions[lbl]
+        for nxt in edges.get(lbl, ()):
+            before = len(label_regions[nxt])
+            label_regions[nxt] |= regs
+            if len(label_regions[nxt]) != before:
+                work.append(nxt)
+
     prefetch_regions: Dict[str, Set[str]] = collections.defaultdict(set)
-    scripts_dir = assets_root / "data/scripts"
-    for spath in sorted(scripts_dir.glob("scripts_*.yaml")):
-        sdoc = yaml.safe_load(spath.read_text("utf-8")) or {}
-        scripts_map = sdoc.get("scripts", sdoc)
-        if not isinstance(scripts_map, dict):
+    for lbl, steps in scripts_all.items():
+        regs = label_regions.get(lbl)
+        if not regs:
             continue
-        for lbl, steps in scripts_map.items():
-            if not isinstance(steps, list):
+        for st in steps:
+            if not isinstance(st, dict):
                 continue
-            regs = label_regions.get(lbl)
-            if not regs:
-                continue
-            for st in steps:
-                if not isinstance(st, dict):
-                    continue
-                op = st.get("op", "")
-                args = st.get("args") or []
-                if op == "scene_change":
-                    dst_sid = int(st.get("scene_id", args[0] if args else 0) or 0)
-                    dst_reg = scene_to_region.get(dst_sid)
-                    if dst_reg:
-                        for r in regs:
-                            if dst_reg != r:
-                                prefetch_regions[r].add(dst_reg)
-                elif op == "battle_start":
-                    tid = int(st.get("team_id", args[0] if args else 0) or 0)
-                    for eid in team_enemies.get(tid, []):
-                        aid = enemy_abc.get(eid, 0)
-                        for k in abc_files.get(aid, []):
-                            if k not in assigned_non_region:
-                                key_regions[k].update(regs)
-                elif op == "fbp_show":
-                    fid = int(st.get("fbp_id", args[0] if args else 0) or 0)
-                    for k in fbp_files.get(fid, []):
+            op = st.get("op", "")
+            args = st.get("args") or []
+            if op == "scene_change":
+                dst_sid = int(st.get("scene_id", args[0] if args else 0) or 0)
+                dst_reg = scene_to_region.get(dst_sid)
+                if dst_reg:
+                    for r in direct_label_regions.get(lbl, ()):
+                        if dst_reg != r:
+                            prefetch_regions[r].add(dst_reg)
+            elif op == "battle_start":
+                tid = int(st.get("team_id", args[0] if args else 0) or 0)
+                for eid in team_enemies.get(tid, []):
+                    aid = enemy_abc.get(eid, 0)
+                    for k in abc_files.get(aid, []):
                         if k not in assigned_non_region:
                             key_regions[k].update(regs)
-                elif op in ("music_play", "battle_music_set"):
-                    tid = int(st.get("track", args[0] if args else 0) or 0)
-                    for k in bgm_hd_files.get(tid, []):
-                        if k not in assigned_non_region:
-                            key_regions[k].update(regs)
+            elif op == "fbp_show":
+                fid = int(st.get("fbp_id", args[0] if args else 0) or 0)
+                for k in fbp_files.get(fid, []):
+                    if k not in assigned_non_region:
+                        key_regions[k].update(regs)
+            elif op in ("music_play", "battle_music_set"):
+                # HD BGM degrades gracefully to the OPL synth when not cached, so keep it on direct
+                # bindings only (propagated regions would push most tracks into `shared`).
+                tid = int(st.get("track", args[0] if args else 0) or 0)
+                for k in bgm_hd_files.get(tid, []):
+                    if k not in assigned_non_region:
+                        key_regions[k].update(direct_label_regions.get(lbl, ()))
 
     # 6. Assign region assets:
     #    - 1 region -> exclusive to that region
