@@ -10,7 +10,8 @@ pub use draw::{
 };
 pub use input::{HitRect, HitTag, PointerEvent, PointerKind, UiAction, UiKey};
 pub use state::{
-    BattleSubPhase, BattleVictoryInfo, DialogModel, ReplayChapterSummary, RoleSelectTarget,
+    download_all_text, BattleSubPhase, BattleVictoryInfo, DialogModel, DownloadAllState,
+    ReplayChapterSummary, RoleSelectTarget,
     SaveSlotMode, SaveSlotSummary, ShopEntry, UiCatalog, UiState, UiView,
 };
 

@@ -389,9 +389,14 @@ pub fn spawn_asset_download(
             let boot_ids: Vec<String> = fetcher.manifest.boot.clone();
             let total = boot_ids.len().max(1);
             for (idx, pid) in boot_ids.iter().enumerate() {
+                let stage = if fetcher.is_pack_cached(pid) {
+                    "VERIFYING BOOT PACK..."
+                } else {
+                    "DOWNLOADING BOOT PACK..."
+                };
                 let _ = tx.send(BootstrapMsg::Progress {
                     pct: 0.10 + 0.80 * (idx as f32 / total as f32),
-                    stage: "DOWNLOADING BOOT PACK...".to_string(),
+                    stage: stage.to_string(),
                     detail: format!("{pid}.rpk ({}/{})", idx + 1, total),
                 });
                 if let Err(e) = fetcher.ensure_pack(pid) {

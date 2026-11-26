@@ -235,45 +235,6 @@ pub(crate) fn render_loading_overlay(rt: &mut pal_runtime::PalRuntime, view: &Lo
     );
 }
 
-/// Title Options label for the "download all assets" item given the remaining bytes / job.
-pub(crate) fn download_all_label(
-    remaining_bytes: u64,
-    job: Option<&PackDownloadJob>,
-    lang: pal_core::Language,
-) -> String {
-    download_all_label_at(remaining_bytes, job.map(PackDownloadJob::fraction), lang)
-}
-
-/// [`download_all_label`] from raw state: `progress` is `Some(0.0..=1.0)` while downloading.
-pub(crate) fn download_all_label_at(
-    remaining_bytes: u64,
-    progress: Option<f32>,
-    lang: pal_core::Language,
-) -> String {
-    use pal_core::Language;
-    if let Some(f) = progress {
-        let pct = (f * 100.0).round() as u32;
-        return match lang {
-            Language::En => format!("Downloading all… {pct}%"),
-            Language::ZhHant => format!("下載全部資源… {pct}%"),
-            Language::ZhHans => format!("下载全部资源… {pct}%"),
-        };
-    }
-    if remaining_bytes == 0 {
-        return match lang {
-            Language::En => "All downloaded ✓".to_string(),
-            Language::ZhHant => "資源已全部下載 ✓".to_string(),
-            Language::ZhHans => "资源已全部下载 ✓".to_string(),
-        };
-    }
-    let m = mb(remaining_bytes);
-    match lang {
-        Language::En => format!("Download all ({m:.0} MB)"),
-        Language::ZhHant => format!("下載全部資源 ({m:.0} MB)"),
-        Language::ZhHans => format!("下载全部资源 ({m:.0} MB)"),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -344,8 +305,10 @@ mod tests {
     #[test]
     fn labels_cover_all_states() {
         use pal_core::Language;
-        assert!(download_all_label(0, None, Language::ZhHans).contains('✓'));
-        assert!(download_all_label(300 * 1024 * 1024, None, Language::En).contains("300 MB"));
+        assert!(pal_ui::download_all_text(Language::ZhHans, 0, None).contains('✓'));
+        assert!(
+            pal_ui::download_all_text(Language::En, 300 * 1024 * 1024, None).contains("300 MB")
+        );
         let v = loading_view(5 * 1024 * 1024, 10 * 1024 * 1024, None, Language::ZhHans);
         assert_eq!(v.fraction, Some(0.5));
         assert!(v.detail.contains("50%"));

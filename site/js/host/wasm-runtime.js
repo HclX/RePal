@@ -78,6 +78,7 @@ export const UI_ACTION = {
   ToggleFullscreen: 25,
   ToggleAgentMode: 26,
   CheckForUpdate: 37,
+  DownloadAllAssets: 38,
   RestartRecording: 27,
   ExportReplay: 28,
   OpenReplay: 29,
@@ -483,6 +484,9 @@ export class WasmHudAdapter {
         break;
       case UI_ACTION.ReturnToTitle:
         await this.onReturnToTitle?.();
+        break;
+      case UI_ACTION.DownloadAllAssets:
+        await this.onDownloadAllAssets?.();
         break;
       case UI_ACTION.CheckForUpdate:
         if ("serviceWorker" in navigator) {

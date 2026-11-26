@@ -452,7 +452,7 @@ impl DesktopApp {
             .unwrap_or(pal_core::Language::ZhHans);
         if missing.is_empty() {
             if let Some(rt) = self.rt.as_mut() {
-                rt.show_toast(crate::pack_download::download_all_label(0, None, lang), 120);
+                rt.show_toast(pal_ui::download_all_text(lang, 0, None), 120);
             }
             self.refresh_download_all_label();
             return;
@@ -487,7 +487,7 @@ impl DesktopApp {
                     .map(|rt| rt.ui.lang)
                     .unwrap_or(pal_core::Language::ZhHans);
                 let msg = match (&res, lang) {
-                    (Ok(()), _) => crate::pack_download::download_all_label(0, None, lang),
+                    (Ok(()), _) => pal_ui::download_all_text(lang, 0, None),
                     (Err(_), pal_core::Language::En) => {
                         "Download failed — try again from Options".to_string()
                     }
@@ -509,24 +509,21 @@ impl DesktopApp {
         }
     }
 
-    /// Recompute the Title Options "download all assets" label (hidden without a pack fetcher).
+    /// Recompute the "download all assets" item state (hidden without a pack fetcher).
     pub(crate) fn refresh_download_all_label(&mut self) {
-        let label = self.pack_fetcher.as_ref().map(|f| {
-            let remaining: u64 = f.missing_packs().iter().map(|p| f.pack_size(p)).sum();
-            let lang = self
-                .rt
-                .as_ref()
-                .map(|rt| rt.ui.lang)
-                .unwrap_or(pal_core::Language::ZhHans);
-            crate::pack_download::download_all_label(
-                remaining,
-                self.download_all_job.as_ref(),
-                lang,
-            )
-        });
+        let state = self
+            .pack_fetcher
+            .as_ref()
+            .map(|f| pal_ui::DownloadAllState {
+                remaining_bytes: f.missing_packs().iter().map(|p| f.pack_size(p)).sum(),
+                progress: self
+                    .download_all_job
+                    .as_ref()
+                    .map(crate::pack_download::PackDownloadJob::fraction),
+            });
         if let Some(rt) = self.rt.as_mut() {
-            if rt.ui.download_all_label != label {
-                rt.ui.download_all_label = label;
+            if rt.ui.download_all != state {
+                rt.ui.download_all = state;
                 rt.ui.dirty = true;
             }
         }

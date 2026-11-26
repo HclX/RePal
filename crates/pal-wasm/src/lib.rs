@@ -169,7 +169,7 @@ fn encode_ui_action(action: &UiAction) -> (u32, u32, u32) {
         UiAction::ToggleAgentMode => (26, 0, 0),
         UiAction::CopyAgentToken | UiAction::RefreshAgentToken => (0, 0, 0),
         UiAction::CheckForUpdate => (37, 0, 0),
-        UiAction::DownloadAllAssets => (0, 0, 0),
+        UiAction::DownloadAllAssets => (38, 0, 0),
         UiAction::RestartRecording => (27, 0, 0),
         UiAction::ExportReplay => (28, 0, 0),
         UiAction::OpenReplay => (29, 0, 0),
@@ -1171,6 +1171,28 @@ pub extern "C" fn core_set_ai_thought(len: usize) {
             .map(|s| pal_core::game::replay_rec::sanitize_ai_thought(s).0)
             .filter(|s| !s.is_empty());
         st.rt.set_ai_thought(text);
+    });
+}
+
+/// Show/hide and update the "download all assets" menu item (#18). `enabled == 0` hides it;
+/// `progress_permille < 0` means idle, otherwise 0..=1000 while the background download runs.
+#[no_mangle]
+pub extern "C" fn core_set_download_all(
+    enabled: u32,
+    remaining_bytes: u32,
+    progress_permille: i32,
+) {
+    STATE.with(|cell| {
+        let mut st = cell.borrow_mut();
+        let state = (enabled != 0).then(|| pal_ui::DownloadAllState {
+            remaining_bytes: remaining_bytes as u64,
+            progress: (progress_permille >= 0)
+                .then(|| (progress_permille.min(1000) as f32) / 1000.0),
+        });
+        if st.rt.ui.download_all != state {
+            st.rt.ui.download_all = state;
+            st.rt.ui.dirty = true;
+        }
     });
 }
 

@@ -284,9 +284,10 @@ pub struct UiState {
     pub hit_rects: Vec<HitRect>,
     /// Optional available update version tag (e.g. `Some("v0.3.10")`) shown in Title & TitleOptions.
     pub update_available: Option<String>,
-    /// Host-provided label for the Title Options "download all assets" item (e.g.
-    /// `Some("下载全部资源 (312 MB)")`); `None` hides the item (Web / loose-asset mode, #18).
-    pub download_all_label: Option<String>,
+    /// Host-provided state of the "download all assets" item (Title Options + in-game Remake
+    /// menu); `None` hides the item (loose-asset mode / no pack manager, #18). The label is
+    /// formatted at draw time so it follows language switches.
+    pub download_all: Option<DownloadAllState>,
     pub toast_text: Option<String>,
     /// Current AI thought/commentary subtitle (`think <text>`), rendered only in 4x HD mode.
     pub ai_thought: Option<String>,
@@ -368,7 +369,7 @@ impl UiState {
             catalog: UiCatalog::with_defaults(),
             hit_rects: Vec::new(),
             update_available: None,
-            download_all_label: None,
+            download_all: None,
             toast_text: None,
             ai_thought: None,
             show_ai_thought: true,
@@ -592,5 +593,52 @@ impl UiState {
             })
             .map(|(&id, &q)| (id, q))
             .collect()
+    }
+}
+
+/// Host-provided "download all assets" status (#18).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DownloadAllState {
+    /// Bytes of packages not cached yet (0 = everything downloaded).
+    pub remaining_bytes: u64,
+    /// `Some(0.0..=1.0)` while the background download runs.
+    pub progress: Option<f32>,
+}
+
+/// Localized "download all assets" label for the given status.
+pub fn download_all_text(
+    lang: pal_core::Language,
+    remaining_bytes: u64,
+    progress: Option<f32>,
+) -> String {
+    use pal_core::Language;
+    if let Some(f) = progress {
+        let pct = (f.clamp(0.0, 1.0) * 100.0).round() as u32;
+        return match lang {
+            Language::En => format!("Downloading all… {pct}%"),
+            Language::ZhHant => format!("下載全部資源… {pct}%"),
+            Language::ZhHans => format!("下载全部资源… {pct}%"),
+        };
+    }
+    if remaining_bytes == 0 {
+        return match lang {
+            Language::En => "All downloaded ✓".to_string(),
+            Language::ZhHant => "資源已全部下載 ✓".to_string(),
+            Language::ZhHans => "资源已全部下载 ✓".to_string(),
+        };
+    }
+    let m = remaining_bytes as f64 / (1024.0 * 1024.0);
+    match lang {
+        Language::En => format!("Download all ({m:.0} MB)"),
+        Language::ZhHant => format!("下載全部資源 ({m:.0} MB)"),
+        Language::ZhHans => format!("下载全部资源 ({m:.0} MB)"),
+    }
+}
+
+impl UiState {
+    /// Current "download all assets" item label, or `None` when the item is hidden.
+    pub fn download_all_label(&self) -> Option<String> {
+        self.download_all
+            .map(|d| download_all_text(self.lang, d.remaining_bytes, d.progress))
     }
 }

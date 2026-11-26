@@ -5,7 +5,7 @@ use super::*;
 impl UiState {
     /// Number of Title Options rows: 8 fixed + optional host "download all assets" item (#18).
     pub(crate) fn title_options_count(&self) -> usize {
-        8 + usize::from(self.download_all_label.is_some())
+        8 + usize::from(self.download_all.is_some())
     }
 
     /// Process a keyboard event in the current UI view and return any resulting `UiAction`.
@@ -102,7 +102,7 @@ impl UiState {
                         UiAction::ToggleAgentMode
                     }
                     7 => UiAction::CheckForUpdate,
-                    _ if self.download_all_label.is_some() => UiAction::DownloadAllAssets,
+                    _ if self.download_all.is_some() => UiAction::DownloadAllAssets,
                     _ => UiAction::CheckForUpdate,
                 },
                 _ => UiAction::None,
@@ -565,7 +565,7 @@ impl UiState {
                 let count = if self.replay_mode {
                     5
                 } else {
-                    10 + usize::from(self.download_all_label.is_some())
+                    10 + usize::from(self.download_all.is_some())
                 };
                 if self.remake_sub_cursor >= count {
                     self.remake_sub_cursor = 0;

@@ -202,6 +202,67 @@ pub fn gc_unreferenced_packs(cache_dir: &Path, manifest: &PackManifest) -> usize
     removed
 }
 
+const VERIFIED_STAMPS_FILE: &str = ".verified.json";
+
+fn file_stamp(path: &Path) -> Option<(u64, u128)> {
+    let meta = fs::metadata(path).ok()?;
+    let mtime = meta
+        .modified()
+        .ok()?
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_nanos();
+    Some((meta.len(), mtime))
+}
+
+/// Load packs whose SHA-256 was verified by an earlier launch and that are unchanged since
+/// (same manifest SHA, size and mtime), so startup does not re-hash ~140 MB of cached packs.
+/// Content tampering is still caught on read by per-entry AES-GCM authentication.
+fn load_verified_stamps(cache_dir: &Path, manifest: &PackManifest) -> HashSet<String> {
+    let mut out = HashSet::new();
+    let Ok(raw) = fs::read_to_string(cache_dir.join(VERIFIED_STAMPS_FILE)) else {
+        return out;
+    };
+    let Ok(doc) = serde_json::from_str::<serde_json::Value>(&raw) else {
+        return out;
+    };
+    for desc in manifest.packs.values() {
+        let Some(st) = doc.get(&desc.file) else {
+            continue;
+        };
+        let Some((size, mtime)) = file_stamp(&cache_dir.join(&desc.file)) else {
+            continue;
+        };
+        let ok = st["sha256"].as_str() == Some(desc.sha256.as_str())
+            && st["size"].as_u64() == Some(size)
+            && (desc.size == 0 || desc.size == size)
+            && st["mtime_ns"].as_str() == Some(mtime.to_string().as_str());
+        if ok {
+            out.insert(desc.file.clone());
+        }
+    }
+    out
+}
+
+fn save_verified_stamps(cache_dir: &Path, manifest: &PackManifest, verified: &HashSet<String>) {
+    let mut doc = serde_json::Map::new();
+    for desc in manifest.packs.values() {
+        if !verified.contains(&desc.file) {
+            continue;
+        }
+        if let Some((size, mtime)) = file_stamp(&cache_dir.join(&desc.file)) {
+            doc.insert(
+                desc.file.clone(),
+                serde_json::json!({ "sha256": desc.sha256, "size": size, "mtime_ns": mtime.to_string() }),
+            );
+        }
+    }
+    let tmp = cache_dir.join(format!("{VERIFIED_STAMPS_FILE}.tmp.{}", std::process::id()));
+    if fs::write(&tmp, serde_json::Value::Object(doc).to_string()).is_ok() {
+        let _ = fs::rename(&tmp, cache_dir.join(VERIFIED_STAMPS_FILE));
+    }
+}
+
 /// Host-agnostic pack fetcher bound to a local `cache_dir` and resolved `PackManifest`.
 #[derive(Clone, Debug)]
 pub struct PackFetcher {
@@ -243,11 +304,12 @@ impl PackFetcher {
         fs::rename(&tmp_man, &final_man)
             .map_err(|e| format!("commit {}: {e}", final_man.display()))?;
         let _ = gc_unreferenced_packs(&cache_dir, &manifest);
+        let verified = load_verified_stamps(&cache_dir, &manifest);
         Ok(Self {
             cache_dir,
             manifest_url,
             manifest,
-            verified: Arc::new(Mutex::new(HashSet::new())),
+            verified: Arc::new(Mutex::new(verified)),
         })
     }
 
@@ -273,6 +335,8 @@ impl PackFetcher {
     fn mark_verified(&self, file: &str) {
         if let Ok(mut v) = self.verified.lock() {
             v.insert(file.to_string());
+            // Persist so later launches skip re-hashing unchanged cached packs.
+            save_verified_stamps(&self.cache_dir, &self.manifest, &v);
         }
     }
 
@@ -573,6 +637,43 @@ mod tests {
         // Shut down local test server cleanly.
         let _ = fetch_url_to_file(&format!("{base}/__stop__"), &cache_dir.join("stop.tmp"));
         let _ = handle.join();
+        let _ = fs::remove_dir_all(&cache_dir);
+    }
+
+    #[test]
+    fn verified_stamps_persist_across_launches_until_file_changes() {
+        let src_dir = unique_tmp_dir("stamp_src");
+        let cache_dir = unique_tmp_dir("stamp_dst");
+        let payload = b"STAMPED_RPK_PAYLOAD".to_vec();
+        fs::write(src_dir.join("base.rpk"), &payload).unwrap();
+        let man = serde_json::json!({
+            "format": "repal-packs/1", "schema_version": 1, "version": "stamp-v1",
+            "boot": ["base"],
+            "packs": {"base": {"file": "base.rpk", "size": payload.len(), "sha256": sha256_hex(&payload), "urls": ["base.rpk"]}}
+        });
+        let man_path = src_dir.join("pack-manifest.json");
+        fs::write(&man_path, man.to_string()).unwrap();
+        let url = format!("file://{}", man_path.display());
+
+        let first = PackFetcher::fetch_manifest(cache_dir.clone(), url.clone(), None).unwrap();
+        first.ensure_pack("base").unwrap();
+        assert!(cache_dir.join(VERIFIED_STAMPS_FILE).is_file());
+
+        // Next launch: unchanged file is trusted without re-hashing.
+        let second = PackFetcher::fetch_manifest(cache_dir.clone(), url.clone(), None).unwrap();
+        assert!(second.verified.lock().unwrap().contains("base.rpk"));
+
+        // File rewritten (new mtime) -> stamp invalid -> re-verified (and re-downloaded if bad).
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        fs::write(cache_dir.join("base.rpk"), vec![0u8; payload.len()]).unwrap();
+        let third = PackFetcher::fetch_manifest(cache_dir.clone(), url, None).unwrap();
+        assert!(!third.verified.lock().unwrap().contains("base.rpk"));
+        assert_eq!(
+            fs::read(third.ensure_pack("base").unwrap()).unwrap(),
+            payload
+        );
+
+        let _ = fs::remove_dir_all(&src_dir);
         let _ = fs::remove_dir_all(&cache_dir);
     }
 

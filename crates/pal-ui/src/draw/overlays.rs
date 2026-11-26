@@ -271,7 +271,7 @@ pub(super) fn draw_title_options(
     let n_cols = if ui.lang.is_en() { 8 } else { 7 };
     let bx = if ui.lang.is_en() { 78 } else { 86 };
     let by = 14;
-    let rows = if ui.download_all_label.is_some() {
+    let rows = if ui.download_all.is_some() {
         8
     } else {
         7
@@ -324,7 +324,7 @@ pub(super) fn draw_title_options(
         ),
         update_item,
     ];
-    if let Some(dl) = ui.download_all_label.clone() {
+    if let Some(dl) = ui.download_all_label() {
         items.push(dl);
     }
     for (i, label) in items.iter().enumerate() {

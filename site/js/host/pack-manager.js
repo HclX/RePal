@@ -607,6 +607,19 @@ export class PackManager {
     return removed;
   }
 
+  /** Pack IDs from the manifest not yet cached in storage (size-checked), excluding dev packs. */
+  async missingPackIds() {
+    const out = [];
+    for (const [pid, desc] of Object.entries(this.manifest?.packs || {})) {
+      if (pid.startsWith("dev-")) continue;
+      if (this.mounted.has(pid)) continue;
+      const blob = await this.storage.getPackBlob(desc.file);
+      const sz = blob ? (blob instanceof Uint8Array ? blob.byteLength : blob.size) : -1;
+      if (!blob || (desc.size && sz !== desc.size)) out.push(pid);
+    }
+    return out.sort();
+  }
+
   async ensurePack(packId) {
     if (this.mounted.has(packId)) return this.mounted.get(packId);
     if (this._inFlight.has(packId)) return this._inFlight.get(packId);

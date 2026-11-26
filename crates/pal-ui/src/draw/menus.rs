@@ -369,7 +369,7 @@ pub(super) fn draw_remake_submenu(
     };
     let mut items = items;
     if !ui.replay_mode {
-        if let Some(dl) = ui.download_all_label.clone() {
+        if let Some(dl) = ui.download_all_label() {
             items.push(dl);
         }
     }

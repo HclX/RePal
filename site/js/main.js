@@ -261,6 +261,7 @@ class PalRemakeApp {
         this.renderer.packManager = pm;
         this.renderer.presenter.assets.packManager = pm;
         this.audio.packManager = pm;
+        this.refreshDownloadAll();
         return;
       } catch (err) {
         const msg = String(err?.message || err);
@@ -282,6 +283,46 @@ class PalRemakeApp {
         keyHex = await promptPackKeyOverlay(this.loadingOverlay, this.loadingText, promptMsg);
         this.setBootProgress(0.26, "正在解密启动资产包...");
       }
+    }
+  }
+
+  /** Push the "download all assets" menu state into the core (#18); hidden without packs. */
+  async refreshDownloadAll(progressPermille = -1) {
+    const pm = this.packManager;
+    const set = this.wasm?.exports?.core_set_download_all;
+    if (!pm || !set) return;
+    try {
+      const missing = await pm.missingPackIds();
+      const remaining = missing.reduce((sum, pid) => sum + (pm.manifest.packs[pid]?.size || 0), 0);
+      set(1, Math.min(remaining, 0xffffffff) >>> 0, progressPermille | 0);
+    } catch {}
+  }
+
+  /** Background-download every missing package (play continues meanwhile). */
+  async startDownloadAll() {
+    const pm = this.packManager;
+    if (!pm || this._downloadAllRunning) return;
+    this._downloadAllRunning = true;
+    const lang = this.hud?.lang;
+    const say = (en, hans, hant) => this.hud?.showToast?.(lang === "en" ? en : lang === "hant" ? hant : hans);
+    try {
+      const missing = await pm.missingPackIds();
+      const sizes = missing.map((pid) => pm.manifest.packs[pid]?.size || 0);
+      const total = sizes.reduce((a, b) => a + b, 0) || 1;
+      let done = 0;
+      await this.refreshDownloadAll(0);
+      for (let i = 0; i < missing.length; i++) {
+        await pm.ensurePack(missing[i]);
+        done += sizes[i];
+        await this.refreshDownloadAll(Math.round((done / total) * 1000));
+      }
+      say("All downloaded ✓", "资源已全部下载 ✓", "資源已全部下載 ✓");
+    } catch (err) {
+      console.warn("[download-all]", err);
+      say("Download failed — try again from Options", "资源下载失败，请稍后在选项中重试", "資源下載失敗，請稍後在選項中重試");
+    } finally {
+      this._downloadAllRunning = false;
+      await this.refreshDownloadAll(-1);
     }
   }
 
@@ -358,6 +399,7 @@ class PalRemakeApp {
       }
     };
     hud.onExportSave = () => core.exportSaveFile();
+    hud.onDownloadAllAssets = () => this.startDownloadAll();
     hud.onImportSave = async () => {
       if (await core.importSaveFile()) this.inTitle = false;
     };
