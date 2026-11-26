@@ -46,6 +46,17 @@ impl ApplicationHandler for DesktopApp {
             if self.fullscreen {
                 attrs = attrs.with_fullscreen(Some(Fullscreen::Borderless(None)));
             }
+            // Match the installed `repal.desktop` (StartupWMClass=repal) so docks/taskbars show
+            // the RePal icon for this window on both X11 and Wayland.
+            #[cfg(target_os = "linux")]
+            {
+                attrs = winit::platform::x11::WindowAttributesExtX11::with_name(
+                    attrs, "repal", "repal",
+                );
+                attrs = winit::platform::wayland::WindowAttributesExtWayland::with_name(
+                    attrs, "repal", "repal",
+                );
+            }
             let win = Arc::new(
                 event_loop
                     .create_window(attrs)

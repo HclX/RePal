@@ -12,6 +12,8 @@ mod app_events;
 mod app_sim;
 mod audio;
 mod cli;
+#[cfg(target_os = "linux")]
+mod linux_integration;
 mod os_bridge;
 mod pack_download;
 mod pack_fetcher;
@@ -352,6 +354,8 @@ impl DesktopApp {
     }
 
     pub(crate) fn finish_boot(&mut self) {
+        #[cfg(target_os = "linux")]
+        linux_integration::ensure_desktop_integration(APP_ICON_PNG);
         let user_cfg = UserConfig::load(&self.cfg.config_path);
         let hd_mode = self.cfg.hd_mode_override.unwrap_or(user_cfg.hd_mode);
         self.vfs = if let Some(packs_dir) = &self.cfg.packs_dir_arg {
