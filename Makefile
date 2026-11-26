@@ -3,6 +3,17 @@ CARGO ?= cargo
 NODE ?= node
 PYTHON ?= python3
 
+# Desktop audio output (cpal) is opt-in on Linux via the `audio` feature (built-in on macOS /
+# Windows). Enable it automatically when ALSA headers are available, matching release builds.
+ifeq ($(shell uname -s),Linux)
+  ifeq ($(shell pkg-config --exists alsa 2>/dev/null && echo yes),yes)
+    REPAL_FEATURES ?= --features audio
+  else
+    REPAL_FEATURES ?=
+    REPAL_AUDIO_HINT := 1
+  endif
+endif
+
 .PHONY: help build-wasm build-repal build-desktop run-repal run-desktop test-rust test-rust-lowmem test-js test-py test fuzz fuzz-nightly
 
 help:
@@ -26,10 +37,13 @@ build-wasm:
 	cp target/wasm32-unknown-unknown/release/pal_wasm.wasm site/wasm/pal.wasm
 
 build-repal build-desktop:
-	$(CARGO) build -p pal-desktop --bin repal --release
+ifdef REPAL_AUDIO_HINT
+	@echo "warning: ALSA headers not found; building repal WITHOUT audio (install libasound2-dev pkg-config)"
+endif
+	$(CARGO) build -p pal-desktop --bin repal --release $(REPAL_FEATURES)
 
 run-repal run-desktop:
-	$(CARGO) run -p pal-desktop --bin repal --release -- --assets site/assets
+	$(CARGO) run -p pal-desktop --bin repal --release $(REPAL_FEATURES) -- --assets site/assets
 
 test-rust:
 	$(CARGO) test --workspace
