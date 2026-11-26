@@ -114,7 +114,7 @@ mod tests {
         );
         // Up to date -> no rewrite; moved binary -> Exec refreshed.
         assert!(!install_into(&root, &exe, b"PNG1").unwrap());
-        assert!(install_into(&root, Path::new("/home/u/RePal/repal"), b"PNG1").unwrap());
+        assert!(install_into(&root, Path::new("/opt/games/RePal/repal"), b"PNG1").unwrap());
         // User-edited launcher without the marker is never touched.
         fs::write(
             root.join("applications/repal.desktop"),
