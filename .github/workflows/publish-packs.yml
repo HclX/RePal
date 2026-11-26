@@ -85,8 +85,8 @@ jobs:
             --master-key-env REPAL_PACK_KEY \
             ${REPAL_PACK_PASSPHRASE:+--passphrase-env REPAL_PACK_PASSPHRASE} \
             --opaque-names \
-            --base-url "https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@${PACK_VERSION}" \
-            --mirror-url "https://raw.githubusercontent.com/HclX/RePal_Packs/${PACK_VERSION}"
+            --base-url "https://raw.githubusercontent.com/HclX/RePal_Packs/${PACK_VERSION}" \
+            --mirror-url "https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@${PACK_VERSION}"
 
       - name: Publish packs and tag in HclX/RePal_Packs
         env:
@@ -124,8 +124,10 @@ jobs:
               "version": ver,
               "manifest": {
                   "urls": [
-                      f"https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@{ver}/pack-manifest.json",
+                      # raw.githubusercontent first: jsDelivr's GitHub proxy refuses repos > 50 MB
+                      # (RePal_Packs is ~350 MB per tag) with 403, so it is only a fallback.
                       f"https://raw.githubusercontent.com/HclX/RePal_Packs/{ver}/pack-manifest.json",
+                      f"https://cdn.jsdelivr.net/gh/HclX/RePal_Packs@{ver}/pack-manifest.json",
                   ],
                   "sha256": hashlib.sha256(raw).hexdigest(),
                   "size_bytes": len(raw),
