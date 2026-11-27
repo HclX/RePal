@@ -815,7 +815,8 @@ pub(crate) fn rotate_lan_token_at(path: &Path) -> String {
     tok
 }
 
-/// Zero-dependency cross-platform system clipboard writer (`pbcopy` / `clip.exe` / `wl-copy` / `xclip` / `xsel`).
+/// Cross-platform system clipboard writer: native `arboard` on Linux (X11/Wayland), then
+/// `wl-copy` / `xclip` / `xsel`; `pbcopy` on macOS, `clip.exe` on Windows.
 pub(crate) fn copy_text_to_clipboard(text: &str) -> bool {
     use std::io::Write as _;
     use std::process::{Command, Stdio};
@@ -850,6 +851,18 @@ pub(crate) fn copy_text_to_clipboard(text: &str) -> bool {
     }
     #[cfg(all(unix, not(target_os = "macos")))]
     {
+        // Native clipboard first. On X11 the owner must keep serving the selection, so the handle
+        // lives for the whole session (a clipboard manager may also take over the contents).
+        static NATIVE: std::sync::OnceLock<std::sync::Mutex<Option<arboard::Clipboard>>> =
+            std::sync::OnceLock::new();
+        let native = NATIVE.get_or_init(|| std::sync::Mutex::new(arboard::Clipboard::new().ok()));
+        if let Ok(mut guard) = native.lock() {
+            if let Some(cb) = guard.as_mut() {
+                if cb.set_text(text.to_string()).is_ok() {
+                    return true;
+                }
+            }
+        }
         let on_wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
         if on_wayland && run_clip("wl-copy", &[], text) {
             return true;
@@ -867,6 +880,18 @@ pub(crate) fn copy_text_to_clipboard(text: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    #[test]
+    fn native_clipboard_roundtrip_when_a_display_exists() {
+        if std::env::var_os("DISPLAY").is_none() && std::env::var_os("WAYLAND_DISPLAY").is_none() {
+            return; // headless CI
+        }
+        let token = format!("repal-clip-test-{}", std::process::id());
+        assert!(copy_text_to_clipboard(&token), "copy failed");
+        let read = arboard::Clipboard::new().and_then(|mut c| c.get_text()).expect("read clipboard");
+        assert_eq!(read, token);
+    }
 
     #[test]
     fn cmd_replay_allowlist_blocks_file_io_view_and_debug_commands() {
