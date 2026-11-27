@@ -5,6 +5,22 @@ use crate::*;
 /// Redraw interval for an unfocused, idle window (~10 fps).
 const BACKGROUND_FRAME_INTERVAL: Duration = Duration::from_millis(100);
 
+/// Foreground draw cap. The game logic ticks at 50 Hz, but the picture changes at most every
+/// 4 ticks (party steps; NPC scripts every 6, the original DOS game drew ~10 fps), so 25 fps
+/// halves HD software rendering cost with no visible difference. `REPAL_MAX_FPS` overrides
+/// (1..=50; 50 = draw every tick).
+fn foreground_frame_interval() -> Duration {
+    static INTERVAL: std::sync::OnceLock<Duration> = std::sync::OnceLock::new();
+    *INTERVAL.get_or_init(|| {
+        let fps = std::env::var("REPAL_MAX_FPS")
+            .ok()
+            .and_then(|v| v.trim().parse::<u32>().ok())
+            .unwrap_or(25)
+            .clamp(1, 50);
+        Duration::from_micros(1_000_000 / fps as u64)
+    })
+}
+
 impl DesktopApp {
     pub(crate) fn step_simulation(&mut self) {
         if self.rt.is_none() {
@@ -242,21 +258,25 @@ impl DesktopApp {
 
     /// Background render throttling: HD software rendering costs ~10 ms/frame, so an idle game in
     /// an unfocused window drew half a CPU core for nothing. The simulation always runs at 50 Hz;
-    /// only drawing is reduced: ~10 fps when unfocused, none while hidden. Anything someone may be
-    /// watching from another window keeps full rate: replay playback, RNG cutscenes, an attached
+    /// only drawing is reduced: capped at 25 fps (`REPAL_MAX_FPS`), ~10 fps when unfocused, none
+    /// while hidden. Anything someone may be watching from another window keeps the foreground cap: replay playback, RNG cutscenes, an attached
     /// Text Mode / LAN agent server, or the boot splash.
     pub(crate) fn should_present_frame(&self) -> bool {
+        // Redraws arrive at the 50 Hz tick; allow ~4 ms of jitter so a 25 fps cap really draws
+        // every second tick instead of drifting to every third.
+        let due = |interval: Duration| self.last_present.elapsed() + Duration::from_millis(4) >= interval;
+        let fg_interval = foreground_frame_interval();
         if self.window_focused && !self.window_occluded {
-            return true;
+            return due(fg_interval);
         }
         let watched = self.rt.is_none()
             || self.core_replay.as_ref().is_some_and(|p| !p.paused && !p.finished)
             || self.rng_play.is_some()
             || self.channel_server.is_some();
         if watched {
-            return true;
+            return due(fg_interval);
         }
-        !self.window_occluded && self.last_present.elapsed() >= BACKGROUND_FRAME_INTERVAL
+        !self.window_occluded && due(BACKGROUND_FRAME_INTERVAL.max(fg_interval))
     }
 
     /// Print `REPAL_PERF=1` main-thread timings every 5 s (ms are per second of wall time).
