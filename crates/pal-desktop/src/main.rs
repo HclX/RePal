@@ -96,6 +96,7 @@ pub(crate) struct PerfStats {
     pub(crate) sim: Duration,
     pub(crate) render: Duration,
     pub(crate) blit_present: Duration,
+    pub(crate) skipped: u32,
 }
 
 impl PerfStats {
@@ -108,6 +109,7 @@ impl PerfStats {
             sim: Duration::ZERO,
             render: Duration::ZERO,
             blit_present: Duration::ZERO,
+            skipped: 0,
         }
     }
 }
@@ -146,6 +148,8 @@ pub(crate) struct DesktopApp {
     pub(crate) window_occluded: bool,
     pub(crate) last_present: Instant,
     pub(crate) ripple_clock: Instant,
+    /// Last time a frame was actually drawn (skipped unchanged frames don't count).
+    pub(crate) last_real_present: Instant,
     /// Opt-in main-thread profiler (`REPAL_PERF=1`), printed to stderr every 5 s.
     pub(crate) perf: Option<PerfStats>,
     tick_acc: Duration,
@@ -239,6 +243,7 @@ impl DesktopApp {
             window_occluded: false,
             last_present: Instant::now(),
             ripple_clock: Instant::now(),
+            last_real_present: Instant::now(),
             perf: std::env::var_os("REPAL_PERF").filter(|v| !v.is_empty() && v != "0").map(|_| PerfStats::new()),
             tick_acc: Duration::ZERO,
             rng_play: None,

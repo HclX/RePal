@@ -9,7 +9,7 @@ use crate::framebuffer::{Color, Framebuffer};
 use pal_core::render::{build_field_draw_list, compute_camera, DrawSprite};
 use pal_core::state::GameState;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct BattleEnemyVisual {
     pub slot: usize,
     pub sprite_id: u16,
@@ -27,7 +27,7 @@ pub struct BattleEnemyVisual {
     pub statuses: Vec<u16>,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct BattleHeroVisual {
     pub role_id: u16,
     pub sprite_id: u16,
@@ -48,7 +48,7 @@ pub struct BattleHeroVisual {
     pub statuses: Vec<u16>,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct BattleEffectVisual {
     pub fire_id: u16,
     pub frame: usize,
@@ -60,7 +60,7 @@ pub struct BattleEffectVisual {
     pub is_summon: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BattleFloatText {
     pub x: i32,
     pub y: i32,
@@ -68,7 +68,7 @@ pub struct BattleFloatText {
     pub color: Color,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct BattleVisuals {
     pub active: bool,
     pub battlefield_fbp: u16,
@@ -86,7 +86,7 @@ pub struct BattleVisuals {
     pub float_texts: Vec<BattleFloatText>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct WorldRenderState {
     /// If `Some((rng_id, frame_idx))`, renders fullscreen RNG cutscene frame (live HD/1x switchable).
     pub active_rng: Option<(u16, u16)>,

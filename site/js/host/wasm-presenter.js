@@ -114,6 +114,13 @@ export class WasmCanvasPresenter {
    */
   presentFrame() {
     if (!this.w?.wasm_render_frame) return false;
+    // Skip drawing when nothing visible changed (the canvas keeps the last frame); still draw at
+    // least once a second as a safety net.
+    const nowMs = globalThis.performance?.now?.() ?? Date.now();
+    if (this.w.wasm_frame_unchanged?.() && nowMs - (this._lastRealPresent || 0) < 1000) {
+      return false;
+    }
+    this._lastRealPresent = nowMs;
     const ptr = this.w.wasm_render_frame();
     const w = this.w.wasm_fb_width();
     const h = this.w.wasm_fb_height();

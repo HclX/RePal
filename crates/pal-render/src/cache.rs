@@ -388,6 +388,9 @@ pub struct AssetCache {
     in_flight: HashSet<(AssetKind, String)>,
     failed_until: HashMap<(AssetKind, String), u64>,
     permanent_missing: HashSet<(AssetKind, String)>,
+    /// Bumped whenever cached content or availability changes (upload, failure, missing mark), so
+    /// hosts can tell that an otherwise unchanged frame must be redrawn (asset pop-in).
+    pub generation: u64,
 }
 
 impl Default for AssetCache {
@@ -410,6 +413,7 @@ impl AssetCache {
             in_flight: HashSet::new(),
             failed_until: HashMap::new(),
             permanent_missing: HashSet::new(),
+            generation: 0,
         }
     }
 
@@ -526,6 +530,7 @@ impl AssetCache {
     }
 
     pub fn upload_texture(&mut self, key: String, width: u32, height: u32, pixels: Vec<u8>, pinned: bool) {
+        self.generation = self.generation.wrapping_add(1);
         let expected = (width as usize).saturating_mul(height as usize).saturating_mul(4);
         if width == 0 || height == 0 || pixels.len() < expected {
             self.mark_failed(AssetKind::Texture, &key);
@@ -552,6 +557,7 @@ impl AssetCache {
     }
 
     pub fn upload_atlas_json(&mut self, key: String, json_text: &str) -> bool {
+        self.generation = self.generation.wrapping_add(1);
         self.in_flight.remove(&(AssetKind::AtlasMeta, key.clone()));
         if let Some(meta) = AtlasMeta::parse_json(json_text) {
             self.failed_until.remove(&(AssetKind::AtlasMeta, key.clone()));
@@ -564,12 +570,14 @@ impl AssetCache {
     }
 
     pub fn upload_map_binary(&mut self, key: String, bytes: Vec<u8>) {
+        self.generation = self.generation.wrapping_add(1);
         self.in_flight.remove(&(AssetKind::MapBinary, key.clone()));
         self.failed_until.remove(&(AssetKind::MapBinary, key.clone()));
         self.maps.insert(key, bytes);
     }
 
     pub fn upload_hd_map_json(&mut self, key: String, json_text: &str) -> bool {
+        self.generation = self.generation.wrapping_add(1);
         self.in_flight.remove(&(AssetKind::HdMapMeta, key.clone()));
         if let Some(meta) = HdMapMeta::parse_json(json_text) {
             self.failed_until.remove(&(AssetKind::HdMapMeta, key.clone()));
@@ -584,6 +592,7 @@ impl AssetCache {
 
     /// Record a transient fetch/decode failure with cooldown (180 frames ~ 3s) instead of permanent poisoning.
     pub fn mark_failed(&mut self, kind: AssetKind, key: &str) {
+        self.generation = self.generation.wrapping_add(1);
         let id = (kind, key.to_string());
         self.in_flight.remove(&id);
         self.failed_until.insert(id, self.tick.saturating_add(180));
@@ -592,6 +601,7 @@ impl AssetCache {
     /// Mark an optional asset (such as an un-remastered map's `maps_hd/map_XXX/meta.json` returning 404)
     /// as permanently absent for this session so we never spam repeated 404 requests.
     pub fn mark_missing_permanent(&mut self, kind: AssetKind, key: &str) {
+        self.generation = self.generation.wrapping_add(1);
         let id = (kind, key.to_string());
         self.in_flight.remove(&id);
         self.failed_until.remove(&id);
@@ -602,6 +612,7 @@ impl AssetCache {
     /// Hosts call this after new asset packages become available (e.g. a chapter package finished
     /// downloading), because assets requested while it was still downloading were marked missing.
     pub fn forget_missing(&mut self) {
+        self.generation = self.generation.wrapping_add(1);
         self.permanent_missing.clear();
         self.failed_until.clear();
     }

@@ -57,6 +57,8 @@ pub struct PalRuntime {
     pub shop_open: bool,
     pub victory_open: bool,
     pub render_dirty: bool,
+    /// Inputs of the last rendered frame, for [`PalRuntime::frame_unchanged`].
+    last_render_key: Option<Box<RenderKey>>,
     /// Scene ID when the current AI thought was set, so scene transitions clear only older thoughts.
     pub ai_thought_scene_id: Option<u16>,
     /// Monotonic counter bumped whenever `set_ai_thought` changes the active thought (for host 12s auto-dim).
@@ -103,6 +105,7 @@ impl PalRuntime {
             shop_open: false,
             victory_open: false,
             render_dirty: false,
+            last_render_key: None,
             ai_thought_scene_id: None,
             ai_thought_gen: 0,
         }
@@ -1073,8 +1076,35 @@ impl PalRuntime {
             .collect();
     }
 
+    /// `true` when rendering now would reproduce the last rendered frame exactly, so a host may skip
+    /// drawing and presenting. Compares everything the compositor reads: the `GameState` /
+    /// `WorldRenderState` projections (the tick-driven `frame_count` only while the screen wave
+    /// uses it), HD/retro mode, the asset cache generation (pop-in) and the UI dirty flags.
+    /// Host-side overlays drawn outside the compositor are the host's responsibility.
+    pub fn frame_unchanged(&mut self) -> bool {
+        self.flush_projection();
+        if self.ui.dirty || self.compositor.ui_dirty {
+            return false;
+        }
+        self.last_render_key
+            .as_deref()
+            .is_some_and(|k| k.matches(&self.state, &self.world, self.compositor.hd_mode, self.compositor.cache.generation))
+    }
+
     /// Render the current world + UI frame into `self.compositor.fb`.
     pub fn render_frame(&mut self) {
+        self.render_frame_inner();
+        // Generation is read after rendering: requests issued by this render that fail/arrive
+        // later bump it and force the next frame.
+        self.last_render_key = Some(Box::new(RenderKey::new(
+            &self.state,
+            &self.world,
+            self.compositor.hd_mode,
+            self.compositor.cache.generation,
+        )));
+    }
+
+    fn render_frame_inner(&mut self) {
         self.flush_projection();
         // Animation clock for render-only effects (screen wave): follow the 50 Hz game tick so
         // effects keep their speed whatever the host's draw rate (desktop/web cap drawing at 15 fps).
@@ -1094,6 +1124,36 @@ impl PalRuntime {
             .render_frame(state, world, |fb, cache, fonts, hd| {
                 draw_ui(fb, cache, fonts, ui, state, battle_ref, hd);
             });
+    }
+}
+
+/// Snapshot of the compositor's inputs for [`PalRuntime::frame_unchanged`].
+struct RenderKey {
+    state: GameState,
+    world: WorldRenderState,
+    hd: bool,
+    cache_gen: u64,
+}
+
+impl RenderKey {
+    /// `frame_count` advances every tick but only feeds the screen-wave effect.
+    fn normalized_world(world: &WorldRenderState) -> WorldRenderState {
+        let mut w = world.clone();
+        if w.wave_amplitude <= 0.01 {
+            w.frame_count = 0;
+        }
+        w
+    }
+
+    fn new(state: &GameState, world: &WorldRenderState, hd: bool, cache_gen: u64) -> Self {
+        Self { state: state.clone(), world: Self::normalized_world(world), hd, cache_gen }
+    }
+
+    fn matches(&self, state: &GameState, world: &WorldRenderState, hd: bool, cache_gen: u64) -> bool {
+        if self.hd != hd || self.cache_gen != cache_gen || &self.state != state {
+            return false;
+        }
+        Self::normalized_world(world) == self.world
     }
 }
 

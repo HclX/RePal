@@ -427,15 +427,26 @@ impl ApplicationHandler for DesktopApp {
                 self.poll_bootstrap();
                 self.step_simulation();
                 let t1 = Instant::now();
-                let present = self.should_present_frame();
+                let mut present = self.should_present_frame();
+                let mut skipped = false;
                 if present {
                     // Measure the cap from the start of a frame, not its end (drawing takes ~10-25 ms).
                     self.last_present = Instant::now();
-                    self.render_and_present();
+                    if self.frame_skippable() {
+                        // Nothing visible changed: the window keeps showing the last frame.
+                        skipped = true;
+                        present = false;
+                    } else {
+                        self.render_and_present();
+                        self.last_real_present = self.last_present;
+                    }
                 }
                 if let Some(p) = self.perf.as_mut() {
                     p.redraws += 1;
                     p.sim += t1 - t0;
+                    if skipped {
+                        p.skipped += 1;
+                    }
                     if present {
                         p.presents += 1;
                         p.render += Instant::now() - t1;

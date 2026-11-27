@@ -279,6 +279,26 @@ impl DesktopApp {
         !self.window_occluded && due(BACKGROUND_FRAME_INTERVAL.max(fg_interval))
     }
 
+    /// A due frame may be skipped when the runtime reports identical render inputs, no host-drawn
+    /// overlay is active, and a real frame was drawn within the last second (safety net for any
+    /// input not covered, and for window re-exposure).
+    pub(crate) fn frame_skippable(&mut self) -> bool {
+        if self.last_real_present.elapsed() >= Duration::from_secs(1)
+            || self.transition_banner.is_some()
+            || self.pending_scene_load.is_some()
+            || self.core_replay.is_some()
+            || self.rng_play.is_some()
+        {
+            return false;
+        }
+        let Some(rt) = self.rt.as_mut() else { return false };
+        // The click ripple ages in `render_and_present`, so it must keep drawing while active.
+        if rt.ui.ai_thought.is_some() || rt.world.click_ripple.is_some() {
+            return false;
+        }
+        rt.frame_unchanged()
+    }
+
     /// Print `REPAL_PERF=1` main-thread timings every 5 s (ms are per second of wall time).
     pub(crate) fn report_perf(&mut self) {
         let watched = format!(
@@ -297,9 +317,10 @@ impl DesktopApp {
         }
         let ms = |d: Duration| d.as_secs_f64() * 1000.0 / secs;
         eprintln!(
-            "[perf] hd={hd} redraws/s={:.1} presents/s={:.1} | busy ms/s: sim={:.1} render+blit={:.1} (blit+present={:.1}) about_to_wait={:.1} | {watched}",
+            "[perf] hd={hd} redraws/s={:.1} presents/s={:.1} skipped/s={:.1} | busy ms/s: sim={:.1} render+blit={:.1} (blit+present={:.1}) about_to_wait={:.1} | {watched}",
             p.redraws as f64 / secs,
             p.presents as f64 / secs,
+            p.skipped as f64 / secs,
             ms(p.sim),
             ms(p.render),
             ms(p.blit_present),

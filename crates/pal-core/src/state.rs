@@ -59,7 +59,7 @@ pub struct EventState {
     pub current_frame: u16,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct GameState {
     pub scene_id: u16,
     pub palette_id: u16,

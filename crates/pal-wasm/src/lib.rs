@@ -254,6 +254,20 @@ pub extern "C" fn wasm_fb_height() -> u32 {
     STATE.with(|cell| cell.borrow().rt.compositor.fb.height)
 }
 
+/// `1` when `wasm_render_frame` would reproduce the last frame exactly (see
+/// `PalRuntime::frame_unchanged`), so the host may skip drawing; `0` while the AI subtitle or a
+/// click ripple (both animated outside the compared inputs) is showing.
+#[no_mangle]
+pub extern "C" fn wasm_frame_unchanged() -> u32 {
+    STATE.with(|cell| {
+        let mut st = cell.borrow_mut();
+        if st.rt.has_visible_ai_thought_overlay() || st.rt.world.click_ripple.is_some() {
+            return 0;
+        }
+        u32::from(st.rt.frame_unchanged())
+    })
+}
+
 #[no_mangle]
 pub extern "C" fn wasm_render_frame() -> *const u8 {
     STATE.with(|cell| {
