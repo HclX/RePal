@@ -75,7 +75,8 @@ class PalRemakeApp {
     this.loadingBar = document.getElementById("boot-bar-fill");
     this.loadingText = document.getElementById("boot-status");
     this.keysDown = new Set();
-    this.touchDir = -1;
+    this.touchDir = -1; // cardinal direction for menus (0=down,1=left,2=up,3=right)
+    this.touchWalkDir = -1; // on-screen diagonal for walking (0=SW,1=NW,2=NE,3=SE)
     this.touchDpadPointerId = null;
     this.touchUiRepeatTimer = null;
     this.pointerDragActive = false;
@@ -459,7 +460,7 @@ class PalRemakeApp {
 
   /** Classic DOS PAL diagonal mapping: Down/Num2=SW(0), Left/Num4=NW(1), Up/Num8=NE(2), Right/Num6=SE(3) (#274). */
   getHeldDirection() {
-    if (this.touchDir >= 0) return this.touchDir;
+    if (this.touchWalkDir >= 0) return this.touchWalkDir;
     const gpDir = this.gamepad?.getHeldDirection?.() ?? -1;
     if (gpDir >= 0) return gpDir;
     const k = this.keysDown;
@@ -784,6 +785,7 @@ class PalRemakeApp {
 
   _releaseTouchDpad() {
     this.touchDir = -1;
+    this.touchWalkDir = -1;
     this.touchDpadPointerId = null;
     if (this.touchUiRepeatTimer) {
       clearInterval(this.touchUiRepeatTimer);
@@ -856,12 +858,17 @@ class PalRemakeApp {
         const angle = Math.atan2(dy, dx);
         nub.style.transform = `translate(${(Math.cos(angle) * clamped).toFixed(1)}px, ${(Math.sin(angle) * clamped).toFixed(1)}px)`;
       }
-      if (dist < 10) {
+      if (dist < 12) {
         this.touchDir = -1;
+        this.touchWalkDir = -1;
         document.querySelectorAll?.(".touch-dpad-arrow.active")?.forEach?.((el) => el.classList.remove("active"));
         return;
       }
       const nextDir = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 3 : 1) : (dy > 0 ? 0 : 2);
+      // PAL only walks along screen diagonals, so walking follows the thumb's quadrant
+      // (up-right = NE, ...) instead of the keyboard-style cardinal mapping (up = NE),
+      // which always felt 45 degrees off on a joystick.
+      this.touchWalkDir = dx >= 0 ? (dy < 0 ? 2 : 3) : dy < 0 ? 1 : 0;
       const changed = nextDir !== this.touchDir;
       this.touchDir = nextDir;
       document.querySelectorAll?.(".touch-dpad-arrow")?.forEach?.((el) => {
