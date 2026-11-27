@@ -429,8 +429,9 @@ impl ApplicationHandler for DesktopApp {
                 let t1 = Instant::now();
                 let present = self.should_present_frame();
                 if present {
-                    self.render_and_present();
+                    // Measure the cap from the start of a frame, not its end (drawing takes ~10-25 ms).
                     self.last_present = Instant::now();
+                    self.render_and_present();
                 }
                 if let Some(p) = self.perf.as_mut() {
                     p.redraws += 1;

@@ -332,8 +332,23 @@ export class RustCoreHost {
         this.pumpCmds();
       }
     }
-    this.app.renderer.present();
+    // Draw at most ~15 fps (the game logic still ticks at 50 Hz): the picture changes at most every
+    // 4 ticks, and requestAnimationFrame runs at 60-144 Hz, so drawing every rAF wasted most of the
+    // CPU/battery on identical HD frames. `?fps=N` (1..60) overrides for testing.
+    if (now - (this.lastPresentAt || 0) + 4 >= this.frameIntervalMs()) {
+      this.lastPresentAt = now;
+      this.app.renderer.present();
+    }
     this.app.replayTheater?.renderOverlay?.(now);
+  }
+
+  frameIntervalMs() {
+    if (this._frameIntervalMs === undefined) {
+      const q = Number(new URLSearchParams(globalThis.location?.search || "").get("fps"));
+      const fps = Number.isFinite(q) && q > 0 ? Math.min(60, Math.max(1, q)) : 15;
+      this._frameIntervalMs = 1000 / fps;
+    }
+    return this._frameIntervalMs;
   }
 
   pumpCmds() {

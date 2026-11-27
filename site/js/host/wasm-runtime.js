@@ -193,6 +193,7 @@ export class WasmRendererAdapter {
   addClickRipple(worldX, worldY) {
     if (Number.isFinite(worldX) && Number.isFinite(worldY)) {
       this._clickRipple = { x: Math.round(worldX), y: Math.round(worldY), age: 0 };
+      this._rippleClock = globalThis.performance?.now?.() ?? Date.now();
     }
   }
 
@@ -200,7 +201,11 @@ export class WasmRendererAdapter {
   present() {
     const w = this.wasm.exports;
     if (this._clickRipple) {
-      this._clickRipple.age += 0.06;
+      // ~0.3 s of wall time regardless of the draw rate.
+      const nowMs = globalThis.performance?.now?.() ?? Date.now();
+      const dt = Math.min(250, nowMs - (this._rippleClock ?? nowMs));
+      this._rippleClock = nowMs;
+      this._clickRipple.age += dt / 300;
       if (this._clickRipple.age >= 1) {
         this._clickRipple = null;
         w.wasm_set_click_ripple(0, 0, 0, 0);

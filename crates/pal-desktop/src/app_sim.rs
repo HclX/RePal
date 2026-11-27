@@ -6,16 +6,16 @@ use crate::*;
 const BACKGROUND_FRAME_INTERVAL: Duration = Duration::from_millis(100);
 
 /// Foreground draw cap. The game logic ticks at 50 Hz, but the picture changes at most every
-/// 4 ticks (party steps; NPC scripts every 6, the original DOS game drew ~10 fps), so 25 fps
-/// halves HD software rendering cost with no visible difference. `REPAL_MAX_FPS` overrides
-/// (1..=50; 50 = draw every tick).
+/// 4 ticks (party steps at 12.5 Hz; NPC scripts every 6; the original DOS game drew ~10 fps), so
+/// 15 fps cuts HD software rendering to under a third with no visible difference in play testing.
+/// `REPAL_MAX_FPS` overrides (1..=50; 50 = draw every tick).
 fn foreground_frame_interval() -> Duration {
     static INTERVAL: std::sync::OnceLock<Duration> = std::sync::OnceLock::new();
     *INTERVAL.get_or_init(|| {
         let fps = std::env::var("REPAL_MAX_FPS")
             .ok()
             .and_then(|v| v.trim().parse::<u32>().ok())
-            .unwrap_or(25)
+            .unwrap_or(15)
             .clamp(1, 50);
         Duration::from_micros(1_000_000 / fps as u64)
     })
@@ -258,12 +258,12 @@ impl DesktopApp {
 
     /// Background render throttling: HD software rendering costs ~10 ms/frame, so an idle game in
     /// an unfocused window drew half a CPU core for nothing. The simulation always runs at 50 Hz;
-    /// only drawing is reduced: capped at 25 fps (`REPAL_MAX_FPS`), ~10 fps when unfocused, none
+    /// only drawing is reduced: capped at 15 fps (`REPAL_MAX_FPS`), ~10 fps when unfocused, none
     /// while hidden. Anything someone may be watching from another window keeps the foreground cap: replay playback, RNG cutscenes, an attached
     /// Text Mode / LAN agent server, or the boot splash.
     pub(crate) fn should_present_frame(&self) -> bool {
-        // Redraws arrive at the 50 Hz tick; allow ~4 ms of jitter so a 25 fps cap really draws
-        // every second tick instead of drifting to every third.
+        // Redraws arrive at the 50 Hz tick; allow ~4 ms of jitter so the cap lands on tick boundaries
+        // (e.g. 15 fps draws every 3rd-4th tick, 25 fps every 2nd).
         let due = |interval: Duration| self.last_present.elapsed() + Duration::from_millis(4) >= interval;
         let fg_interval = foreground_frame_interval();
         if self.window_focused && !self.window_occluded {
@@ -338,8 +338,11 @@ impl DesktopApp {
         };
 
         // Advance golden click-ripple animation (mouse click, agent goto, or replay Click)
+        // Ripple lasts ~0.4 s of wall time regardless of the draw rate.
+        let ripple_dt = self.ripple_clock.elapsed().as_secs_f32().min(0.25);
+        self.ripple_clock = Instant::now();
         if let Some((rx, ry, age)) = rt.world.click_ripple {
-            let next_age = age + 0.05;
+            let next_age = age + ripple_dt * 2.5;
             if next_age >= 1.0 {
                 rt.world.click_ripple = None;
             } else {

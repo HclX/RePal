@@ -145,6 +145,7 @@ pub(crate) struct DesktopApp {
     pub(crate) window_focused: bool,
     pub(crate) window_occluded: bool,
     pub(crate) last_present: Instant,
+    pub(crate) ripple_clock: Instant,
     /// Opt-in main-thread profiler (`REPAL_PERF=1`), printed to stderr every 5 s.
     pub(crate) perf: Option<PerfStats>,
     tick_acc: Duration,
@@ -237,6 +238,7 @@ impl DesktopApp {
             window_focused: true,
             window_occluded: false,
             last_present: Instant::now(),
+            ripple_clock: Instant::now(),
             perf: std::env::var_os("REPAL_PERF").filter(|v| !v.is_empty() && v != "0").map(|_| PerfStats::new()),
             tick_acc: Duration::ZERO,
             rng_play: None,

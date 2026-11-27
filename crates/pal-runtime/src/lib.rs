@@ -1076,7 +1076,12 @@ impl PalRuntime {
     /// Render the current world + UI frame into `self.compositor.fb`.
     pub fn render_frame(&mut self) {
         self.flush_projection();
-        self.world.frame_count += 1;
+        // Animation clock for render-only effects (screen wave): follow the 50 Hz game tick so
+        // effects keep their speed whatever the host's draw rate (desktop/web cap drawing at 15 fps).
+        self.world.frame_count = match self.game.as_ref() {
+            Some(g) => g.tick_count,
+            None => self.world.frame_count + 1,
+        };
         let state = &self.state;
         let world = &self.world;
         let ui = &mut self.ui;
