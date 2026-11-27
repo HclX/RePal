@@ -304,3 +304,35 @@ fn save_json_anchor_replay_is_bit_exact() {
         "Replay from save_json anchor must match continuous execution bit-for-bit"
     );
 }
+
+#[test]
+fn in_between_held_directions_alternate_adjacent_diagonals() {
+    // Held 4..=7 (W, N, E, S) step only along the two adjacent diagonals `a = held - 4` and
+    // `a + 1`: alternating when both are open (net straight line), sliding along one when the
+    // other is blocked.
+    const DIAG: [(i32, i32); 4] = [(-16, 8), (-16, -8), (16, -8), (16, 8)]; // SW, NW, NE, SE
+    let mut alternated = false;
+    for held in 4i8..=7 {
+        let a = (held - 4) as usize;
+        let allowed = [DIAG[a], DIAG[(a + 1) & 3]];
+        let mut host = NativeHost::new();
+        host.game.start_new_game(0x95_1995);
+        host.pump();
+        assert!(host.settle(20_000));
+        let mut prev = (host.game.world.leader().x, host.game.world.leader().y);
+        let mut used = [false; 2];
+        for _ in 0..80 {
+            host.tick(TickInput { held_dir: held, interact: false, click: None, steer: None });
+            let cur = (host.game.world.leader().x, host.game.world.leader().y);
+            let d = (cur.0 - prev.0, cur.1 - prev.1);
+            if d != (0, 0) {
+                let k = allowed.iter().position(|&v| v == d);
+                assert!(k.is_some(), "held {held}: unexpected step {d:?}");
+                used[k.unwrap()] = true;
+            }
+            prev = cur;
+        }
+        alternated |= used[0] && used[1];
+    }
+    assert!(alternated, "no in-between direction alternated its two diagonals");
+}

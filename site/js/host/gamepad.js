@@ -17,6 +17,17 @@ import { L } from "./l10n.js";
  */
 
 const DEADZONE = 0.38;
+
+/**
+ * Map a screen-space vector (x right, y down) to an 8-way walking direction:
+ * PAL diagonals 0=SW, 1=NW, 2=NE, 3=SE, or the in-between screen directions 4=W, 5=N, 6=E, 7=S
+ * (the core walks those by alternating the two adjacent diagonals). Returns -1 for (0, 0).
+ */
+export function walkDirFromVector(dx, dy) {
+  if (!dx && !dy) return -1;
+  const sector = (Math.round(Math.atan2(-dy, dx) / (Math.PI / 4)) + 8) % 8; // 0=E, 1=NE, ... CCW
+  return [6, 2, 5, 1, 4, 0, 7, 3][sector];
+}
 const REPEAT_INITIAL_MS = 280;
 const REPEAT_INTERVAL_MS = 95;
 
@@ -25,7 +36,7 @@ export class GamepadController {
     this.app = app;
     this.prevButtons = new Map();
     this.dirRepeat = { dir: null, nextAt: 0 };
-    this.heldDir = -1; // PAL95: 0=SW(Down), 1=NW(Left), 2=NE(Up), 3=SE(Right)
+    this.heldDir = -1; // walkDirFromVector(): 0..3 diagonals, 4..7 = W/N/E/S
     this.connected = false;
     this.lastInputMode = "keyboard"; // "gamepad" | "keyboard" | "mouse"
 
@@ -89,12 +100,11 @@ export class GamepadController {
     const left = Boolean(gp.buttons[14]?.pressed) || ax < -DEADZONE;
     const right = Boolean(gp.buttons[15]?.pressed) || ax > DEADZONE;
 
-    // Update continuous movement direction for overworld exploration
-    if (down) this.heldDir = 0;
-    else if (left) this.heldDir = 1;
-    else if (up) this.heldDir = 2;
-    else if (right) this.heldDir = 3;
-    else this.heldDir = -1;
+    // Continuous 8-way walking direction: the stick's angle when it is pushed, else the D-pad.
+    const stickOn = Math.hypot(ax, ay) > DEADZONE;
+    const vx = stickOn ? ax : (gp.buttons[15]?.pressed ? 1 : 0) - (gp.buttons[14]?.pressed ? 1 : 0);
+    const vy = stickOn ? ay : (gp.buttons[13]?.pressed ? 1 : 0) - (gp.buttons[12]?.pressed ? 1 : 0);
+    this.heldDir = walkDirFromVector(vx, vy);
     if (this.heldDir >= 0) this.lastInputMode = "gamepad";
 
     // Edge-triggered + smooth repeat directional key for menus & library overlay

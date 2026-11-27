@@ -809,7 +809,7 @@ pub extern "C" fn core_reply(kind: u32, arg: u32) {
 pub extern "C" fn core_tick(held_dir: i32, flags: u32, cx: i32, cy: i32, sx: i32, sy: i32) {
     STATE.with(|cell| {
         let input = TickInput {
-            held_dir: held_dir.clamp(-1, 3) as i8,
+            held_dir: held_dir.clamp(-1, 7) as i8,
             interact: flags & 1 != 0,
             click: (flags & 2 != 0).then_some((cx, cy)),
             steer: (flags & 4 != 0).then_some((sx, sy)),

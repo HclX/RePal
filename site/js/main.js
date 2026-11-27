@@ -20,7 +20,7 @@ import {
 import { POINTER_KIND } from "./host/wasm-presenter.js";
 import { RustCoreHost, fetchArrayBuffer } from "./host/core-host.js";
 import { PackManager, masterKeyHexFromPassphrase } from "./host/pack-manager.js";
-import { GamepadController } from "./host/gamepad.js";
+import { GamepadController, walkDirFromVector } from "./host/gamepad.js";
 import { WebReplayTheater } from "./host/replay-theater.js";
 import { WebAgentHost } from "./host/web-agent.js";
 import { saveLocalReplay } from "./host/repal-loader.js";
@@ -865,10 +865,11 @@ class PalRemakeApp {
         return;
       }
       const nextDir = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 3 : 1) : (dy > 0 ? 0 : 2);
-      // PAL only walks along screen diagonals, so walking follows the thumb's quadrant
-      // (up-right = NE, ...) instead of the keyboard-style cardinal mapping (up = NE),
-      // which always felt 45 degrees off on a joystick.
-      this.touchWalkDir = dx >= 0 ? (dy < 0 ? 2 : 3) : dy < 0 ? 1 : 0;
+      // 8-way walking: PAL's diagonals (0=SW,1=NW,2=NE,3=SE) when the thumb points at one,
+      // and the in-between screen directions (4=W,5=N,6=E,7=S, which the core walks by
+      // alternating the two adjacent diagonals) when it points straight along an axis.
+      // The old keyboard-style mapping (up = NE) was always 45 degrees off on a joystick.
+      this.touchWalkDir = walkDirFromVector(dx, dy);
       const changed = nextDir !== this.touchDir;
       this.touchDir = nextDir;
       document.querySelectorAll?.(".touch-dpad-arrow")?.forEach?.((el) => {

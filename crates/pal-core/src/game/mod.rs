@@ -103,7 +103,8 @@ pub enum HostReply {
 /// Player input sampled for one tick.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct TickInput {
-    /// Held movement direction (`0=SW, 1=NW, 2=NE, 3=SE`) or `-1`.
+    /// Held movement direction (`0=SW, 1=NW, 2=NE, 3=SE`; `4=W, 5=N, 6=E, 7=S` alternate the two
+    /// adjacent diagonals, see `held_step`) or `-1`.
     pub held_dir: i8,
     /// Interact/confirm pressed this tick (Space/Enter in exploration).
     pub interact: bool,

@@ -52,7 +52,7 @@ impl Game {
             if input.held_dir >= 0 {
                 self.auto_walk.clear();
                 self.pending_click_event = 0;
-                self.try_manual_step(input.held_dir as u8);
+                self.held_step(input.held_dir as u8);
                 self.move_cd = MOVE_TICKS;
             } else if let Some((wx, wy)) = input.steer {
                 let lead = self.world.leader().clone();
@@ -157,6 +157,23 @@ impl Game {
     }
 
     /// Step the leader one half-tile in `dir` if not blocked (legacy `tryManualStep`).
+    /// One held-direction step. `0..=3` are PAL's diagonals (SW, NW, NE, SE). `4..=7` are the
+    /// in-between screen directions (W, N, E, S): they alternate the two adjacent diagonals
+    /// `a = held - 4` and `(a + 1) & 3`, so the net movement is straight, and fall back to the
+    /// other diagonal when one is blocked (slides along walls). Every diagonal step moves x by
+    /// ±16, so the parity of `x / 16` alternates each step; deriving the order from it keeps
+    /// replays and save-anchored recordings deterministic without extra state.
+    pub fn held_step(&mut self, held: u8) -> bool {
+        if held < 4 {
+            return self.try_manual_step(held);
+        }
+        let a = (held - 4) & 3;
+        let b = (a + 1) & 3;
+        let odd = self.world.leader().x.div_euclid(16) & 1 == 1;
+        let (first, second) = if odd { (b, a) } else { (a, b) };
+        self.try_manual_step(first) || self.try_manual_step(second)
+    }
+
     pub fn try_manual_step(&mut self, dir: u8) -> bool {
         self.world.view.cam_override = None;
         self.world.leader_mut().dir = dir & 3;
