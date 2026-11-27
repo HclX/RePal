@@ -87,6 +87,31 @@ pub(crate) struct RngPlayback {
     next_frame_at: Instant,
 }
 
+/// Accumulated main-thread timings for `REPAL_PERF=1`.
+pub(crate) struct PerfStats {
+    pub(crate) since: Instant,
+    pub(crate) redraws: u32,
+    pub(crate) presents: u32,
+    pub(crate) wait: Duration,
+    pub(crate) sim: Duration,
+    pub(crate) render: Duration,
+    pub(crate) blit_present: Duration,
+}
+
+impl PerfStats {
+    fn new() -> Self {
+        Self {
+            since: Instant::now(),
+            redraws: 0,
+            presents: 0,
+            wait: Duration::ZERO,
+            sim: Duration::ZERO,
+            render: Duration::ZERO,
+            blit_present: Duration::ZERO,
+        }
+    }
+}
+
 pub(crate) struct DesktopApp {
     pub(crate) cfg: CliConfig,
     pub(crate) vfs: OverlayVfs,
@@ -120,6 +145,8 @@ pub(crate) struct DesktopApp {
     pub(crate) window_focused: bool,
     pub(crate) window_occluded: bool,
     pub(crate) last_present: Instant,
+    /// Opt-in main-thread profiler (`REPAL_PERF=1`), printed to stderr every 5 s.
+    pub(crate) perf: Option<PerfStats>,
     tick_acc: Duration,
     pub(crate) rng_play: Option<RngPlayback>,
     pub(crate) fullscreen: bool,
@@ -210,6 +237,7 @@ impl DesktopApp {
             window_focused: true,
             window_occluded: false,
             last_present: Instant::now(),
+            perf: std::env::var_os("REPAL_PERF").filter(|v| !v.is_empty() && v != "0").map(|_| PerfStats::new()),
             tick_acc: Duration::ZERO,
             rng_play: None,
             fullscreen,

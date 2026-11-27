@@ -423,18 +423,31 @@ impl ApplicationHandler for DesktopApp {
                 }
             }
             WindowEvent::RedrawRequested => {
+                let t0 = Instant::now();
                 self.poll_bootstrap();
                 self.step_simulation();
-                if self.should_present_frame() {
+                let t1 = Instant::now();
+                let present = self.should_present_frame();
+                if present {
                     self.render_and_present();
                     self.last_present = Instant::now();
                 }
+                if let Some(p) = self.perf.as_mut() {
+                    p.redraws += 1;
+                    p.sim += t1 - t0;
+                    if present {
+                        p.presents += 1;
+                        p.render += Instant::now() - t1;
+                    }
+                }
+                self.report_perf();
             }
             _ => {}
         }
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        let wait_t0 = Instant::now();
         self.poll_bootstrap();
         self.poll_bug_report();
         self.poll_file_picker();
@@ -460,6 +473,9 @@ impl ApplicationHandler for DesktopApp {
             }
         }
         event_loop.set_control_flow(ControlFlow::WaitUntil(self.next_frame_at));
+        if let Some(p) = self.perf.as_mut() {
+            p.wait += wait_t0.elapsed();
+        }
     }
 }
 

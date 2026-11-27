@@ -267,17 +267,16 @@ impl DesktopApp {
     }
 
     pub(crate) fn flush_archived_replays(&mut self) {
+        // Runs on every `about_to_wait` (dozens of times a second): only PNG-encode the end
+        // screenshot when a replay was actually archived. Encoding the 1280x800 HD framebuffer
+        // unconditionally here cost ~half a CPU core while idle (HD only; retro is 320x200).
         let archived = self.rt.as_mut().and_then(|rt| {
-            let end_png = encode_fb_png(&rt.compositor.fb);
-            rt.game.as_mut().and_then(|g| {
-                g.take_archived_replay().map(|mut bundle| {
-                    if bundle.end_screenshot_png.is_none() {
-                        bundle.end_screenshot_png = end_png;
-                    }
-                    let sid = bundle.last_scene_id();
-                    (bundle, sid)
-                })
-            })
+            let mut bundle = rt.game.as_mut()?.take_archived_replay()?;
+            if bundle.end_screenshot_png.is_none() {
+                bundle.end_screenshot_png = encode_fb_png(&rt.compositor.fb);
+            }
+            let sid = bundle.last_scene_id();
+            Some((bundle, sid))
         });
         if let Some((bundle, sid)) = archived {
             if let Some(p) = write_repal_to_dir(&self.replays_dir(), &bundle, "auto", sid, true) {

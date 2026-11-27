@@ -259,6 +259,35 @@ impl DesktopApp {
         !self.window_occluded && self.last_present.elapsed() >= BACKGROUND_FRAME_INTERVAL
     }
 
+    /// Print `REPAL_PERF=1` main-thread timings every 5 s (ms are per second of wall time).
+    pub(crate) fn report_perf(&mut self) {
+        let watched = format!(
+            "focused={} occluded={} replay={} rng={} agent_server={}",
+            self.window_focused,
+            self.window_occluded,
+            self.core_replay.as_ref().is_some_and(|p| !p.paused && !p.finished),
+            self.rng_play.is_some(),
+            self.channel_server.is_some()
+        );
+        let hd = self.rt.as_ref().is_some_and(|rt| rt.compositor.hd_mode);
+        let Some(p) = self.perf.as_mut() else { return };
+        let secs = p.since.elapsed().as_secs_f64();
+        if secs < 5.0 {
+            return;
+        }
+        let ms = |d: Duration| d.as_secs_f64() * 1000.0 / secs;
+        eprintln!(
+            "[perf] hd={hd} redraws/s={:.1} presents/s={:.1} | busy ms/s: sim={:.1} render+blit={:.1} (blit+present={:.1}) about_to_wait={:.1} | {watched}",
+            p.redraws as f64 / secs,
+            p.presents as f64 / secs,
+            ms(p.sim),
+            ms(p.render),
+            ms(p.blit_present),
+            ms(p.wait),
+        );
+        *p = crate::PerfStats::new();
+    }
+
     pub(crate) fn render_and_present(&mut self) {
         let (Some(win), Some(surface)) = (&self.window, &mut self.surface) else {
             return;
@@ -391,6 +420,7 @@ impl DesktopApp {
         let sw = fb.width as usize;
         let sh = fb.height as usize;
 
+        let blit_t0 = Instant::now();
         // 16:10 letterboxed nearest-neighbor blit (RGBA8 -> 0x00RRGGBB).
         let target_aspect = 16.0 / 10.0;
         let win_aspect = dw_u as f64 / dh_u as f64;
@@ -461,5 +491,8 @@ impl DesktopApp {
             }
         }
         let _ = buffer.present();
+        if let Some(p) = self.perf.as_mut() {
+            p.blit_present += blit_t0.elapsed();
+        }
     }
 }
