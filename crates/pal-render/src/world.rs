@@ -147,6 +147,92 @@ impl Default for WorldRenderState {
 /// Compute the clamped logical `320x200` world camera origin `(cam_x, cam_y)` identically for
 /// the software renderer, pointer hit-testing (`logical_to_world`), fair-vision filtering, and
 /// Text Mode `view.camera` responses (#222, #224).
+/// Map shown by the isometric field view.
+pub fn field_map_id(state: &GameState, world: &WorldRenderState) -> u16 {
+    world
+        .map_id_override
+        .filter(|&id| id > 0)
+        .or_else(|| {
+            state
+                .scenes
+                .iter()
+                .find(|s| s.id == state.scene_id)
+                .map(|s| s.map_id)
+                .filter(|&id| id > 0)
+        })
+        .unwrap_or(state.scene_id)
+        .max(1)
+}
+
+/// Field view origin in 1x world pixels (camera + screen shake).
+pub fn field_view(state: &GameState, world: &WorldRenderState) -> (i32, i32) {
+    let (cx, cy) = resolve_world_camera(state, world);
+    (cx + world.shake_offset.0, cy + world.shake_offset.1)
+}
+
+/// Y-sorted sprites the field view draws: party, followers and the scene's events, culled to the
+/// viewport (with margins for sprite extents). Shared by `render_world` and the frame-change key,
+/// so off-screen changes never force a redraw.
+pub fn visible_field_sprites(state: &GameState, world: &WorldRenderState, view_x: i32, view_y: i32) -> Vec<DrawSprite> {
+    let sprites = if world.ev_end < world.ev_start {
+        // Empty scene event range (e.g. Scene 164): render party only, never flood all events.
+        build_field_draw_list(state, u16::MAX, 0)
+    } else {
+        let ev_end = if world.ev_end > 0 {
+            world.ev_end
+        } else {
+            state.events.len().saturating_sub(1) as u16
+        };
+        build_field_draw_list(state, world.ev_start, ev_end)
+    };
+    sprites
+        .into_iter()
+        .filter(|sp| {
+            sp.sprite_id != 0
+                && sp.world_x >= view_x - 96
+                && sp.world_x <= view_x + 416
+                && sp.world_y >= view_y - 64
+                && sp.world_y <= view_y + 320
+        })
+        .collect()
+}
+
+/// Everything the isometric field view reads from `GameState`, reduced to what is on screen.
+#[derive(Clone, Debug, PartialEq)]
+pub struct FieldFrameKey {
+    pub map_id: u16,
+    pub view: (i32, i32),
+    pub sprites: Vec<DrawSprite>,
+}
+
+impl FieldFrameKey {
+    /// Keeps only sprites whose drawn box (frame + soft shadow, using the atlas's largest frame)
+    /// intersects the 320x200 view. `render_world` culls with generous margins, so e.g. an NPC
+    /// animating ~100 px off-screen would otherwise force redraws. Sprites whose atlas metadata is
+    /// not loaded yet stay in the key (conservative).
+    pub fn new(state: &GameState, world: &WorldRenderState, cache: &AssetCache) -> Self {
+        let map_id = field_map_id(state, world);
+        let view = field_view(state, world);
+        let (vx0, vy0, vx1, vy1) = (view.0 - 2, view.1 - 2, view.0 + 320 + 2, view.1 + 200 + 2);
+        let sprites = visible_field_sprites(state, world, view.0, view.1)
+            .into_iter()
+            .filter(|sp| {
+                let meta_key = atlas_meta_key("mgo", &format!("mgo_{:03}", sp.sprite_id));
+                let Some(meta) = cache.get_atlas(&meta_key) else { return true };
+                let (fw, fh) = meta
+                    .frames
+                    .iter()
+                    .fold((24, 40), |(w, h), f| (w.max(f[2]), h.max(f[3])));
+                let half_w = (fw / 2).max(14); // soft shadow is at most 13 px wide
+                let (x0, x1) = (sp.world_x - half_w, sp.world_x + half_w);
+                let (y0, y1) = (sp.world_y - fh, sp.world_y + 12); // anchor pad <= 6, shadow ~+9
+                x1 >= vx0 && x0 <= vx1 && y1 >= vy0 && y0 <= vy1
+            })
+            .collect();
+        Self { map_id, view, sprites }
+    }
+}
+
 pub fn resolve_world_camera(state: &GameState, world: &WorldRenderState) -> (i32, i32) {
     if let Some((cx, cy)) = world.cam_override {
         (cx.clamp(0, 2048 - 320), cy.clamp(0, 2048 - 200))
@@ -659,23 +745,8 @@ pub fn render_world(
     }
 
     let scale = if hd { 4 } else { 1 };
-    let map_id = world
-        .map_id_override
-        .filter(|&id| id > 0)
-        .or_else(|| {
-            state
-                .scenes
-                .iter()
-                .find(|s| s.id == state.scene_id)
-                .map(|s| s.map_id)
-                .filter(|&id| id > 0)
-        })
-        .unwrap_or(state.scene_id)
-        .max(1);
-
-    let (base_cam_x, base_cam_y) = resolve_world_camera(state, world);
-    let view_x = base_cam_x + world.shake_offset.0;
-    let view_y = base_cam_y + world.shake_offset.1;
+    let map_id = field_map_id(state, world);
+    let (view_x, view_y) = field_view(state, world);
 
     let mut depth_queue: Vec<DepthItem> = Vec::with_capacity(512);
     let gop_base = format!("gop_{:03}", map_id);
@@ -845,29 +916,8 @@ pub fn render_world(
         }
     }
 
-    // 4. Collect Y-sorted sprites (party + scene NPCs) via pal-core
-    let sprites: Vec<DrawSprite> = if world.ev_end < world.ev_start {
-        // Empty scene event range (e.g. Scene 164): render party only, never flood all events.
-        build_field_draw_list(state, u16::MAX, 0)
-    } else {
-        let ev_end = if world.ev_end > 0 {
-            world.ev_end
-        } else {
-            state.events.len().saturating_sub(1) as u16
-        };
-        build_field_draw_list(state, world.ev_start, ev_end)
-    };
-    for sp in sprites {
-        if sp.sprite_id == 0 {
-            continue;
-        }
-        if sp.world_x < view_x - 96
-            || sp.world_x > view_x + 416
-            || sp.world_y < view_y - 64
-            || sp.world_y > view_y + 320
-        {
-            continue;
-        }
+    // 4. Collect Y-sorted, viewport-culled sprites (party + scene NPCs) via pal-core
+    for sp in visible_field_sprites(state, world, view_x, view_y) {
         let mgo_base = format!("mgo_{:03}", sp.sprite_id);
         let meta_key = atlas_meta_key("mgo", &mgo_base);
         let total_frames = cache

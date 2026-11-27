@@ -1088,7 +1088,7 @@ impl PalRuntime {
         }
         self.last_render_key
             .as_deref()
-            .is_some_and(|k| k.matches(&self.state, &self.world, self.compositor.hd_mode, self.compositor.cache.generation))
+            .is_some_and(|k| k.matches(&self.state, &self.world, self.compositor.hd_mode, &self.compositor.cache))
     }
 
     /// Render the current world + UI frame into `self.compositor.fb`.
@@ -1100,7 +1100,7 @@ impl PalRuntime {
             &self.state,
             &self.world,
             self.compositor.hd_mode,
-            self.compositor.cache.generation,
+            &self.compositor.cache,
         )));
     }
 
@@ -1127,15 +1127,28 @@ impl PalRuntime {
     }
 }
 
-/// Snapshot of the compositor's inputs for [`PalRuntime::frame_unchanged`].
+/// Snapshot of the compositor's inputs for [`PalRuntime::frame_unchanged`]. Only what is on screen
+/// counts: in the field view, the map, the view origin and the viewport-culled sprite list (the
+/// same selection `render_world` draws) instead of the whole `GameState`, so off-screen NPC
+/// animation, scripts or cash changes don't force a redraw. Battles, RNG cutscenes and full-screen
+/// FBPs only read `WorldRenderState`.
 struct RenderKey {
-    state: GameState,
+    field: Option<pal_render::world::FieldFrameKey>,
     world: WorldRenderState,
     hd: bool,
     cache_gen: u64,
 }
 
 impl RenderKey {
+    fn field_key(
+        state: &GameState,
+        world: &WorldRenderState,
+        cache: &pal_render::cache::AssetCache,
+    ) -> Option<pal_render::world::FieldFrameKey> {
+        let field_view = world.active_rng.is_none() && world.fbp_override.is_none() && !world.battle.active;
+        field_view.then(|| pal_render::world::FieldFrameKey::new(state, world, cache))
+    }
+
     /// `frame_count` advances every tick but only feeds the screen-wave effect.
     fn normalized_world(world: &WorldRenderState) -> WorldRenderState {
         let mut w = world.clone();
@@ -1145,15 +1158,20 @@ impl RenderKey {
         w
     }
 
-    fn new(state: &GameState, world: &WorldRenderState, hd: bool, cache_gen: u64) -> Self {
-        Self { state: state.clone(), world: Self::normalized_world(world), hd, cache_gen }
+    fn new(state: &GameState, world: &WorldRenderState, hd: bool, cache: &pal_render::cache::AssetCache) -> Self {
+        Self {
+            field: Self::field_key(state, world, cache),
+            world: Self::normalized_world(world),
+            hd,
+            cache_gen: cache.generation,
+        }
     }
 
-    fn matches(&self, state: &GameState, world: &WorldRenderState, hd: bool, cache_gen: u64) -> bool {
-        if self.hd != hd || self.cache_gen != cache_gen || &self.state != state {
-            return false;
-        }
-        Self::normalized_world(world) == self.world
+    fn matches(&self, state: &GameState, world: &WorldRenderState, hd: bool, cache: &pal_render::cache::AssetCache) -> bool {
+        self.hd == hd
+            && self.cache_gen == cache.generation
+            && Self::normalized_world(world) == self.world
+            && Self::field_key(state, world, cache) == self.field
     }
 }
 
