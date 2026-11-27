@@ -1,3 +1,4 @@
+#![cfg(feature = "disk")]
 //! Cross-language Python `tools/build_asset_packs.py` <-> Rust `OverlayVfs` / `RpkReader`
 //! integration tests (#237 T1–T3).
 

@@ -1,3 +1,4 @@
+#![cfg(feature = "disk")]
 //! `PalRuntime::frame_unchanged` must never report "unchanged" when a fresh render would differ:
 //! play real replays tick by tick, render every tick anyway (pumping assets like the desktop
 //! host), and require a byte-identical framebuffer whenever the check said "unchanged".

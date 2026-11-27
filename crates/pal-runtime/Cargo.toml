@@ -17,6 +17,6 @@ flate2 = { version = "1", default-features = false, features = ["rust_backend"] 
 image = { version = "0.25", default-features = false, features = ["png", "webp"], optional = true }
 serde_yaml = { version = "0.9", optional = true }
 
-[dev-dependencies]
+[target.'cfg(unix)'.dev-dependencies]
 # Opt-in sampling profiler for `tests/profile_render.rs` (SIGPROF-based; no perf permissions).
 pprof = { version = "0.15", features = ["flamegraph", "frame-pointer"] }

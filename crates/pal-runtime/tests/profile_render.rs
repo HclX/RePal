@@ -1,3 +1,4 @@
+#![cfg(all(unix, feature = "disk"))]
 //! Opt-in CPU profile of the desktop-equivalent frame loop (not run by default):
 //!
 //!   RUSTFLAGS="-C force-frame-pointers=yes" CARGO_TARGET_DIR=target/profile \
