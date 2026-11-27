@@ -110,7 +110,12 @@ All game logic and state live in Rust; JavaScript contains none.
 
 Static game assets (`site/assets`, gitignored in the code repo) are decoupled into **`HclX/RePal_Assets`** and SHA-256 pinned via [`assets-lock.json`](../assets-lock.json):
 - **Local dev**: symlink `site/assets -> ../../RePal_Assets/assets` (or unpack `DoSPal.zip` via `pal-cli`).
-- **Native `repal` binary**: on first launch without local `assets/`, `assets_bootstrap.rs` downloads the SHA-256-pinned release tarball, verifies checksums, and caches it under `<user_data>/assets_cache/<short_hash>/assets/`.
+- **Encrypted packs (`tools/build_asset_packs.py`)**: assets ship as `.rpk` packs described by `pack-manifest.json` — one **base** pack (data, i18n, UI, fonts, title, engine-required FBPs; split into category-stable shards such as `base-data`) plus one pack per **chapter** (derived from scene requirements). `build_asset_packs.py check` (run in CI) verifies every scene's assets land in base or its chapter pack.
+  - **Deterministic content keys**: each pack's key is `HMAC(master, pack_id + content digest)`, so unchanged content produces byte-identical packs across releases and clients only re-download packs that changed.
+  - **Passphrase unlock**: `master_key_wraps` in the manifest wraps the master key with PBKDF2-SHA256 (600k iterations); clients accept either the passphrase or the 64-hex master key (`pal_runtime::pack_vfs::resolve_pack_key_input`, `site/js/host/pack-manager.js`).
+  - **Publishing**: the `publish-packs.yml` workflow builds and uploads a `packs-vN` release and bumps `assets-lock.json`; manifests are fetched from raw.githubusercontent.com first, with jsDelivr as fallback (jsDelivr's GitHub proxy rejects files over 50 MB).
+- **Native `repal` binary**: `assets_bootstrap.rs` fetches the pinned manifest, downloads and verifies the base pack at the splash screen, and caches packs under `<user_data>/assets_cache/packs/` (with persisted verification stamps, so warm launches skip re-hashing). Chapter packs download asynchronously on scene load behind a loading overlay (`pack_download.rs`); **Download All** fetches the rest for offline play.
+- **Web**: `pack-manager.js` mirrors the same flow (IndexedDB cache, `navigator.storage.persist()`, passphrase dialog, Download All).
 - **CI & GitHub Pages**: workflows fetch and verify the pinned asset pack via `assets-lock.json` before running asset-dependent Rust/Node/Python suites.
 - **External CDN override (Web)**: `site/js/host/asset-provider.js` (`resolveAssetBaseUrl()`) supports overriding the asset origin via **`window.PAL_ASSET_BASE_URL`** or query parameter **`?assets=<base_url>`** while defaulting to `./assets`.
 

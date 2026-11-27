@@ -9,19 +9,24 @@
   - `repal` — Native desktop GUI (4× HD graphics, authentic 1995 DOS UI, acoustic/OPL2 audio).
   - `repal --text` — Headless Text Mode over stdio or TCP socket (`--listen`), with plain text or `--json` output and full-UI `shot` / `golden` visual regression.
   - `repal --gui --text` / `repal --listen 127.0.0.1:9999` — GUI + Text Mode (watch an AI Agent play live).
-- **`assets-lock.json`** — SHA-256 hash pin for the matching static asset pack in `HclX/RePal_Assets`.
+- **`assets-lock.json`** — Pins the encrypted asset-pack release (`packs-vN` manifest URL + SHA-256) in `HclX/RePal_Assets`.
 - **`agent-skill/SKILL.md`** — Complete instruction sheet for an LLM / AI Agent to play RePal via `repal --text`.
 - **`USER_MANUAL.md`** — This guide.
 
 ---
 
 ## 2. First Launch & Automatic Asset Download
-RePal ships lightweight (~1–2 MB) executables decoupled from copyrighted game assets. On first launch, `repal` opens a splash screen with a live progress bar, automatically downloads the SHA-256-pinned asset pack from `HclX/RePal_Assets`, verifies its checksum, and caches it by hash so future upgrades never re-download unchanged assets.
+RePal ships lightweight executables decoupled from copyrighted game assets. Assets come as encrypted `.rpk` packs: a small **base** pack (UI, data, fonts, translations, title screen) plus one pack per **chapter**.
 
-### Authentication / Asset Sources (in priority order)
-1. **Local folder**: `--assets <DIR>` (or an `assets/` folder placed next to the executable).
-2. **GitHub CLI (`gh`)** *(easiest for private `HclX/RePal_Assets`)*: Run `gh auth login` once, then double-click `repal`.
-3. **Custom URL / Token**: Set `REPAL_ASSETS_URL=<URL>` (or `--assets-url <URL>`) and/or `GITHUB_TOKEN=<PAT>`.
+- **First launch**: the splash screen downloads and verifies the base pack (`DOWNLOADING` / `VERIFYING`), then the title screen appears.
+- **During play**: entering a new chapter downloads its pack in the background behind a short loading overlay. Verified packs are cached and never re-downloaded; packs are content-addressed, so updates only fetch packs that actually changed.
+- **Download everything up front** (for offline play): Title → Options → **Download All**, or in-game Menu → Remake → Download All.
+- **Unlocking**: on the first launch you are asked for the **pack passphrase** (or the 64-hex pack key). It is saved to `pack.key` in your profile directory, so you only enter it once. `REPAL_PACK_KEY=<passphrase or hex>` also works.
+
+### Asset Sources (in priority order)
+1. **Local folder**: `--assets <DIR>` (or an `assets/` folder placed next to the executable) — loose, unencrypted assets for development.
+2. **Local packs**: `--packs-dir <DIR>` (or `REPAL_PACKS_DIR`) — a folder containing `pack-manifest.json` and `.rpk` files.
+3. **Default**: the pinned pack manifest from `assets-lock.json` (raw.githubusercontent.com first, jsDelivr as fallback). Override with `--assets-url <URL>` / `REPAL_ASSETS_URL`.
 
 ### User Profile Directories (Saves, Config, Bug Reports, Asset Cache)
 - **Windows**: `%APPDATA%\RePal\`
@@ -31,7 +36,8 @@ RePal ships lightweight (~1–2 MB) executables decoupled from copyrighted game 
 Inside that directory:
 - `saves/slot_0.json` .. `slot_99.json` — 100 save slots (20 pages × 5 slots/page; press `←`/`→` in Save/Load menu to flip pages).
 - `config.json` — Persisted HD/Retro mode, language (繁/简/EN), music/SFX toggles, and fullscreen preference.
-- `assets_cache/<hash>/assets/` — Hash-keyed verified asset cache (customizable via `--assets-cache <DIR>` or `REPAL_ASSETS_CACHE_DIR`).
+- `pack.key` — Saved pack key (written after you enter the passphrase once).
+- `assets_cache/packs/` — Downloaded, verified `.rpk` packs (customizable via `--assets-cache <DIR>` or `REPAL_ASSETS_CACHE_DIR`). Legacy loose-asset caches from older versions are cleaned up automatically.
 - `replays/<version>/` — Auto-archived `.repal` deterministic gameplay replays (bucketed by engine version, e.g. `v0.3.11/`).
 - `agent_out/` — Default `--out-dir` for `shot` / `save` / `replay-export` when running GUI+Text or `--listen` socket modes.
 - `bug_reports/` & `screenshots/` — Saved `F9` bug report bundles (`.repal` + `.png`) and `F10` screenshots.
@@ -54,7 +60,7 @@ Inside that directory:
 | **F10** | Save 4× HD PNG screenshot (to `RePal/screenshots/`) |
 | **F11** or **Alt+Enter** | Toggle Fullscreen (also available in Menu → Remake → Fullscreen) |
 
-> **Linux Icon Tip**: Linux ELF binaries don't embed file-manager icons directly. Run `./install-desktop-icon.sh` once inside the extracted folder to register the RePal Flying Sword icon & desktop launcher (`~/.local/share/applications/repal.desktop`).
+> **Linux icon & launcher**: Linux binaries can't carry their own icon, so the `repal` file itself always shows a generic icon in file managers. On the first GUI launch RePal installs a launcher (`~/.local/share/applications/repal.desktop`) and icon automatically, so **RePal** appears in the applications menu and the taskbar shows its icon; right-click the menu entry to add it to the desktop or panel. The launcher's path is refreshed if you move the folder, and a launcher you edited yourself (without the `X-RePal-Managed=true` line) is never touched. Opt out with `REPAL_NO_DESKTOP_INTEGRATION=1`. `install-desktop-icon.sh` in the release folder does the same by hand.
 
 ---
 
@@ -86,6 +92,6 @@ You can also run RePal directly in any terminal (no GUI window / no `$DISPLAY` r
 - `--obs <fair|debug>` (`--fog`) / `--minimap <auto|always|off>` — Observation fairness profile and viewport ASCII minimap cadence
 - `-c <CMDS>` / `--script <FILE>` / `--record <FILE>` / `--out-dir <DIR>` / `--keep-going` — Batch commands, recording, and output directory
 - `--replay <FILE>` / `--replay-export-srt <IN.repal> <OUT.srt>` — Auto-play a `.repal`/`.cmd` replay or export AI thought subtitles to `.srt`
-- `--assets <DIR>` / `--assets-cache <DIR>` / `--assets-url <URL>` — Asset directory & cache overrides
+- `--assets <DIR>` / `--packs-dir <DIR>` / `--assets-cache <DIR>` / `--assets-url <URL>` — Loose assets, local packs, pack cache, and manifest source overrides
 - `--saves <DIR>` / `--config <FILE>` — Override default user-profile paths
 - `--new` / `--save <FILE>` / `--scene <ID>` / `--debug` / `--hd` / `--retro` / `--lang <hans|hant|en>` / `--fullscreen` / `--pace-ms <MS>` — Boot, debug watermark, display, and spectator pacing overrides
