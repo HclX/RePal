@@ -2,6 +2,9 @@
 
 use crate::*;
 
+/// Redraw interval for an unfocused, idle window (~10 fps).
+const BACKGROUND_FRAME_INTERVAL: Duration = Duration::from_millis(100);
+
 impl DesktopApp {
     pub(crate) fn step_simulation(&mut self) {
         if self.rt.is_none() {
@@ -235,6 +238,25 @@ impl DesktopApp {
 
         self.text_engine = Some(engine);
         input
+    }
+
+    /// Background render throttling: HD software rendering costs ~10 ms/frame, so an idle game in
+    /// an unfocused window drew half a CPU core for nothing. The simulation always runs at 50 Hz;
+    /// only drawing is reduced: ~10 fps when unfocused, none while hidden. Anything someone may be
+    /// watching from another window keeps full rate: replay playback, RNG cutscenes, an attached
+    /// Text Mode / LAN agent server, or the boot splash.
+    pub(crate) fn should_present_frame(&self) -> bool {
+        if self.window_focused && !self.window_occluded {
+            return true;
+        }
+        let watched = self.rt.is_none()
+            || self.core_replay.as_ref().is_some_and(|p| !p.paused && !p.finished)
+            || self.rng_play.is_some()
+            || self.channel_server.is_some();
+        if watched {
+            return true;
+        }
+        !self.window_occluded && self.last_present.elapsed() >= BACKGROUND_FRAME_INTERVAL
     }
 
     pub(crate) fn render_and_present(&mut self) {

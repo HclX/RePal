@@ -81,7 +81,14 @@ impl ApplicationHandler for DesktopApp {
                     self.load_file_or_replay(path);
                 }
             }
+            WindowEvent::Focused(true) => {
+                self.window_focused = true;
+            }
+            WindowEvent::Occluded(occluded) => {
+                self.window_occluded = occluded;
+            }
             WindowEvent::Focused(false) => {
+                self.window_focused = false;
                 self.keys_down.clear();
                 self.alt_used_combo = false;
                 self.pointer_drag = false;
@@ -418,7 +425,10 @@ impl ApplicationHandler for DesktopApp {
             WindowEvent::RedrawRequested => {
                 self.poll_bootstrap();
                 self.step_simulation();
-                self.render_and_present();
+                if self.should_present_frame() {
+                    self.render_and_present();
+                    self.last_present = Instant::now();
+                }
             }
             _ => {}
         }
