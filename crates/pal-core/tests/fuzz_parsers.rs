@@ -6,7 +6,8 @@
 //! - Uses structure-aware JSON mutations (extreme numbers `-1`, `i64::MIN`, `u64::MAX`, `1e308`,
 //!   key drop/dup, type swaps, deep nesting) + byte mutations (bit flip, truncation, splice,
 //!   magic-preserving corruption).
-//! - Runs every target under a watchdog deadline thread so infinite loops (like #265) fail fast.
+//! - Runs every target under a per-input watchdog (heartbeat) so infinite loops (like #265) fail
+//!   fast and dump the hanging input, without false timeouts at high iteration counts (#24).
 //! - Writes any crashing/panicking input to `.tmp/fuzz_parser_<target>_<hash>.bin`.
 //!
 //! Override iteration budget via `PAL_PARSER_FUZZ_ITERS` (default `250` per target in PR).
@@ -21,9 +22,10 @@ use pal_core::yj1::yj1_decompress;
 use serde_json::{json, Value};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::Path;
-use std::sync::mpsc;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 struct MutRng(u64);
 
@@ -214,29 +216,80 @@ fn extreme_json_scalar(rng: &mut MutRng) -> Value {
     }
 }
 
-fn run_with_watchdog<F>(target: &'static str, timeout: Duration, f: F)
+/// Progress beacon shared with the watchdog (#24): each target calls [`Heartbeat::beat`] before
+/// every input, so a genuine per-input hang is told apart from "many iterations" and the offending
+/// input can be dumped for reproduction.
+#[derive(Clone, Default)]
+struct Heartbeat(Arc<HeartbeatInner>);
+
+#[derive(Default)]
+struct HeartbeatInner {
+    beats: AtomicU64,
+    current: Mutex<(String, Vec<u8>)>,
+}
+
+impl Heartbeat {
+    fn beat(&self, label: &str, input: &[u8]) {
+        *self.0.current.lock().unwrap() = (label.to_string(), input.to_vec());
+        self.0.beats.fetch_add(1, Ordering::Release);
+    }
+}
+
+/// No single input may run longer than this.
+const PER_INPUT_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Run a fuzz target on a worker thread. Fails on a panic, when one input stalls for
+/// [`PER_INPUT_TIMEOUT`] (dumping that input), or when the whole run exceeds `base_timeout`
+/// plus a per-iteration allowance (catches pathological slowness at high iteration counts).
+fn run_with_watchdog<F>(target: &'static str, base_timeout: Duration, iters: usize, f: F)
 where
-    F: FnOnce() + Send + 'static,
+    F: FnOnce(Heartbeat) + Send + 'static,
 {
+    let hb = Heartbeat::default();
+    let worker_hb = hb.clone();
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
-        let res = catch_unwind(AssertUnwindSafe(f));
+        let res = catch_unwind(AssertUnwindSafe(|| f(worker_hb)));
         let _ = tx.send(res);
     });
-    match rx.recv_timeout(timeout) {
-        Ok(Ok(())) => {}
-        Ok(Err(payload)) => {
-            let msg = payload
-                .downcast_ref::<&str>()
-                .copied()
-                .or_else(|| payload.downcast_ref::<String>().map(|s| s.as_str()))
-                .unwrap_or("non-string panic");
-            panic!("[fuzz_parsers:{target}] panicked: {msg}");
+    let total_cap = base_timeout + Duration::from_millis(20) * iters as u32;
+    let started = Instant::now();
+    let mut last_beats = 0u64;
+    let mut last_progress = Instant::now();
+    loop {
+        match rx.recv_timeout(Duration::from_millis(250)) {
+            Ok(Ok(())) => return,
+            Ok(Err(payload)) => {
+                let msg = payload
+                    .downcast_ref::<&str>()
+                    .copied()
+                    .or_else(|| payload.downcast_ref::<String>().map(|s| s.as_str()))
+                    .unwrap_or("non-string panic");
+                panic!("[fuzz_parsers:{target}] panicked: {msg}");
+            }
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                panic!("[fuzz_parsers:{target}] worker thread exited without a result");
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {}
         }
-        Err(_) => {
+        let beats = hb.0.beats.load(Ordering::Acquire);
+        if beats != last_beats {
+            last_beats = beats;
+            last_progress = Instant::now();
+        }
+        if last_progress.elapsed() > PER_INPUT_TIMEOUT {
+            let (label, input) = hb.0.current.lock().unwrap().clone();
+            let path = dump_parser_failure(&format!("{target}_{label}_hang"), &input);
             panic!(
-                "[fuzz_parsers:{target}] WATCHDOG TIMEOUT after {:?} (possible infinite loop / OOM)",
-                timeout
+                "[fuzz_parsers:{target}] WATCHDOG: input #{beats} ({label}) ran > {PER_INPUT_TIMEOUT:?} \
+                 (infinite loop / OOM?); dumped to {}",
+                path.display()
+            );
+        }
+        if started.elapsed() > total_cap {
+            panic!(
+                "[fuzz_parsers:{target}] WATCHDOG: {iters} iterations exceeded {total_cap:?} \
+                 ({beats} inputs done; no single input stalled)"
             );
         }
     }
@@ -252,7 +305,7 @@ fn iters_budget() -> usize {
 #[test]
 fn fuzz_parser_load_save_json_and_replay_bundle_from_json() {
     let iters = iters_budget();
-    run_with_watchdog("save_and_replay_json", Duration::from_secs(30), move || {
+    run_with_watchdog("save_and_replay_json", Duration::from_secs(30), iters, move |hb| {
         let mut host = NativeHost::new();
         host.reset_new_game();
         host.enter_scene(1, false);
@@ -267,6 +320,7 @@ fn fuzz_parser_load_save_json_and_replay_bundle_from_json() {
             for _ in 0..steps {
                 mutate_json_value(&mut v, &mut rng, 0);
             }
+            hb.beat("save_json", v.to_string().as_bytes());
             let res = catch_unwind(AssertUnwindSafe(|| {
                 let _ = host.game.load_save_json(&v);
             }));
@@ -288,6 +342,7 @@ fn fuzz_parser_load_save_json_and_replay_bundle_from_json() {
                     mutate_json_value(&mut rv, &mut rng, 0);
                 }
             }
+            hb.beat("replay_json", rv.to_string().as_bytes());
             let res = catch_unwind(AssertUnwindSafe(|| {
                 let _ = ReplayBundle::from_json(&rv);
             }));
@@ -305,7 +360,7 @@ fn fuzz_parser_load_save_json_and_replay_bundle_from_json() {
 #[test]
 fn fuzz_parser_load_dos_rpg() {
     let iters = iters_budget();
-    run_with_watchdog("load_dos_rpg", Duration::from_secs(30), move || {
+    run_with_watchdog("load_dos_rpg", Duration::from_secs(30), iters, move |hb| {
         let mut host = NativeHost::new();
         let saves_dir = assets_dir().join("orig_saves");
         let mut seeds = Vec::new();
@@ -321,6 +376,7 @@ fn fuzz_parser_load_dos_rpg() {
         for i in 0..iters {
             let base = &seeds[rng.range(seeds.len())];
             let mutated = mutate_bytes(base, &mut rng, 0);
+            hb.beat("rpg", &mutated);
             let res = catch_unwind(AssertUnwindSafe(|| {
                 let _ = host.game.load_dos_rpg(&mutated);
             }));
@@ -335,7 +391,7 @@ fn fuzz_parser_load_dos_rpg() {
 #[test]
 fn fuzz_parser_yj1_mkf_rle_and_sanitize_ai_thought() {
     let iters = iters_budget().max(400);
-    run_with_watchdog("yj1_mkf_rle_thought", Duration::from_secs(20), move || {
+    run_with_watchdog("yj1_mkf_rle_thought", Duration::from_secs(20), iters, move |hb| {
         let mut rng = MutRng::new(0x71_4B_F00D);
         let pal = Palette::from_vga6(&vec![32u8; 768]).unwrap();
 
@@ -351,6 +407,7 @@ fn fuzz_parser_yj1_mkf_rle_and_sanitize_ai_thought() {
             let base = &yj1_seeds[rng.range(yj1_seeds.len())];
             let keep = if rng.range(4) == 0 { 0 } else { 4 };
             let yj = mutate_bytes(base, &mut rng, keep);
+            hb.beat("yj1", &yj);
             let res = catch_unwind(AssertUnwindSafe(|| {
                 let _ = yj1_decompress(&yj);
             }));
@@ -361,6 +418,7 @@ fn fuzz_parser_yj1_mkf_rle_and_sanitize_ai_thought() {
 
             // 2. MKF & SMKF parsers
             let mkf_buf = mutate_bytes(&yj, &mut rng, 0);
+            hb.beat("mkf_rle", &mkf_buf);
             let res = catch_unwind(AssertUnwindSafe(|| {
                 let n = mkf_chunk_count(&mkf_buf).min(32);
                 for k in 0..n {
@@ -398,6 +456,7 @@ fn fuzz_parser_yj1_mkf_rle_and_sanitize_ai_thought() {
             for _ in 0..len {
                 raw.push(alphabet[rng.range(alphabet.len())]);
             }
+            hb.beat("thought", raw.as_bytes());
             let (cleaned, _trunc) = sanitize_ai_thought(&raw);
             assert!(
                 cleaned.chars().count() <= MAX_AI_THOUGHT_CHARS,

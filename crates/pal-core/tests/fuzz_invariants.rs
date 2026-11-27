@@ -203,8 +203,12 @@ fn check_invariants(
         if (m.role_id as usize) >= w.roles.len() {
             return Err(format!("{label}: party[{i}] invalid role_id {}", m.role_id));
         }
-        if !seen_roles.insert(m.role_id) {
-            return Err(format!("{label}: duplicate role_id {} in party", m.role_id));
+        // Original data stages one scripted battle with a duplicated role: `s_522b` (scene 106,
+        // 阿奴 & 盖罗娇 vs 石长老) runs `party_set_roles [5, 6, 5]` and restores `[1]` right after
+        // the fight; SDLPAL copies the operands verbatim too (#23). Duplicates are therefore legal
+        // only while a battle is running; one that survives into exploration is still a bug.
+        if !seen_roles.insert(m.role_id) && g.battle.is_none() {
+            return Err(format!("{label}: duplicate role_id {} in party outside battle", m.role_id));
         }
         if !(0..=2048).contains(&m.x) || !(0..=2048).contains(&m.y) {
             return Err(format!(
