@@ -457,7 +457,7 @@ pub struct ReplayBundle {
 
 /// Bug reports keep only the last this-many segments (checkpoints): each segment starts from its
 /// own full save anchor, so the tail replays exactly while staying small.
-pub const BUG_REPORT_SEGMENTS: usize = 2;
+pub const BUG_REPORT_SEGMENTS: usize = 3;
 
 impl ReplayBundle {
     /// Keep only the last `n` segments. Segments are self-contained (save anchor + segment-relative

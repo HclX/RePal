@@ -146,7 +146,7 @@ function parseTarEntries(bytes) {
 }
 
 /** Bug reports keep only the last this-many segments (matches Rust `BUG_REPORT_SEGMENTS`). */
-export const BUG_REPORT_SEGMENTS = 2;
+export const BUG_REPORT_SEGMENTS = 3;
 
 /**
  * Keep only the last `n` segments of a `RePal_CoreReplay_v3` bundle JSON (mirrors Rust
