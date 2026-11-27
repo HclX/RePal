@@ -391,6 +391,12 @@ pub struct AssetCache {
     /// Bumped whenever cached content or availability changes (upload, failure, missing mark), so
     /// hosts can tell that an otherwise unchanged frame must be redrawn (asset pop-in).
     pub generation: u64,
+    /// Lifetime counters (diagnostics): texture uploads, LRU evictions, and uploads of a key that
+    /// had been evicted before (re-decodes caused by cache pressure).
+    pub stats_uploads: u64,
+    pub stats_evictions: u64,
+    pub stats_reuploads: u64,
+    evicted_keys: HashSet<String>,
 }
 
 impl Default for AssetCache {
@@ -414,6 +420,10 @@ impl AssetCache {
             failed_until: HashMap::new(),
             permanent_missing: HashSet::new(),
             generation: 0,
+            stats_uploads: 0,
+            stats_evictions: 0,
+            stats_reuploads: 0,
+            evicted_keys: HashSet::new(),
         }
     }
 
@@ -536,6 +546,10 @@ impl AssetCache {
             self.mark_failed(AssetKind::Texture, &key);
             return;
         }
+        self.stats_uploads += 1;
+        if self.evicted_keys.remove(&key) {
+            self.stats_reuploads += 1;
+        }
         self.in_flight.remove(&(AssetKind::Texture, key.clone()));
         self.failed_until.remove(&(AssetKind::Texture, key.clone()));
         if let Some(old) = self.textures.remove(&key) {
@@ -630,6 +644,8 @@ impl AssetCache {
             };
             if let Some(removed) = self.textures.remove(&k) {
                 self.total_texture_bytes = self.total_texture_bytes.saturating_sub(removed.pixels.len());
+                self.stats_evictions += 1;
+                self.evicted_keys.insert(k);
             }
         }
     }

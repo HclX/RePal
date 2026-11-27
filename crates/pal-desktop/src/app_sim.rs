@@ -310,6 +310,17 @@ impl DesktopApp {
             self.channel_server.is_some()
         );
         let hd = self.rt.as_ref().is_some_and(|rt| rt.compositor.hd_mode);
+        let cache = self.rt.as_ref().map(|rt| {
+            let c = &rt.compositor.cache;
+            format!(
+                "cache: uploads={} evictions={} re-decodes={} {}/{} MB",
+                c.stats_uploads,
+                c.stats_evictions,
+                c.stats_reuploads,
+                c.total_texture_bytes() / (1024 * 1024),
+                c.max_texture_bytes / (1024 * 1024)
+            )
+        });
         let Some(p) = self.perf.as_mut() else { return };
         let secs = p.since.elapsed().as_secs_f64();
         if secs < 5.0 {
@@ -326,6 +337,9 @@ impl DesktopApp {
             ms(p.blit_present),
             ms(p.wait),
         );
+        if let Some(c) = cache {
+            eprintln!("[perf] {c} (lifetime)");
+        }
         *p = crate::PerfStats::new();
     }
 
