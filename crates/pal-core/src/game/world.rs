@@ -586,9 +586,14 @@ impl World {
         self.cash /= 2;
     }
 
+    /// Add (or with a negative `count`, take) items. Gains clamp at 99 per item, like SDLPAL's
+    /// `PAL_AddItemToInventory` (found by fuzzing 44.rpg: repeated 傀儡虫 gains reached 100).
     pub fn add_item(&mut self, item_id: u16, count: i32) {
         let prev = self.inventory.get(&item_id).copied().unwrap_or(0);
-        let next = (prev + count).max(0);
+        let mut next = prev.saturating_add(count).max(0);
+        if count > 0 {
+            next = next.min(99);
+        }
         if next == 0 {
             self.inventory.remove(&item_id);
         } else {
