@@ -990,7 +990,7 @@ impl TextEngine {
                     host.out_dir(),
                     &path,
                     origin.is_socket(),
-                    &["repal"],
+                    &["gz", "repal"],
                 ) {
                     Ok(pb) => pb,
                     Err(e) => {

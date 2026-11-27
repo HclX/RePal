@@ -127,6 +127,26 @@ fn read_tar_entries<'a>(bytes: &'a [u8]) -> Option<HashMap<String, &'a [u8]>> {
     }
 }
 
+/// File extension for new replay archives (`.repal.gz`: a tar.gz that GitHub issue attachments,
+/// file managers and archive tools all accept). Readers detect the format by content.
+pub const REPAL_FILE_EXT: &str = "repal.gz";
+
+/// `true` for replay archive file names: current `*.repal.gz` and legacy `*.repal`.
+pub fn is_repal_file_name(name: &str) -> bool {
+    let n = name.to_ascii_lowercase();
+    n.ends_with(".repal.gz") || n.ends_with(".repal")
+}
+
+/// Strip a replay archive / JSON extension (`.repal.gz`, `.repal`, `.json`).
+fn strip_replay_ext(name: &str) -> &str {
+    for ext in [".repal.gz", ".repal", ".json"] {
+        if name.len() > ext.len() && name.to_ascii_lowercase().ends_with(ext) {
+            return &name[..name.len() - ext.len()];
+        }
+    }
+    name
+}
+
 /// Write a [`ReplayBundle`] into a standard `.tar.gz` `.repal` archive atomically via a temp sibling (#209).
 pub fn write_repal_archive(path: &Path, bundle: &ReplayBundle) -> Result<(), String> {
     if let Some(parent) = path.parent() {
@@ -384,10 +404,7 @@ fn auto_replay_sort_key(path: &Path) -> (u128, u32, String) {
         .and_then(|s| s.to_str())
         .unwrap_or("")
         .to_string();
-    let stem = path
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("");
+    let stem = strip_replay_ext(&name);
     if let Some(rest) = stem.strip_prefix("auto_") {
         let mut parts = rest.split('_');
         if let Some(ts_str) = parts.next() {
@@ -431,7 +448,7 @@ pub fn write_repal_to_dir(
         .map(|d| d.as_millis())
         .unwrap_or(0);
     let seq = ARCHIVE_SEQ.fetch_add(1, Ordering::Relaxed);
-    let path = replays_dir.join(format!("{prefix}_{ts_ms}_{seq:04}_sc{scene_id}.repal"));
+    let path = replays_dir.join(format!("{prefix}_{ts_ms}_{seq:04}_sc{scene_id}.{REPAL_FILE_EXT}"));
     write_repal_archive(&path, bundle).ok()?;
 
     if auto_rotate {
@@ -442,7 +459,7 @@ pub fn write_repal_to_dir(
                 .filter(|p| {
                     p.file_name()
                         .and_then(|s| s.to_str())
-                        .map(|n| n.starts_with("auto_") && (n.ends_with(".repal") || n.ends_with(".json")))
+                        .map(|n| n.starts_with("auto_") && (is_repal_file_name(n) || n.ends_with(".json")))
                         .unwrap_or(false)
                 })
                 .collect();
@@ -767,5 +784,17 @@ mod tests {
         let srt = export_repal_to_srt(&bad);
         // Second cue starts at 150 (3.000s) and must clamp at segment 0 end tick 200 (4.000s), not 150+400=550.
         assert!(srt.contains("00:00:03,000 --> 00:00:04,000"), "unexpected srt:\n{srt}");
+    }
+
+    #[test]
+    fn repal_gz_names_are_recognised_and_sorted_like_legacy() {
+        assert!(is_repal_file_name("auto_1795000000123_0001_sc5.repal.gz"));
+        assert!(is_repal_file_name("OLD.REPAL"));
+        assert!(!is_repal_file_name("notes.gz"));
+        let a = auto_replay_sort_key(Path::new("auto_1795000000123_0001_sc5.repal.gz"));
+        let b = auto_replay_sort_key(Path::new("auto_1795000000123_0001_sc5.repal"));
+        assert_eq!((a.0, a.1), (b.0, b.1), "new and legacy names must share the same sort key");
+        let old = auto_replay_sort_key(Path::new("auto_1700000000_sc5.repal"));
+        assert!(old.0 < a.0, "legacy seconds-based names sort before newer ms-based ones");
     }
 }

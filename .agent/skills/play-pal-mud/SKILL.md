@@ -34,8 +34,8 @@ In a release archive, `./repal` (or `repal.exe`) is prebuilt — no build step r
   - One-shot batch / UI visual regression: `./repal --text --json -c "load 10.rpg; view status; shot status.png"`
   - Headless TCP server: `./repal --text --listen 127.0.0.1:9999 [--json]` (non-loopback LAN binds require per-session `auth <token>`, shown on startup and in TitleOptions/Remake menus; default socket `--out-dir` is `<user_dir>/agent_out`)
   - Resume from a saved checkpoint: `./repal --text --save .tmp/agent_play.json`
-  - Export AI thought subtitles from a `.repal` replay: `./repal --replay-export-srt in.repal out.srt`
-  - Render a `.repal` replay directly to MP4/GIF/PNG sequence: `./repal --replay-export-video in.repal out.mp4 [--hd|--retro] [--stride N] [--with-thought] [--start-tick N] [--end-tick M]`
+  - Export AI thought subtitles from a `.repal.gz` replay: `./repal --replay-export-srt in.repal.gz out.srt`
+  - Render a `.repal.gz` replay directly to MP4/GIF/PNG sequence: `./repal --replay-export-video in.repal.gz out.mp4 [--hd|--retro] [--stride N] [--with-thought] [--start-tick N] [--end-tick M]`
 - **Language flags**: `--lang hans` (default), `--lang hant`, `--lang en`.
 - **Human Takeover in GUI+Text / Web Mode**: Pressing `Esc` immediately cancels any in-flight AI task (`interrupted_by: "human"`) and returns control to the human player. Pressing `F7` toggles the 4× HD AI thought subtitle bar.
 
@@ -72,7 +72,7 @@ In one-shot stdio/batch invocations, each shell call starts a fresh process — 
 | `help [cmd \| topic]` | `?` | Show localized command overview (debug commands hidden in `--obs fair`) or detailed usage, aliases, examples & tips for a specific command/topic (e.g. `help battle`, `help magic`, `help items`, `help save`; structured JSON in `artifacts.help`). |
 | `status` | `st` | Print full party stats, level, EXP, equipment, and known spells with `#id`, MP cost, field/battle tags & effect descriptions in both plain text and JSON (`artifacts.status`). |
 | `bag` | `items`, `inv` | List all inventory items with `#id`, counts, usability/throwable/equip tags & effect descriptions in both plain text and JSON (`artifacts.bag`). |
-| `think <text \| clear>` | `thought` | Display a short AI commentary/thought subtitle at the top of the 4× HD screen (disabled in 1× Retro, `F7` toggles visibility, auto-dims after 12 s, clears on scene change) AND record it into `.repal` replays' separate `annotations.json` track (untainted, allowed in `--obs fair` & `.cmd` replays, exportable via `repal --replay-export-srt`). **Limits**: max 200 chars stored (wraps to 2 lines ~80 chars on screen), plain CJK/Latin/punctuation (no emoji/bidi), rapid calls within 50 ticks (1 s) coalesce in-place preserving original start tick (always `ok: true`), ring cap 200/segment. Wrap in quotes if your thought contains `;`. Use sparingly at key story/puzzle/battle decisions (15–40 chars)! |
+| `think <text \| clear>` | `thought` | Display a short AI commentary/thought subtitle at the top of the 4× HD screen (disabled in 1× Retro, `F7` toggles visibility, auto-dims after 12 s, clears on scene change) AND record it into `.repal.gz` replays' separate `annotations.json` track (untainted, allowed in `--obs fair` & `.cmd` replays, exportable via `repal --replay-export-srt`). **Limits**: max 200 chars stored (wraps to 2 lines ~80 chars on screen), plain CJK/Latin/punctuation (no emoji/bidi), rapid calls within 50 ticks (1 s) coalesce in-place preserving original start tick (always `ok: true`), ring cap 200/segment. Wrap in quotes if your thought contains `;`. Use sparingly at key story/puzzle/battle decisions (15–40 chars)! |
 
 ### Movement & Exploration
 | Command | Aliases | Description |
@@ -131,10 +131,10 @@ In explore mode, open the full RPG menu with `menu` (or `m`). Both headless and 
 ### Persistence & Replays
 | Command | Description |
 | :--- | :--- |
-| `new [seed]` | Start a new game from Scene 1 (starts a fresh untainted `.repal` recording). |
+| `new [seed]` | Start a new game from Scene 1 (starts a fresh untainted `.repal.gz` recording). |
 | `save [path]` | Save full state JSON (default `repal_save.json`). |
 | `load <path>` | Load a `.json` save or original DOS `.rpg` save. |
-| `replay-export [path.repal]` | Export the current session's deterministic `.repal` replay archive (including `annotations.json` AI thoughts, `tainted_by_debug`, and `debug_mode` status; alias `export-replay`). |
+| `replay-export [path.repal.gz]` | Export the current session's deterministic `.repal.gz` replay archive (including `annotations.json` AI thoughts, `tainted_by_debug`, and `debug_mode` status; alias `export-replay`). |
 | `quit` | `exit`, `q` — Disconnect client (socket) or exit `repal --text` (stdio). |
 
 ### Embedded Debug Commands (`/` prefix — **DO NOT USE** mutating commands during legitimate playtesting!)
@@ -156,7 +156,7 @@ In explore mode, open the full RPG menu with `menu` (or `m`). Both headless and 
    - **Toggleable pressure plates**: Floor switches (e.g. General's Tomb `菱形石砖踏板`) are **two-way toggles** — stepping on an already-triggered plate while backtracking closes the stone door again! Track triggered plate coordinates and route around them on return trips.
    - **Pre-battle dialogue (`mode == "dialog"` with `battle.active == true`)**: Some encounters (e.g. `菜刀婆婆`) play dialogue before the first battle turn. Always check `mode == "dialog"` and send `next`/`continue` **before** dispatching battle commands (`attack`/`magic`).
    - **Narrow-corridor `flee` loops**: Fleeing in a 1-tile-wide dungeon corridor leaves the wandering monster right next to you, causing immediate re-engagement if you step forward. Defeat the enemy, use `驱魔香` (incense), or step back / `wait` for it to wander away.
-6. **Recording continuous `.repal` replays**: One-shot per-turn `repal --text --save` restarts do **not** produce a single continuous `.repal` archive unless `--record` is used. To record a full playable `.repal` (with `annotations.json` AI thoughts), run a **persistent** stdio or `--listen` TCP session and run `replay-export <path.repal>` before quitting.
-7. **Narrate key decisions with `think`**: Emit concise `think <text>` commentary (15–40 chars, plain CJK/Latin without emoji; wrap in quotes if containing `;`) when arriving at new objectives, solving puzzles, or making tactical battle choices — it appears live in 4× HD and is recorded cleanly in `.repal` (`annotations.json`) and exportable to `.srt`.
+6. **Recording continuous `.repal.gz` replays**: One-shot per-turn `repal --text --save` restarts do **not** produce a single continuous `.repal.gz` archive unless `--record` is used. To record a full playable `.repal.gz` (with `annotations.json` AI thoughts), run a **persistent** stdio or `--listen` TCP session and run `replay-export <path.repal.gz>` before quitting.
+7. **Narrate key decisions with `think`**: Emit concise `think <text>` commentary (15–40 chars, plain CJK/Latin without emoji; wrap in quotes if containing `;`) when arriving at new objectives, solving puzzles, or making tactical battle choices — it appears live in 4× HD and is recorded cleanly in `.repal.gz` (`annotations.json`) and exportable to `.srt`.
 8. **Take screenshots & file bugs**: `shot [path]` saves a settled thought-free 4× HD PNG (`shot --with-thought [path]` includes the HD subtitle bar), and `bugreport <description>` exports full diagnostics!
 9. **Spectator Mode pacing**: When connected to `repal --listen` / `--gui --text` with a human watching, do **not** spam skip keys during cutscenes, and let dialogues advance naturally so spectators can read the story.

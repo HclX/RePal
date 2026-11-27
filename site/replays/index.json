@@ -1,6 +1,6 @@
 [
   {
-    "file": "v0.3.11/02_ch2_think_fair_blind.repal",
+    "file": "v0.3.11/02_ch2_think_fair_blind.repal.gz",
     "version": "v0.3.11",
     "title": "第二章（纯文本盲打 + AI 思考字幕）· 十里坡学剑至初入苏州城",
     "subtitle": "53 条 AI 实时思考字幕（F7 开关）· 密道 → 十里坡御剑术 → 救灵儿 → 葬姥姥 → 战黑苗首领 → 苏州初战林月如 → 苏州客栈（0截图/0调试）",
@@ -8,7 +8,7 @@
     "ticks": 42351
   },
   {
-    "file": "v0.3.11/01_ch1_zero_shot_fair_blind.repal",
+    "file": "v0.3.11/01_ch1_zero_shot_fair_blind.repal.gz",
     "version": "v0.3.11",
     "title": "第一章全通（纯文本零截图盲打）· 盛渔村至仙灵岛救醒李大娘",
     "subtitle": "New Game → 醉道士 → 仙灵岛山道4战 → 荷叶迷宫6阿修罗像 → 水月宫成亲 → 紫金丹救醒李大娘（0截图/0调试）",
@@ -16,7 +16,7 @@
     "ticks": 32790
   },
   {
-    "file": "v0.3.8/01_ch1_yuhang_opening.repal",
+    "file": "v0.3.8/01_ch1_yuhang_opening.repal.gz",
     "version": "v0.3.8",
     "title": "第一章 · 盛渔村开局与醉道士",
     "subtitle": "New Game → 客栈起床 → 招待苗人 → 桂花酒结识酒剑仙",
@@ -24,7 +24,7 @@
     "ticks": 3890
   },
   {
-    "file": "v0.3.8/02_ch1_fairy_island_to_miao_guards.repal",
+    "file": "v0.3.8/02_ch1_fairy_island_to_miao_guards.repal.gz",
     "version": "v0.3.8",
     "title": "第一章 · 仙灵岛水月宫与十里坡学剑",
     "subtitle": "阿修罗迷宫 → 水月宫成亲 → 密道 → 十里坡习得御剑术",
@@ -32,7 +32,7 @@
     "ticks": 27757
   },
   {
-    "file": "v0.3.8/03_ch1_miao_guards_win_to_miao_leader.repal",
+    "file": "v0.3.8/03_ch1_miao_guards_win_to_miao_leader.repal.gz",
     "version": "v0.3.8",
     "title": "第一章 · 击退苗人卫兵与水月宫惨案",
     "subtitle": "山神庙 → 救出灵儿 → 重返仙灵岛 → 姥姥托孤 → 黑苗头领战",
@@ -40,7 +40,7 @@
     "ticks": 11159
   },
   {
-    "file": "v0.3.8/05_ch1_miao_leader_win_to_suzhou_boat.repal",
+    "file": "v0.3.8/05_ch1_miao_leader_win_to_suzhou_boat.repal.gz",
     "version": "v0.3.8",
     "title": "第一章终 · 战胜黑苗头领与告别李大娘",
     "subtitle": "观音咒续航胜胖苗 → 习得飞龙探云手 → 余杭港登船",
@@ -48,7 +48,7 @@
     "ticks": 8362
   },
   {
-    "file": "v0.3.8/06_ch2_suzhou_full_to_hidden_dragon_cave.repal",
+    "file": "v0.3.8/06_ch2_suzhou_full_to_hidden_dragon_cave.repal.gz",
     "version": "v0.3.8",
     "title": "第二章全通 · 苏州城与林家堡比武招亲",
     "subtitle": "林月如初战 → 赌坊救刘晋元 → 比武招亲 → 西厢蛇妖 → 隐龙窟之路",

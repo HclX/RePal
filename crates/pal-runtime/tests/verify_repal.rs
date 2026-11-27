@@ -37,7 +37,7 @@ fn collect_repal_files(dir: &std::path::Path, out: &mut Vec<PathBuf>) {
         let p = entry.path();
         if p.is_dir() {
             collect_repal_files(&p, out);
-        } else if p.extension().and_then(|s| s.to_str()) == Some("repal") {
+        } else if p.file_name().and_then(|s| s.to_str()).is_some_and(pal_runtime::repal_archive::is_repal_file_name) {
             out.push(p);
         }
     }

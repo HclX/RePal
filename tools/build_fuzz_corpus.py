@@ -11,7 +11,7 @@ from diverse points across the story without committing hundreds of near-identic
 
 Usage:
   python3 tools/build_fuzz_corpus.py [--repal GLOB ...] [--saves GLOB ...] [--per-scene N] [--out PATH]
-Defaults: --repal 'site/replays/*/*.repal' --saves '.tmp/playtest*/**/*.json' --per-scene 2
+Defaults: --repal 'site/replays/*/*.repal*' --saves '.tmp/playtest*/**/*.json' --per-scene 2
 """
 import argparse
 import glob
@@ -69,7 +69,7 @@ def main() -> int:
     a = ap.parse_args()
 
     entries = []
-    for pat in a.repal or ["site/replays/*/*.repal"]:
+    for pat in a.repal or ["site/replays/*/*.repal*"]:
         for f in sorted(glob.glob(pat)):
             entries.extend(from_repal(f))
     for pat in a.saves or [".tmp/playtest*/**/*.json"]:

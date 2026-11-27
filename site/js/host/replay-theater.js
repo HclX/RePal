@@ -174,7 +174,7 @@ export class WebReplayTheater {
         </div>
         <div id="repal-lib-list" class="repal-lib-list"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px;">
-          <button id="repal-lib-pick-file" class="repal-hud-btn" style="padding:6px 12px;">${L("打开本地 .repal / .json 文件...", "開啟本地 .repal / .json 檔案...", "Open a local .repal / .json file...")}</button>
+          <button id="repal-lib-pick-file" class="repal-hud-btn" style="padding:6px 12px;">${L("打开本地 .repal.gz / .json 文件...", "開啟本地 .repal.gz / .json 檔案...", "Open a local .repal.gz / .json file...")}</button>
           <button id="repal-lib-close" class="repal-hud-btn" style="padding:6px 14px;">${L("关闭", "關閉", "Close")}</button>
         </div>
       </div>
@@ -299,7 +299,7 @@ export class WebReplayTheater {
     if (!this.libraryItems.length) {
       const empty = document.createElement("div");
       empty.style.cssText = "padding:20px;text-align:center;color:#9eb5c4;";
-      empty.textContent = L("暂无可用录像，可点击下方按钮打开本地 .repal 文件，或将 .repal 拖入游戏窗口。", "暫無可用錄像，可點擊下方按鈕開啟本地 .repal 檔案，或將 .repal 拖入遊戲視窗。", "No replays yet. Open a local .repal file below, or drop one onto the game window.");
+      empty.textContent = L("暂无可用录像，可点击下方按钮打开本地 .repal.gz 文件，或将 .repal.gz 拖入游戏窗口。", "暫無可用錄像，可點擊下方按鈕開啟本地 .repal.gz 檔案，或將 .repal.gz 拖入遊戲視窗。", "No replays yet. Open a local .repal.gz file below, or drop one onto the game window.");
       this.elLibList.appendChild(empty);
       return;
     }
@@ -350,7 +350,7 @@ export class WebReplayTheater {
   async startFromUrl(url) {
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const name = url.split("/").pop() || "replay.repal";
+    const name = url.split("/").pop() || "replay.repal.gz";
     await this.startFromBytes(name, new Uint8Array(await resp.arrayBuffer()));
   }
 

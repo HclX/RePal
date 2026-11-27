@@ -41,9 +41,9 @@
 | `--keep-going` | Batch | Continue batch execution after command errors. |
 | `--assets <DIR>` | All | Override local assets directory. |
 | `--new` / `--save <FILE>` | All | Boot into New Game or load a `.rpg` / `.json` save (default without either: Title screen). |
-| `--debug` | All | Opt into explicit `debug_mode: true` on launch (renders `DEBUG ENABLED` watermark and records `debug_mode: true` in `.repal`). Rejected if combined with `--obs fair` / `--fog`. |
-| `--replay <FILE>` | GUI | Auto-play a `.repal` or `.cmd` replay file. |
-| `--replay-export-srt <IN.repal> <OUT.srt>` | CLI | Export AI thought annotations from a `.repal` archive to standard SubRip (`.srt`) subtitles and exit. |
+| `--debug` | All | Opt into explicit `debug_mode: true` on launch (renders `DEBUG ENABLED` watermark and records `debug_mode: true` in `.repal.gz`). Rejected if combined with `--obs fair` / `--fog`. |
+| `--replay <FILE>` | GUI | Auto-play a `.repal.gz` or `.cmd` replay file. |
+| `--replay-export-srt <IN.repal.gz> <OUT.srt>` | CLI | Export AI thought annotations from a `.repal.gz` archive to standard SubRip (`.srt`) subtitles and exit. |
 | `--scene <ID>` | All | Jump to Scene ID after boot. |
 | `--hd` / `--retro` | All | Initial resolution (`1280×800` 4× HD default vs `320×200` 1× Retro). |
 | `--lang <hans\|hant\|en>` | All | Initial UI & script language. |
@@ -57,7 +57,7 @@
 - **Framing & Initial Greeting**: UTF-8, newline-delimited (`\n`; `\r\n` stripped). TCP lines are capped at 64 KiB; up to 16 concurrent clients (max 8 per IP), with a 10 s auth deadline, 600 s idle timeout, and per-session remote write quota (64 files / 64 MiB). Immediately upon TCP connect (after `auth <token>` if remote), `repal` emits one **initial `look` greeting line** (in both plain and `--json` modes) before reading commands — persistent clients must read/drain that greeting line on connect (or verify `resp["cmd"]`) so replies stay aligned 1:1 with commands.
 - **Comments & Blank Lines**: Lines starting with `#` or `//` are ignored. In interactive plain TTY mode, a blank line advances dialogue/victory (`next`) or runs `look`.
 - **Disconnecting (`quit` / `exit` / `q`)**:
-  - **stdio (`--text`)**: replies `{"ok":true,"bye":true,...}` (or `Bye.`) and exits with code `0` (or `2` if an earlier `golden` check failed). Headless `--text` does not auto-archive `.repal` recordings; GUI sessions auto-archive on exit.
+  - **stdio (`--text`)**: replies `{"ok":true,"bye":true,...}` (or `Bye.`) and exits with code `0` (or `2` if an earlier `golden` check failed). Headless `--text` does not auto-archive `.repal.gz` recordings; GUI sessions auto-archive on exit.
   - **socket (`--listen`)**: replies `bye` and closes only that TCP client connection; the host stays alive.
 - **Lazy Rendering & Deterministic Pagination**:
   - Headless `--text` never runs `PalCompositor` during gameplay ticks; only `shot`, `golden`, `click` (in UI), and `bugreport` render a settled frame.
@@ -77,7 +77,7 @@
 
 ### Command Summary
 - **Exploration**: `look`, `map`, `sw|nw|ne|se [n]`, `goto <ev_id | x y>`, `talk [ev_id]`, `search`, `wait [ticks]`
-  - `goto` and `talk <ev_id>` dispatch standard player `TickInput::click` events (`click_world`), keeping `.repal` recordings 100% pure player inputs. `goto <ev_id>` selects a nearby walkable half-tile outside NPC click circles so walking near an NPC does not accidentally trigger conversation; `talk <ev_id>` clicks the event directly (and turns 1 tick via standard `HeldDir` before interacting when blocked across a counter).
+  - `goto` and `talk <ev_id>` dispatch standard player `TickInput::click` events (`click_world`), keeping `.repal.gz` recordings 100% pure player inputs. `goto <ev_id>` selects a nearby walkable half-tile outside NPC click circles so walking near an NPC does not accidentally trigger conversation; `talk <ev_id>` clicks the event directly (and turns 1 tick via standard `HeldDir` before interacting when blocked across a counter).
   - `events[].dist` is half-tile isometric Manhattan distance: `(|dx| + 2*|dy|) / 16`.
   - `events[].dir` is the relative isometric direction (`sw`/`nw`/`ne`/`se`) from the party leader to the event.
   - `events[].screen` is `{ "x", "y" }` in logical `320×200` screen coordinates (or `null` if off-screen).
@@ -88,10 +88,10 @@
   - For `magic <id|name> [slot]` in battle, `slot` indexes `battle.enemies[]` when `target` is `"enemy"`/`"all_enemies"`, or `battle.heroes[]` when `target` is `"ally"`/`"all_allies"`. In `explore` mode, `magic <id|name> [target_party_idx] [caster_party_idx]` casts field-usable spells.
   - `use <id|name> [slot]` automatically routes to `BattleItem` when in `battle` mode (and validates inventory/usability before consuming a turn).
 - **Party & Shops**: `status` (plain-text & JSON include spell `#id`, MP cost, scope/usability tags & `desc`), `bag` (plain-text & JSON include item `#id`, count, usability/throwable/equip tags & `desc`), `use <id|name> [slot|party_idx]`, `equip <id|name> [party_idx]`, `buy <idx> [qty]` (only in buy-only shops `ui_view: shop`), `sell <id|name> [qty]` (only in pawnshops `ui_view: pawnshop` / 当铺)
-- **UI, Subtitles & Visuals**: `menu`, `ui|key <k>`, `view <name>`, `click <x> <y>`, `hd`/`retro`, `lang <hans|hant|en>`, `think <text|clear>` (HD-only top subtitle bar + `.repal` `annotations.json` track; always `ok: true` with 50-tick coalescing; hidden while top-anchored system menus are open and reserves right clearance for the `DEBUG ENABLED` watermark), `shot [--small] [--with-thought] [path]` (default `shot` structurally excludes the thought bar; `--small` writes `640×400` of the canonical `320×200` viewport, centre-cropped to 16:10 when the compositor is wide, allowed in `--obs fair`), `golden <ref.png> [max_diff] [tol] [diff.png]`
+- **UI, Subtitles & Visuals**: `menu`, `ui|key <k>`, `view <name>`, `click <x> <y>`, `hd`/`retro`, `lang <hans|hant|en>`, `think <text|clear>` (HD-only top subtitle bar + `.repal.gz` `annotations.json` track; always `ok: true` with 50-tick coalescing; hidden while top-anchored system menus are open and reserves right clearance for the `DEBUG ENABLED` watermark), `shot [--small] [--with-thought] [path]` (default `shot` structurally excludes the thought bar; `--small` writes `640×400` of the canonical `320×200` viewport, centre-cropped to 16:10 when the compositor is wide, allowed in `--obs fair`), `golden <ref.png> [max_diff] [tol] [diff.png]`
 - **Persistence & Diagnostics**:
-  - `new [seed]`, `save <path>`, `load <path>` (checks `--out-dir` first, then path, then `assets/orig_saves/`), `replay-export [path.repal]` (returns `segments`, `total_ticks`, `engine_version`, `tainted_by_debug`, `debug_mode`), `dump-state [path]`
-  - `core-replay <file> [until_tick]`: runs through the unified `pal_runtime::replay_player::ReplayPlayer` and supports `.repal` (`.tar.gz`), `RePal_CoreReplay_v3`/`v2`, `PalRemake_CoreReplay_v1`, and `CoreDiag_v1`. Embedded `ReplayEvent::Debug` events are strict no-ops unless the bundle declares `debug_mode: true`.
+  - `new [seed]`, `save <path>`, `load <path>` (checks `--out-dir` first, then path, then `assets/orig_saves/`), `replay-export [path.repal.gz]` (returns `segments`, `total_ticks`, `engine_version`, `tainted_by_debug`, `debug_mode`), `dump-state [path]`
+  - `core-replay <file> [until_tick]`: runs through the unified `pal_runtime::replay_player::ReplayPlayer` and supports `.repal.gz` (`.tar.gz`), `RePal_CoreReplay_v3`/`v2`, `PalRemake_CoreReplay_v1`, and `CoreDiag_v1`. Embedded `ReplayEvent::Debug` events are strict no-ops unless the bundle declares `debug_mode: true`.
   - `bugreport [desc]`: headless writes `<out_dir>/bug_reports/*.png` + `*.json`; GUI writes `<user_dir>/bug_reports/*.repal.gz` (including `end_screenshot.png` + `state.json`) and submits via `gh` (disabled over TCP sockets).
   - Save slots (`UiAction::SaveSlot` / `LoadSlot`): both headless (`<out_dir>/slot_{N}.json`) and desktop (`<saves_dir>/slot_{N}.json`) use 0-based `slot_{N}.json`, with slot `0` falling back to `orig_saves/10.rpg`.
 

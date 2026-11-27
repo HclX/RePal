@@ -725,7 +725,7 @@ pub fn parse_command(raw: &str) -> Result<Command, String> {
             Ok(Command::Load((*p).to_string()))
         }
         "replay-export" | "export-replay" => {
-            let path = args.first().copied().unwrap_or("repal_recording.repal");
+            let path = args.first().copied().unwrap_or("repal_recording.repal.gz");
             Ok(Command::ExportReplay(path.to_string()))
         }
         "bugreport" | "report" | "bug" => {
@@ -812,7 +812,7 @@ pub const HELP_TEXT: &str = "\
 战斗: attack(a) [slot] | magic <id> [slot] | item <id> [slot] | coop [slot] | defend | flee | auto | cancel-auto
 队伍: status(st) | bag | use <id> [party_idx] | magic <id> [target_idx] [caster_idx] | equip <id> [party_idx] | buy <idx> [qty] | sell <id> [qty]
 UI/视觉: view <name> | click <x> <y> | hd | retro | lang <hans|hant|en> | think <text|clear> | shot [--with-thought] [path] | golden <ref> [max_diff] [tol] [diff_out] | core-replay <json> [tick] | dump-state [path]
-存档/调试: new [seed] | save [path] | load <path> | replay-export [path.repal] | bugreport [desc] | /tp <sc> [x y] | /heal | /god | /cash <n> | /item <id> [n] | /event <id> [state <n>] | /battle <g> | /script <lbl> | /state
+存档/调试: new [seed] | save [path] | load <path> | replay-export [path.repal.gz] | bugreport [desc] | /tp <sc> [x y] | /heal | /god | /cash <n> | /item <id> [n] | /event <id> [state <n>] | /battle <g> | /script <lbl> | /state
 退出: quit(q)";
 
 #[cfg(test)]

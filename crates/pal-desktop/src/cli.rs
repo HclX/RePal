@@ -170,9 +170,9 @@ fn help_text() -> String {
            --new                  Start a new game from Scene 1\n\
            --debug                Enable debug_mode (renders DEBUG ENABLED watermark)\n\
            --save <FILE>          Boot directly into a .json or DOS .rpg save file\n\
-           --replay <FILE>        Auto-play a recorded .cmd/.repal replay file\n\
-           --replay-export-srt <IN.repal> <OUT.srt>  Export AI thought subtitles to SubRip (.srt)\n\
-           --replay-export-video <IN.repal> <OUT.mp4|OUT.gif|DIR>  Render .repal to video/PNG sequence\n\
+           --replay <FILE>        Auto-play a recorded .cmd/.repal.gz replay file\n\
+           --replay-export-srt <IN.repal.gz> <OUT.srt>  Export AI thought subtitles to SubRip (.srt)\n\
+           --replay-export-video <IN.repal.gz> <OUT.mp4|OUT.gif|DIR>  Render .repal.gz to video/PNG sequence\n\
              [--hd|--retro] [--stride N] [--with-thought] [--start-tick N] [--end-tick M]\n\
            --scene <ID>           Jump to a scene ID after loading\n\
            --hd / --retro         Start in 4x HD (1280x800) or 1x Retro (320x200)\n\
@@ -344,7 +344,7 @@ pub(crate) fn parse_cli_from(args: &[String]) -> Result<LaunchMode, CliExit> {
             "--replay-export-srt" => {
                 if i + 2 >= args.len() {
                     return Err(CliExit::Error(
-                        "[repal] usage: --replay-export-srt <in.repal> <out.srt>".to_string(),
+                        "[repal] usage: --replay-export-srt <in.repal.gz> <out.srt>".to_string(),
                     ));
                 }
                 let input = PathBuf::from(&args[i + 1]);
@@ -354,7 +354,7 @@ pub(crate) fn parse_cli_from(args: &[String]) -> Result<LaunchMode, CliExit> {
             "--replay-export-video" => {
                 if i + 2 >= args.len() {
                     return Err(CliExit::Error(
-                        "[repal] usage: --replay-export-video <in.repal> <out.mp4|out.gif|dir> [--hd|--retro] [--stride N] [--with-thought] [--start-tick N] [--end-tick M]".to_string(),
+                        "[repal] usage: --replay-export-video <in.repal.gz> <out.mp4|out.gif|dir> [--hd|--retro] [--stride N] [--with-thought] [--start-tick N] [--end-tick M]".to_string(),
                     ));
                 }
                 let input = PathBuf::from(&args[i + 1]);

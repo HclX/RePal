@@ -12,7 +12,7 @@
 flowchart LR
   subgraph Browser["Browser / PWA / Node Host (site/js/)"]
     Main["main.js + gamepad.js<br/>Boot, keyboard/mouse/gamepad input"]
-    VM["host/core-host.js<br/>20 ms ticks, saves, .repal theater"]
+    VM["host/core-host.js<br/>20 ms ticks, saves, .repal.gz theater"]
     Host["host/wasm-runtime.js<br/>Asset loaders + HUD glue"]
     Prov["host/asset-provider.js<br/>Pull-based fetch + ASSET_VER + ?assets="]
     Pres["host/wasm-presenter.js<br/>Canvas2D RGBA blit + pointer/key routing"]
@@ -54,7 +54,7 @@ flowchart LR
 3. **Unified Native Binary (`repal`)**: Desktop GUI, Headless Text Mode (`--text`), and Live GUI+Text Mode (`--gui --text` / `--listen`) execute on **one shared `TextEngine` + `ChannelServer`** (see [`docs/TEXT_MODE_SPEC.md`](TEXT_MODE_SPEC.md)), with strict lazy rendering in headless mode.
 4. **Instant Live `[Tab]` Dual-Mode Parity**: Switching between **`4× HD (1280×800)` + acoustic reverb synth** and **`1× 1995 Retro (320×200)` + OPL2 FM synth** is atomic and lossless across exploration maps, sprites, RNG cutscenes, battles, and audio.
 5. **Pull-Based Bounded Memory (`AssetCache`)**: Instead of eagerly preloading hundreds of scenes, `pal-render` emits missing-asset requests each frame (`wasm_pop_asset_request`). `WasmAssetProvider` (or `pal_runtime::disk::pump_render_assets_from_dir` natively) loads only what the camera touches, `AssetCache` enforces a strict **256 MB** RGBA LRU budget, `permanent_missing` prevents 404 retry storms on un-remastered maps, and `wasm_scratch` shrinks back to `256 KiB` after large asset uploads (`> 4 MiB`).
-6. **Trilingual i18n, Unified `ReplayPlayer` & HD AI Subtitles**: Live switching across Simplified Chinese, Traditional Chinese, and English (`data/i18n/en/*.json`), plus segmented `.repal` (`.tar.gz`, `RePal_CoreReplay_v3`) deterministic replay archives played by a single shared **`pal_runtime::replay_player::ReplayPlayer`** across Desktop, Web WASM, Headless `core-replay`, and CI `verify_repal`. Debug mutations are gated by explicit `debug_mode: bool` (rendering a `DEBUG ENABLED` watermark and recording deterministic `ReplayEvent::Debug` events while staying no-ops when `debug_mode == false`), and optional AI thought commentary (`think`) lives in a separate per-segment `annotations.json` track (4× HD present-time overlay, `F7` toggle, exportable via `--replay-export-srt`).
+6. **Trilingual i18n, Unified `ReplayPlayer` & HD AI Subtitles**: Live switching across Simplified Chinese, Traditional Chinese, and English (`data/i18n/en/*.json`), plus segmented `.repal.gz` (`.tar.gz`, `RePal_CoreReplay_v3`) deterministic replay archives played by a single shared **`pal_runtime::replay_player::ReplayPlayer`** across Desktop, Web WASM, Headless `core-replay`, and CI `verify_repal`. Debug mutations are gated by explicit `debug_mode: bool` (rendering a `DEBUG ENABLED` watermark and recording deterministic `ReplayEvent::Debug` events while staying no-ops when `debug_mode == false`), and optional AI thought commentary (`think`) lives in a separate per-segment `annotations.json` track (4× HD present-time overlay, `F7` toggle, exportable via `--replay-export-srt`).
 
 ---
 

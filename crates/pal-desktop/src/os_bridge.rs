@@ -58,7 +58,7 @@ pub(crate) fn run_os_file_picker() -> Option<PathBuf> {
         let out = std::process::Command::new("osascript")
             .args([
                 "-e",
-                "POSIX path of (choose file with prompt \"Open RePal Replay (.repal/.cmd/.txt) or Save (.json/.rpg)\")",
+                "POSIX path of (choose file with prompt \"Open RePal Replay (.repal.gz/.cmd/.txt) or Save (.json/.rpg)\")",
             ])
             .output()
             .ok()?;
@@ -73,7 +73,7 @@ pub(crate) fn run_os_file_picker() -> Option<PathBuf> {
         if let Ok(out) = std::process::Command::new("zenity")
             .args([
                 "--file-selection",
-                "--title=Open RePal Replay (.repal/.json/.cmd) or Save (.json/.rpg)",
+                "--title=Open RePal Replay (.repal.gz/.json/.cmd) or Save (.json/.rpg)",
                 "--file-filter=RePal Files (*.repal *.gz *.json *.rpg *.cmd *.txt) | *.repal *.gz *.json *.rpg *.cmd *.txt",
                 "--file-filter=All Files | *",
             ])

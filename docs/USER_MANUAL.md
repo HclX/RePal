@@ -38,7 +38,7 @@ Inside that directory:
 - `config.json` — Persisted HD/Retro mode, language (繁/简/EN), music/SFX toggles, and fullscreen preference.
 - `pack.key` — Saved pack key (written after you enter the passphrase once).
 - `assets_cache/packs/` — Downloaded, verified `.rpk` packs (customizable via `--assets-cache <DIR>` or `REPAL_ASSETS_CACHE_DIR`). Legacy loose-asset caches from older versions are cleaned up automatically.
-- `replays/<version>/` — Auto-archived `.repal` deterministic gameplay replays (bucketed by engine version, e.g. `v0.3.11/`).
+- `replays/<version>/` — Auto-archived `.repal.gz` deterministic gameplay replays (bucketed by engine version, e.g. `v0.3.11/`).
 - `agent_out/` — Default `--out-dir` for `shot` / `save` / `replay-export` when running GUI+Text or `--listen` socket modes.
 - `bug_reports/` & `screenshots/` — Saved `F9` bug report bundles (`.repal.gz` + `.png`) and `F10` screenshots.
 
@@ -55,7 +55,7 @@ Inside that directory:
 | **Battle: `R` `A` `D` `E` `W` `Q` `F` `S`** | Repeat (`R`), Auto (`A`), Defend (`D`), Use Item (`E`), Throw (`W`), Flee (`Q`), Force Attack (`F`), Status (`S`) |
 | **F2** | Instant live switch between **4× HD** and **1995 1× Retro** (visuals + audio!) |
 | **F7** | Toggle the **4× HD AI thought/commentary subtitle bar** (`think`, disabled in 1× Retro) |
-| **F8** | Open a local `.repal` / `.json` replay in the built-in Replay Theater (`Tab` opens Chapters inside Replay Theater) |
+| **F8** | Open a local `.repal.gz` / `.json` replay in the built-in Replay Theater (`Tab` opens Chapters inside Replay Theater) |
 | **F9** | One-click Bug Report (saves `.repal.gz` replay bundle + `.png` to `RePal/bug_reports/` AND auto-submits a GitHub Issue via `gh` if logged in) |
 | **F10** | Save 4× HD PNG screenshot (to `RePal/screenshots/`) |
 | **F11** or **Alt+Enter** | Toggle Fullscreen (also available in Menu → Remake → Fullscreen) |
@@ -83,7 +83,7 @@ You can also run RePal directly in any terminal (no GUI window / no `$DISPLAY` r
 - Fair blind playtesting (player-equivalent viewport & anti-cheat): `./repal --text --obs fair --json --new`
 - Batch UI automation / visual regression: `./repal --text --json -c "load 10.rpg; view status; shot status.png"`
 - Headless TCP server: `./repal --text --listen 127.0.0.1:9999 [--json]`
-- Export AI thought subtitles from a `.repal` replay: `./repal --replay-export-srt in.repal out.srt`
+- Export AI thought subtitles from a `.repal.gz` replay: `./repal --replay-export-srt in.repal.gz out.srt`
 
 ---
 
@@ -91,7 +91,7 @@ You can also run RePal directly in any terminal (no GUI window / no `$DISPLAY` r
 - `--text` / `--gui` / `--listen <IP:PORT>` / `--json` — Select execution mode, channel, and output format
 - `--obs <fair|debug>` (`--fog`) / `--minimap <auto|always|off>` — Observation fairness profile and viewport ASCII minimap cadence
 - `-c <CMDS>` / `--script <FILE>` / `--record <FILE>` / `--out-dir <DIR>` / `--keep-going` — Batch commands, recording, and output directory
-- `--replay <FILE>` / `--replay-export-srt <IN.repal> <OUT.srt>` — Auto-play a `.repal`/`.cmd` replay or export AI thought subtitles to `.srt`
+- `--replay <FILE>` / `--replay-export-srt <IN.repal.gz> <OUT.srt>` — Auto-play a `.repal.gz`/`.cmd` replay or export AI thought subtitles to `.srt`
 - `--assets <DIR>` / `--packs-dir <DIR>` / `--assets-cache <DIR>` / `--assets-url <URL>` — Loose assets, local packs, pack cache, and manifest source overrides
 - `--saves <DIR>` / `--config <FILE>` — Override default user-profile paths
 - `--new` / `--save <FILE>` / `--scene <ID>` / `--debug` / `--hd` / `--retro` / `--lang <hans|hant|en>` / `--fullscreen` / `--pace-ms <MS>` — Boot, debug watermark, display, and spectator pacing overrides
