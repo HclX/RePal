@@ -64,6 +64,8 @@ jobs:
           PAL_CONT_WARMUP: "400"
           PAL_CONT_FOLLOW: "600"
           PAL_PARSER_FUZZ_ITERS: "3000"
+          # Story-checkpoint corpus (test_data/fuzz_corpus, built by tools/build_fuzz_corpus.py).
+          PAL_FUZZ_CORPUS: "1"
         run: |
           cargo test -p pal-core --test fuzz_invariants --test fuzz_parsers --release -- --nocapture
           cargo test -p pal-runtime --features disk --test fuzz_runtime --release -- --nocapture
@@ -79,3 +81,54 @@ jobs:
             .tmp/fuzz_parser_*.bin
           if-no-files-found: ignore
           retention-days: 3
+
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checkout HclX/RePal_Assets
+        uses: actions/checkout@v4
+        with:
+          repository: HclX/RePal_Assets
+          ref: main
+          token: ${{ secrets.PACKS_PUBLISH_TOKEN }}
+          path: _repal_assets
+          fetch-depth: 1
+
+      - name: Mount assets into site/assets
+        run: |
+          rm -rf site/assets
+          ln -s "$PWD/_repal_assets/assets" site/assets
+          test -f site/assets/data/scenes.yaml
+
+      - name: Install Rust toolchain (with llvm-tools)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Cache Cargo registry & target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Line coverage of the workspace test suite
+        run: |
+          cargo llvm-cov --workspace --html --output-dir coverage
+          cargo llvm-cov report --summary-only | tee coverage/summary.txt
+          {
+            echo '### Rust line coverage (workspace tests)'
+            echo '```'
+            tail -n 1 coverage/summary.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: coverage
+          retention-days: 14

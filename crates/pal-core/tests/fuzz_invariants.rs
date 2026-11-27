@@ -993,6 +993,31 @@ fn fuzz_run(
     }
 }
 
+/// Story-checkpoint corpus entries `(label, save_json)` (empty unless `PAL_FUZZ_CORPUS` is set).
+fn load_fuzz_corpus() -> Vec<(String, serde_json::Value)> {
+    use std::io::BufRead;
+    let Ok(spec) = std::env::var("PAL_FUZZ_CORPUS") else {
+        return Vec::new();
+    };
+    let path = if spec.is_empty() || spec == "1" {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../test_data/fuzz_corpus/checkpoints.jsonl.gz")
+    } else {
+        std::path::PathBuf::from(spec)
+    };
+    let limit: usize = std::env::var("PAL_FUZZ_CORPUS_LIMIT").ok().and_then(|s| s.parse().ok()).unwrap_or(usize::MAX);
+    let file = std::fs::File::open(&path).unwrap_or_else(|e| panic!("open fuzz corpus {}: {e}", path.display()));
+    let reader = std::io::BufReader::new(flate2::read::GzDecoder::new(file));
+    let mut out = Vec::new();
+    for line in reader.lines().map_while(Result::ok).take(limit) {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&line) {
+            let label = v["label"].as_str().unwrap_or("corpus").to_string();
+            out.push((label, v["save"].clone()));
+        }
+    }
+    eprintln!("[fuzz_invariants] corpus: {} checkpoints from {}", out.len(), path.display());
+    out
+}
+
 fn load_all_51_rpgs() -> Vec<(String, Vec<u8>)> {
     let saves_dir = assets_dir().join("orig_saves");
     let mut paths: Vec<_> = std::fs::read_dir(&saves_dir)
@@ -1079,6 +1104,30 @@ fn fuzz_all_51_dos_saves_and_new_game_with_coverage() {
                 true,
             );
         }
+    }
+
+    // 2b. Story-checkpoint corpus (`tools/build_fuzz_corpus.py`): recording segment anchors and
+    // agent playtest saves spread across the whole story, so random play starts deep in chapters
+    // the 51 DOS saves only touch briefly. Opt-in (nightly): `PAL_FUZZ_CORPUS=1` for the
+    // committed corpus or a path to another `.jsonl.gz`; `PAL_FUZZ_CORPUS_LIMIT` caps entries.
+    for (ci, (label, data)) in load_fuzz_corpus().into_iter().enumerate() {
+        let anchor = FuzzAnchor::SaveSnapshot { label: label.clone(), data };
+        if anchor.apply(&mut host).is_err() {
+            continue;
+        }
+        fuzz_run(
+            &mut host,
+            &anchor,
+            0xC0_0000 + ci as u64,
+            ticks_per_save,
+            &format!("corpus#{ci}_{label}"),
+            &mut global_ops,
+            &mut global_blocks,
+            &mut frontier,
+            frontier_cap,
+            &mut exemptions,
+            true,
+        );
     }
 
     // 3. C9 Coverage-guided frontier follow-up wave from snapshots that reached new blocks
