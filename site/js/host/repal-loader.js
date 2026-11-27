@@ -145,6 +145,88 @@ function parseTarEntries(bytes) {
   return files.size > 0 ? files : null;
 }
 
+/** One USTAR entry (header + 512-byte padded data), same layout as `repal_archive::write_tar_entry`. */
+function tarEntry(name, data) {
+  const enc = new TextEncoder();
+  const nameBytes = enc.encode(name);
+  if (nameBytes.length > 100) throw new Error(`tar entry name too long: ${name}`);
+  const h = new Uint8Array(512);
+  const put = (off, str) => h.set(enc.encode(str), off);
+  h.set(nameBytes, 0);
+  put(100, "0000644\0");
+  put(108, "0000000\0");
+  put(116, "0000000\0");
+  put(124, data.length.toString(8).padStart(11, "0") + "\0");
+  put(136, Math.floor(Date.now() / 1000).toString(8).padStart(11, "0") + "\0");
+  put(148, "        ");
+  h[156] = 0x30; // '0' regular file
+  put(257, "ustar\0");
+  put(263, "00");
+  let sum = 0;
+  for (const b of h) sum += b;
+  put(148, sum.toString(8).padStart(6, "0") + "\0 ");
+  const padded = new Uint8Array(Math.ceil(data.length / 512) * 512);
+  padded.set(data);
+  return [h, padded];
+}
+
+/**
+ * Build a `.repal` (`.tar.gz`) archive from a `RePal_CoreReplay_v3` bundle JSON (as returned by
+ * `core_export_replay_v3`), mirroring `pal-runtime/src/repal_archive.rs::write_repal_archive` so
+ * desktop `repal --replay` and the web Replay Theater read it. Optional `endScreenshotPng`
+ * (Uint8Array) and `state` (object) are stored as `end_screenshot.png` / `state.json`.
+ */
+export async function buildRepalArchive(bundle, { endScreenshotPng = null, state = null, note = null } = {}) {
+  if (typeof CompressionStream === "undefined") {
+    throw new Error("Browser does not support CompressionStream('gzip')");
+  }
+  const enc = new TextEncoder();
+  const json = (v) => enc.encode(JSON.stringify(v));
+  const segs = bundle.segments || [];
+  const segManifest = segs.map((seg) => {
+    const dir = `segments/${String(seg.index).padStart(3, "0")}_sc${seg.scene_id}`;
+    const isSave = seg.anchor?.type === "save_json";
+    return {
+      index: seg.index,
+      start_tick: seg.start_tick,
+      duration_ticks: seg.duration_ticks,
+      scene_id: seg.scene_id,
+      label: seg.label,
+      anchor_type: isSave ? "save_json" : "new_game",
+      save_file: `${dir}/${isSave ? "save" : "anchor"}.json`,
+      thumb_file: null,
+      events_file: `${dir}/events.json`,
+      annotations_file: seg.annotations?.length ? `${dir}/annotations.json` : null,
+    };
+  });
+  const manifest = {
+    kind: bundle.kind || "RePal_CoreReplay_v3",
+    engine_version: bundle.engine_version,
+    total_ticks: bundle.total_ticks,
+    note: note ?? bundle.note ?? null,
+    tainted_by_debug: !!bundle.tainted_by_debug,
+    debug_mode: !!bundle.debug_mode,
+    end_screenshot: endScreenshotPng ? "end_screenshot.png" : null,
+    state_file: state ? "state.json" : null,
+    segments: segManifest,
+  };
+  const parts = [...tarEntry("manifest.json", enc.encode(JSON.stringify(manifest, null, 2)))];
+  if (endScreenshotPng) parts.push(...tarEntry("end_screenshot.png", endScreenshotPng));
+  if (state) parts.push(...tarEntry("state.json", enc.encode(JSON.stringify(state, null, 2))));
+  segs.forEach((seg, i) => {
+    const m = segManifest[i];
+    const anchor = seg.anchor?.type === "save_json"
+      ? typeof seg.anchor.data === "string" ? JSON.parse(seg.anchor.data) : seg.anchor.data
+      : { type: "new_game", seed: seg.anchor?.seed ?? 1 };
+    parts.push(...tarEntry(m.save_file, json(anchor)));
+    parts.push(...tarEntry(m.events_file, json(seg.events || [])));
+    if (m.annotations_file) parts.push(...tarEntry(m.annotations_file, json(seg.annotations)));
+  });
+  parts.push(new Uint8Array(1024)); // two zero blocks terminate the tar stream
+  const gz = new Blob(parts).stream().pipeThrough(new CompressionStream("gzip"));
+  return new Uint8Array(await new Response(gz).arrayBuffer());
+}
+
 /**
  * Parse a `.repal` (`.tar.gz`), gzipped JSON, or plain `.json` (`v3`/`v2`/`v1`/`CoreDiag_v1`)
  * into a unified segmented bundle:

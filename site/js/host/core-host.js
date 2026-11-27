@@ -13,6 +13,7 @@ import { resolveAssetBaseUrl, withAssetVersion } from "./asset-provider.js";
 import { mapDomKeyToUiKey, POINTER_KIND } from "./wasm-presenter.js";
 import { copyTextSafe, downloadBlob, pickFile, SAVE_PREFIX } from "./wasm-runtime.js";
 import { L } from "./l10n.js";
+import { buildRepalArchive } from "./repal-loader.js";
 
 export const TICK_MS = 20;
 const enc = new TextEncoder();
@@ -493,8 +494,8 @@ export class RustCoreHost {
   }
 
   /**
-   * Open the in-game bug report dialog (screenshot preview + description + separate .png/.json
-   * export + clipboard screenshot copy + prefilled GitHub Issue link). Falls back to
+   * Open the in-game bug report dialog (screenshot preview + description + single `.repal`
+   * export (replay + screenshot + state) + clipboard screenshot copy + prefilled GitHub Issue link). Falls back to
    * `copyDiagnosticReport()` in headless/Node environments without `<dialog>`.
    */
   async openBugReportDialog(note = "") {
@@ -549,15 +550,30 @@ export class RustCoreHost {
     const exportBundle = async (openGithub) => {
       const desc = (descEl?.value || "").trim();
       const title = (titleEl?.value || `[Bug] Scene #${sceneId} ${posStr}`).trim();
-      const reportJson = this.diagnosticReport(desc || note || title);
+      // 1. Download ONE `.repal` archive (replay + screenshot + state snapshot), the same format
+      // desktop F9 writes, so the issue gets a single attachment. Falls back to the legacy
+      // separate .png + .json when the browser lacks CompressionStream or the v3 export fails.
+      let repalFile = null;
+      try {
+        const len = this.w.core_export_replay_v3?.() || 0;
+        if (!len) throw new Error("no v3 replay");
+        const bundle = JSON.parse(new TextDecoder().decode(this._buf(len).slice()));
+        const png = shotBlob ? new Uint8Array(await shotBlob.arrayBuffer()) : null;
+        const bytes = await buildRepalArchive(bundle, { endScreenshotPng: png, state, note: desc || note || title });
+        // `.repal.gz`: GitHub issue attachments accept `.gz` (not `.repal`); RePal opens both.
+        repalFile = `${stamp}.repal.gz`;
+        downloadBlob(new Blob([bytes], { type: "application/gzip" }), repalFile);
+      } catch (err) {
+        console.warn("[bugreport] .repal export failed, falling back to .png + .json", err);
+      }
       const jsonFile = `${stamp}.json`;
       const pngFile = `${stamp}.png`;
-
-      // 1. Download separate .png screenshot and .json deterministic replay
-      if (shotBlob) {
-        downloadBlob(shotBlob, pngFile);
+      if (!repalFile) {
+        if (shotBlob) downloadBlob(shotBlob, pngFile);
+        const reportJson = this.diagnosticReport(desc || note || title);
+        downloadBlob(new Blob([reportJson], { type: "application/json;charset=utf-8" }), jsonFile);
       }
-      downloadBlob(new Blob([reportJson], { type: "application/json;charset=utf-8" }), jsonFile);
+      const files = repalFile || `${pngFile} + ${jsonFile}`;
 
       // 2. Copy screenshot PNG to clipboard so user can press Ctrl+V directly in GitHub Issue
       let copiedImg = false;
@@ -581,8 +597,10 @@ export class RustCoreHost {
           `- URL: ${location.href}`,
           "",
           "### 附件（已自动下载到本地）",
-          `- 截图：\`${pngFile}\`${copiedImg ? "（已复制到剪贴板，按 Ctrl+V / Cmd+V 直接粘贴到此处）" : "（请拖入此处）"}`,
-          `- 确定性录像：\`${jsonFile}\`（请拖入此处，本地可用 \`repal --replay ${jsonFile}\` 100% 复现）`,
+          copiedImg ? "- 截图：已复制到剪贴板，按 Ctrl+V / Cmd+V 直接粘贴到此处" : "",
+          repalFile
+            ? `- 录像包：\`${repalFile}\`（含录像、截图与状态快照；请拖入此处，本地可用 \`repal --replay ${repalFile}\` 100% 复现）`
+            : `- 截图：\`${pngFile}\`；确定性录像：\`${jsonFile}\`（请拖入此处，本地可用 \`repal --replay ${jsonFile}\` 100% 复现）`,
         ].join("\n");
         const url = `https://github.com/HclX/RePal/issues/new?labels=bug&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
         window.open(url, "_blank", "noopener,noreferrer");
@@ -592,9 +610,9 @@ export class RustCoreHost {
       this.app.hud.showToast(
         openGithub
           ? copiedImg
-            ? `${L("已下载", "已下載", "Downloaded")} ${pngFile} + ${jsonFile} (${L("截图已复制，Ctrl+V 贴图", "截圖已複製，Ctrl+V 貼上", "screenshot copied, Ctrl+V to paste")})`
-            : `${L("已下载", "已下載", "Downloaded")} ${pngFile} + ${jsonFile}, ${L("并打开 GitHub Issue", "並開啟 GitHub Issue", "opened a GitHub issue")}`
-          : `${L("已下载", "已下載", "Downloaded")} ${pngFile} + ${jsonFile}`
+            ? `${L("已下载", "已下載", "Downloaded")} ${files} (${L("截图已复制，Ctrl+V 贴图", "截圖已複製，Ctrl+V 貼上", "screenshot copied, Ctrl+V to paste")})`
+            : `${L("已下载", "已下載", "Downloaded")} ${files}, ${L("并打开 GitHub Issue", "並開啟 GitHub Issue", "opened a GitHub issue")}`
+          : `${L("已下载", "已下載", "Downloaded")} ${files}`
       );
     };
 
