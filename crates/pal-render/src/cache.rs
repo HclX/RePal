@@ -510,6 +510,21 @@ impl AssetCache {
         self.permanent_missing.contains(&(kind, key.to_string()))
     }
 
+    /// The 2x bilinear-upscaled copy of texture `key` (built once from the loaded texture, then kept
+    /// in the LRU like any texture under `"{key}#up2x"`). `None` until the base texture is loaded.
+    pub fn get_or_build_upscaled_2x(&mut self, key: &str) -> Option<&Texture> {
+        let up_key = format!("{key}#up2x");
+        if !self.textures.contains_key(&up_key) {
+            let base = self.textures.get(key)?;
+            let pixels = crate::framebuffer::upscale_2x_bilinear(&base.pixels, base.width, base.height);
+            let (w, h, pinned) = (base.width * 2, base.height * 2, base.pinned);
+            self.upload_texture(up_key.clone(), w, h, pixels, pinned);
+        }
+        let tex = self.textures.get_mut(&up_key)?;
+        tex.last_used_tick = self.tick;
+        self.textures.get(&up_key)
+    }
+
     pub fn upload_texture(&mut self, key: String, width: u32, height: u32, pixels: Vec<u8>, pinned: bool) {
         let expected = (width as usize).saturating_mul(height as usize).saturating_mul(4);
         if width == 0 || height == 0 || pixels.len() < expected {

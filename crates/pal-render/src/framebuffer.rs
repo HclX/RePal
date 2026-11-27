@@ -238,31 +238,15 @@ impl Framebuffer {
                 }
                 let src_row = (v as usize) * sw_u;
                 let dst_row = (py as usize) * fb_w;
-                let mut u = (u0 + clip_l) as usize;
-                for px in x_start..x_end {
-                    let si = (src_row + u) * 4;
-                    u += 1;
-                    if si + 3 >= src.len() {
-                        break;
-                    }
-                    let sa = src[si + 3] as u32;
-                    if sa == 0 {
-                        continue;
-                    }
-                    let di = (dst_row + px as usize) * 4;
-                    if sa == 255 {
-                        self.pixels[di] = src[si];
-                        self.pixels[di + 1] = src[si + 1];
-                        self.pixels[di + 2] = src[si + 2];
-                        self.pixels[di + 3] = 255;
-                    } else {
-                        let inv = 255 - sa;
-                        self.pixels[di] = ((src[si] as u32 * sa + self.pixels[di] as u32 * inv) / 255) as u8;
-                        self.pixels[di + 1] = ((src[si + 1] as u32 * sa + self.pixels[di + 1] as u32 * inv) / 255) as u8;
-                        self.pixels[di + 2] = ((src[si + 2] as u32 * sa + self.pixels[di + 2] as u32 * inv) / 255) as u8;
-                        self.pixels[di + 3] = (sa + (self.pixels[di + 3] as u32 * inv) / 255).min(255) as u8;
-                    }
+                let u = (u0 + clip_l) as usize;
+                let s0 = (src_row + u) * 4;
+                // Same bound as before: stop at the end of `src` (truncated textures).
+                let n = ((x_end - x_start) as usize).min(src.len().saturating_sub(s0) / 4);
+                if n == 0 {
+                    continue;
                 }
+                let d0 = (dst_row + x_start as usize) * 4;
+                blend_row_over(&mut self.pixels[d0..d0 + n * 4], &src[s0..s0 + n * 4]);
             }
             return;
         }
@@ -792,3 +776,135 @@ mod tests {
         assert_eq!(&fb.pixels[p3..p3 + 4], &[10, 20, 30, 255]);
     }
 }
+
+/// Source-over one row of RGBA8 pixels (`dst.len() == src.len()`, multiple of 4). Runs of fully
+/// opaque source pixels are copied with one `copy_from_slice`, fully transparent runs are
+/// skipped, and only partial alpha is blended (same integer math as the per-pixel path it
+/// replaced, so output is byte-identical).
+#[inline]
+pub(crate) fn blend_row_over(dst: &mut [u8], src: &[u8]) {
+    let n = src.len() / 4;
+    let mut i = 0;
+    while i < n {
+        let sa = src[i * 4 + 3];
+        if sa == 255 {
+            let mut j = i + 1;
+            while j < n && src[j * 4 + 3] == 255 {
+                j += 1;
+            }
+            dst[i * 4..j * 4].copy_from_slice(&src[i * 4..j * 4]);
+            i = j;
+        } else if sa == 0 {
+            i += 1;
+            while i < n && src[i * 4 + 3] == 0 {
+                i += 1;
+            }
+        } else {
+            let sa = sa as u32;
+            let inv = 255 - sa;
+            let (s, d) = (&src[i * 4..i * 4 + 4], &mut dst[i * 4..i * 4 + 4]);
+            d[0] = ((s[0] as u32 * sa + d[0] as u32 * inv) / 255) as u8;
+            d[1] = ((s[1] as u32 * sa + d[1] as u32 * inv) / 255) as u8;
+            d[2] = ((s[2] as u32 * sa + d[2] as u32 * inv) / 255) as u8;
+            d[3] = (sa + (d[3] as u32 * inv) / 255).min(255) as u8;
+            i += 1;
+        }
+    }
+}
+
+/// Pre-upscale a whole RGBA8 texture 2x with exactly the integer bilinear math of the
+/// `blit_region_scaled` 2x->4x path (straight colour + coverage alpha per output pixel). Blitting
+/// the result 1:1 with `blend_row_over` is byte-identical to the per-frame 2x path for a full-texture
+/// blit (`sx = sy = 0`, `sw/sh` = texture size), because each output pixel depends only on its
+/// offset inside the texture. Lets static Track-B 2x map chunks be upscaled once instead of every
+/// frame.
+pub fn upscale_2x_bilinear(src: &[u8], src_w: u32, src_h: u32) -> Vec<u8> {
+    let (w, h) = (src_w as usize, src_h as usize);
+    let (ow, oh) = (w * 2, h * 2);
+    let mut out = vec![0u8; ow * oh * 4];
+    if w == 0 || h == 0 || src.len() < w * h * 4 {
+        return out;
+    }
+    let (max_u, max_v) = (src_w as i32 - 1, src_h as i32 - 1);
+    for oy in 0..oh as i32 {
+        let v4 = (oy * 2 - 1).max(0);
+        let v0 = (v4 >> 2).clamp(0, max_v);
+        let v1 = (v0 + 1).min(max_v);
+        let wy = (v4 & 3) as u32;
+        let wy0 = 4 - wy;
+        let (row0, row1) = (v0 as usize * w, v1 as usize * w);
+        for ox in 0..ow as i32 {
+            let u4 = (ox * 2 - 1).max(0);
+            let u0 = (u4 >> 2).clamp(0, max_u);
+            let u1 = (u0 + 1).min(max_u);
+            let wx = (u4 & 3) as u32;
+            let wx0 = 4 - wx;
+            let i00 = (row0 + u0 as usize) * 4;
+            let i10 = (row0 + u1 as usize) * 4;
+            let i01 = (row1 + u0 as usize) * 4;
+            let i11 = (row1 + u1 as usize) * 4;
+            let (a00, a10, a01, a11) = (src[i00 + 3] as u32, src[i10 + 3] as u32, src[i01 + 3] as u32, src[i11 + 3] as u32);
+            if (a00 | a10 | a01 | a11) == 0 {
+                continue;
+            }
+            let (w00, w10, w01, w11) = (wx0 * wy0, wx * wy0, wx0 * wy, wx * wy);
+            let di = (oy as usize * ow + ox as usize) * 4;
+            if (a00 & a10 & a01 & a11) == 255 {
+                for c in 0..3 {
+                    out[di + c] = ((src[i00 + c] as u32 * w00 + src[i10 + c] as u32 * w10 + src[i01 + c] as u32 * w01 + src[i11 + c] as u32 * w11 + 8) >> 4) as u8;
+                }
+                out[di + 3] = 255;
+            } else {
+                let (wa00, wa10, wa01, wa11) = (w00 * a00, w10 * a10, w01 * a01, w11 * a11);
+                let wa_sum = wa00 + wa10 + wa01 + wa11;
+                let sa = (wa_sum + 8) >> 4;
+                if sa == 0 {
+                    continue;
+                }
+                for c in 0..3 {
+                    out[di + c] = ((src[i00 + c] as u32 * wa00 + src[i10 + c] as u32 * wa10 + src[i01 + c] as u32 * wa01 + src[i11 + c] as u32 * wa11 + wa_sum / 2) / wa_sum) as u8;
+                }
+                out[di + 3] = sa.min(255) as u8;
+            }
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod upscale_cache_tests {
+    use super::*;
+
+    #[test]
+    fn pre_upscaled_1to1_blit_matches_per_frame_2x_path_byte_for_byte() {
+        let (w, h) = (37u32, 23u32);
+        let mut seed = 0x1234_5678u32;
+        let mut rnd = || {
+            seed ^= seed << 13;
+            seed ^= seed >> 17;
+            seed ^= seed << 5;
+            seed
+        };
+        let mut tex = vec![0u8; (w * h * 4) as usize];
+        for px in tex.chunks_exact_mut(4) {
+            let r = rnd();
+            px[0] = r as u8;
+            px[1] = (r >> 8) as u8;
+            px[2] = (r >> 16) as u8;
+            // Mostly opaque with transparent holes and soft edges, like map chunks.
+            px[3] = match r >> 28 { 0 => 0, 1 => (r >> 20) as u8, _ => 255 };
+        }
+        let up = upscale_2x_bilinear(&tex, w, h);
+        for (dx, dy) in [(0, 0), (-9, 5), (13, -7), (40, 30)] {
+            let mut a = Framebuffer::new(96, 64);
+            for (i, b) in a.pixels.iter_mut().enumerate() {
+                *b = (i * 7 % 251) as u8;
+            }
+            let mut b = Framebuffer { width: a.width, height: a.height, pixels: a.pixels.clone() };
+            a.blit_region_scaled(&tex, w, h, 0, 0, w as i32, h as i32, dx, dy, (w * 2) as i32, (h * 2) as i32, 255);
+            b.blit_region_scaled(&up, w * 2, h * 2, 0, 0, (w * 2) as i32, (h * 2) as i32, dx, dy, (w * 2) as i32, (h * 2) as i32, 255);
+            assert!(a.pixels == b.pixels, "mismatch at offset ({dx},{dy})");
+        }
+    }
+}
+

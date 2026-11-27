@@ -759,11 +759,36 @@ pub fn render_world(
 
             // Blit all ready HD ground chunks at exact 1:1 4x integer pixels (0px seam tearing!)
             for (rkey, rx, ry, rw, rh) in &visible_rooms {
+                let dx = (*rx - view_x) * scale;
+                let dy = (*ry - view_y) * scale;
+                let dw = *rw * scale;
+                let dh = *rh * scale;
+                // Track-B 2x chunks: upscale once (cached, byte-identical) and blit 1:1, instead of
+                // bilinear-upscaling ~1M pixels every frame (was ~half of HD frame time).
+                let is_2x = cache
+                    .get_texture(rkey)
+                    .is_some_and(|t| dw == t.width as i32 * 2 && dh == t.height as i32 * 2);
+                if is_2x {
+                    if let Some(up) = cache.get_or_build_upscaled_2x(rkey) {
+                        fb.blit_region_scaled(
+                            &up.pixels,
+                            up.width,
+                            up.height,
+                            0,
+                            0,
+                            up.width as i32,
+                            up.height as i32,
+                            dx,
+                            dy,
+                            dw,
+                            dh,
+                            255,
+                        );
+                        hd_used = true;
+                        continue;
+                    }
+                }
                 if let Some(tex) = cache.get_texture(rkey) {
-                    let dx = (*rx - view_x) * scale;
-                    let dy = (*ry - view_y) * scale;
-                    let dw = *rw * scale;
-                    let dh = *rh * scale;
                     fb.blit_region_scaled(
                         &tex.pixels,
                         tex.width,
