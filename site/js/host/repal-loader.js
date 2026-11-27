@@ -145,6 +145,26 @@ function parseTarEntries(bytes) {
   return files.size > 0 ? files : null;
 }
 
+/** Bug reports keep only the last this-many segments (matches Rust `BUG_REPORT_SEGMENTS`). */
+export const BUG_REPORT_SEGMENTS = 2;
+
+/**
+ * Keep only the last `n` segments of a `RePal_CoreReplay_v3` bundle JSON (mirrors Rust
+ * `ReplayBundle::keep_last_segments`): segments are self-contained (save anchor + segment-relative
+ * event ticks), so indexes are renumbered, `start_tick` rebased to 0 and `total_ticks` shortened.
+ */
+export function trimBundleToLastSegments(bundle, n) {
+  const segs = bundle.segments || [];
+  if (!(n > 0) || segs.length <= n) return bundle;
+  const kept = segs.slice(segs.length - n);
+  const base = kept[0].start_tick || 0;
+  return {
+    ...bundle,
+    total_ticks: Math.max(0, (bundle.total_ticks || 0) - base),
+    segments: kept.map((seg, i) => ({ ...seg, index: i, start_tick: (seg.start_tick || 0) - base })),
+  };
+}
+
 /** One USTAR entry (header + 512-byte padded data), same layout as `repal_archive::write_tar_entry`. */
 function tarEntry(name, data) {
   const enc = new TextEncoder();

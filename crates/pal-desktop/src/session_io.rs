@@ -159,6 +159,8 @@ impl DesktopApp {
                 tainted_by_debug: false,
                 debug_mode: false,
             });
+        // Only the last checkpoints: the bug is near the end, and each segment replays on its own.
+        bundle.keep_last_segments(pal_core::game::replay_rec::BUG_REPORT_SEGMENTS);
         bundle.end_screenshot_png = end_png;
         bundle.state_json = Some(state_json.clone());
         bundle.note = Some(note_str.to_string());

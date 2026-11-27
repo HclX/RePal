@@ -13,7 +13,7 @@ import { resolveAssetBaseUrl, withAssetVersion } from "./asset-provider.js";
 import { mapDomKeyToUiKey, POINTER_KIND } from "./wasm-presenter.js";
 import { copyTextSafe, downloadBlob, pickFile, SAVE_PREFIX } from "./wasm-runtime.js";
 import { L } from "./l10n.js";
-import { buildRepalArchive } from "./repal-loader.js";
+import { BUG_REPORT_SEGMENTS, buildRepalArchive, trimBundleToLastSegments } from "./repal-loader.js";
 
 export const TICK_MS = 20;
 const enc = new TextEncoder();
@@ -557,7 +557,11 @@ export class RustCoreHost {
       try {
         const len = this.w.core_export_replay_v3?.() || 0;
         if (!len) throw new Error("no v3 replay");
-        const bundle = JSON.parse(new TextDecoder().decode(this._buf(len).slice()));
+        // Only the last checkpoints: the bug is near the end, and each segment replays on its own.
+        const bundle = trimBundleToLastSegments(
+          JSON.parse(new TextDecoder().decode(this._buf(len).slice())),
+          BUG_REPORT_SEGMENTS,
+        );
         const png = shotBlob ? new Uint8Array(await shotBlob.arrayBuffer()) : null;
         const bytes = await buildRepalArchive(bundle, { endScreenshotPng: png, state, note: desc || note || title });
         // `.repal.gz`: GitHub issue attachments accept `.gz` (not `.repal`); RePal opens both.

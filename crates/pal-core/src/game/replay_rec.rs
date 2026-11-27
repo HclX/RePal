@@ -455,7 +455,28 @@ pub struct ReplayBundle {
     pub debug_mode: bool,
 }
 
+/// Bug reports keep only the last this-many segments (checkpoints): each segment starts from its
+/// own full save anchor, so the tail replays exactly while staying small.
+pub const BUG_REPORT_SEGMENTS: usize = 2;
+
 impl ReplayBundle {
+    /// Keep only the last `n` segments. Segments are self-contained (save anchor + segment-relative
+    /// event ticks), so this renumbers `index`, rebases `start_tick` to 0 and shortens
+    /// `total_ticks`. Bundle-level `tainted_by_debug` / `debug_mode` are kept as-is (conservative).
+    pub fn keep_last_segments(&mut self, n: usize) {
+        if n == 0 || self.segments.len() <= n {
+            return;
+        }
+        let drop = self.segments.len() - n;
+        self.segments.drain(..drop);
+        let base = self.segments[0].start_tick;
+        for (i, seg) in self.segments.iter_mut().enumerate() {
+            seg.index = i;
+            seg.start_tick -= base;
+        }
+        self.total_ticks = self.total_ticks.saturating_sub(base);
+    }
+
     /// Validate replay timeline bounds at parse time so crafted archives cannot trigger
     /// unbounded tick loops or out-of-order segment seeks across Desktop/Web/Headless (#265).
     pub fn validate(&self) -> Result<(), String> {
@@ -927,5 +948,36 @@ impl ReplayRecorder {
             annotations: Vec::new(),
             thumb_png: None,
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn keep_last_segments_rebases_and_keeps_anchors() {
+        let seg = |i: u64, start: u64, sc: u16| {
+            serde_json::json!({
+                "index": i, "start_tick": start, "duration_ticks": 100, "scene_id": sc, "label": format!("s{sc}"),
+                "anchor": { "type": "save_json", "data": { "sceneId": sc } },
+                "events": [ { "t": 5, "e": "held", "d": 1 } ],
+            })
+        };
+        let doc = serde_json::json!({
+            "kind": REPLAY_FORMAT_KIND, "engine_version": "test", "total_ticks": 420,
+            "segments": [seg(0, 0, 1), seg(1, 100, 2), seg(2, 200, 3), seg(3, 300, 4)],
+        });
+        let mut b = ReplayBundle::from_json(&doc).expect("parse");
+        b.keep_last_segments(2);
+        assert_eq!(b.segments.len(), 2);
+        assert_eq!(b.segments[0].scene_id, 3);
+        assert_eq!((b.segments[0].index, b.segments[0].start_tick), (0, 0));
+        assert_eq!((b.segments[1].index, b.segments[1].start_tick), (1, 100));
+        assert_eq!(b.total_ticks, 220);
+        assert!(b.validate().is_ok());
+        let mut short = ReplayBundle::from_json(&doc).unwrap();
+        short.keep_last_segments(10);
+        assert_eq!(short.segments.len(), 4, "fewer segments than n: unchanged");
     }
 }
