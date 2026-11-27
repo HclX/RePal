@@ -40,7 +40,7 @@ Inside that directory:
 - `assets_cache/packs/` — Downloaded, verified `.rpk` packs (customizable via `--assets-cache <DIR>` or `REPAL_ASSETS_CACHE_DIR`). Legacy loose-asset caches from older versions are cleaned up automatically.
 - `replays/<version>/` — Auto-archived `.repal` deterministic gameplay replays (bucketed by engine version, e.g. `v0.3.11/`).
 - `agent_out/` — Default `--out-dir` for `shot` / `save` / `replay-export` when running GUI+Text or `--listen` socket modes.
-- `bug_reports/` & `screenshots/` — Saved `F9` bug report bundles (`.repal` + `.png`) and `F10` screenshots.
+- `bug_reports/` & `screenshots/` — Saved `F9` bug report bundles (`.repal.gz` + `.png`) and `F10` screenshots.
 
 ---
 
@@ -56,7 +56,7 @@ Inside that directory:
 | **F2** | Instant live switch between **4× HD** and **1995 1× Retro** (visuals + audio!) |
 | **F7** | Toggle the **4× HD AI thought/commentary subtitle bar** (`think`, disabled in 1× Retro) |
 | **F8** | Open a local `.repal` / `.json` replay in the built-in Replay Theater (`Tab` opens Chapters inside Replay Theater) |
-| **F9** | One-click Bug Report (saves `.repal` replay bundle + `.png` to `RePal/bug_reports/` AND auto-submits a GitHub Issue via `gh` if logged in) |
+| **F9** | One-click Bug Report (saves `.repal.gz` replay bundle + `.png` to `RePal/bug_reports/` AND auto-submits a GitHub Issue via `gh` if logged in) |
 | **F10** | Save 4× HD PNG screenshot (to `RePal/screenshots/`) |
 | **F11** or **Alt+Enter** | Toggle Fullscreen (also available in Menu → Remake → Fullscreen) |
 

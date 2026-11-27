@@ -134,7 +134,8 @@ impl DesktopApp {
             .map(|g| (g.world.scene_id, g.tick_count, g.canonical_state()))
             .unwrap_or((0, 0, serde_json::Value::Null));
         let stem = format!("repal_bug_sc{}_t{}_{:03}", scene_id, tick, self.shot_counter);
-        let repal_path = out_dir.join(format!("{stem}.repal"));
+        // `.repal.gz` (same as the web bug report): GitHub issue attachments accept `.gz`.
+        let repal_path = out_dir.join(format!("{stem}.repal.gz"));
         let note_str = note.unwrap_or("repal");
 
         // Ensure the framebuffer is freshly rendered (including on Title/home screen) before capturing PNG (#167).
@@ -167,13 +168,13 @@ impl DesktopApp {
         rt.show_toast(
             match rt.ui.lang {
                 pal_core::Language::En => {
-                    "Bug report (.repal) saved; submitting via gh...".to_string()
+                    "Bug report (.repal.gz) saved; submitting via gh...".to_string()
                 }
                 pal_core::Language::ZhHans => {
-                    "诊断包 (.repal) 已保存，正在通过 gh 自动提交 Issue...".to_string()
+                    "诊断包 (.repal.gz) 已保存，正在通过 gh 自动提交 Issue...".to_string()
                 }
                 pal_core::Language::ZhHant => {
-                    "診斷包 (.repal) 已儲存，正在透過 gh 自動提交 Issue...".to_string()
+                    "診斷包 (.repal.gz) 已儲存，正在透過 gh 自動提交 Issue...".to_string()
                 }
             },
             140,
@@ -196,7 +197,7 @@ impl DesktopApp {
              - **OS**: `{}` (`{}`)\n\
              - **Scene**: `#{scene_id}` (tick `{tick}`)\n\
              {taint_line}\
-             - **Replay Bundle (`.repal`, kept locally)**: `{repal_display}`\n\n\
+             - **Replay Bundle (`.repal.gz`, kept locally)**: `{repal_display}`\n\n\
              <details>\n<summary>Canonical State Snapshot</summary>\n\n```json\n{}\n```\n</details>",
             std::env::consts::OS,
             std::env::consts::ARCH,

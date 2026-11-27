@@ -45,7 +45,7 @@ pub(crate) fn run_os_file_picker() -> Option<PathBuf> {
                 "Add-Type -AssemblyName System.Windows.Forms; \
                  $f = New-Object System.Windows.Forms.OpenFileDialog; \
                  $f.Title = 'Open RePal Replay or Save File'; \
-                 $f.Filter = 'RePal Replay / Save (*.repal;*.json;*.rpg;*.cmd;*.txt)|*.repal;*.json;*.rpg;*.cmd;*.txt|All Files (*.*)|*.*'; \
+                 $f.Filter = 'RePal Replay / Save (*.repal;*.gz;*.json;*.rpg;*.cmd;*.txt)|*.repal;*.gz;*.json;*.rpg;*.cmd;*.txt|All Files (*.*)|*.*'; \
                  if ($f.ShowDialog() -eq 'OK') { $f.FileName }",
             ])
             .output()
@@ -74,7 +74,7 @@ pub(crate) fn run_os_file_picker() -> Option<PathBuf> {
             .args([
                 "--file-selection",
                 "--title=Open RePal Replay (.repal/.json/.cmd) or Save (.json/.rpg)",
-                "--file-filter=RePal Files (*.repal *.json *.rpg *.cmd *.txt) | *.repal *.json *.rpg *.cmd *.txt",
+                "--file-filter=RePal Files (*.repal *.gz *.json *.rpg *.cmd *.txt) | *.repal *.gz *.json *.rpg *.cmd *.txt",
                 "--file-filter=All Files | *",
             ])
             .output()
@@ -90,7 +90,7 @@ pub(crate) fn run_os_file_picker() -> Option<PathBuf> {
             .args([
                 "--getopenfilename",
                 ".",
-                "*.repal *.json *.rpg *.cmd *.txt | RePal Replay or Save",
+                "*.repal *.gz *.json *.rpg *.cmd *.txt | RePal Replay or Save",
             ])
             .output()
         {

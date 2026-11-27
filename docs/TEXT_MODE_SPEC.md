@@ -92,7 +92,7 @@
 - **Persistence & Diagnostics**:
   - `new [seed]`, `save <path>`, `load <path>` (checks `--out-dir` first, then path, then `assets/orig_saves/`), `replay-export [path.repal]` (returns `segments`, `total_ticks`, `engine_version`, `tainted_by_debug`, `debug_mode`), `dump-state [path]`
   - `core-replay <file> [until_tick]`: runs through the unified `pal_runtime::replay_player::ReplayPlayer` and supports `.repal` (`.tar.gz`), `RePal_CoreReplay_v3`/`v2`, `PalRemake_CoreReplay_v1`, and `CoreDiag_v1`. Embedded `ReplayEvent::Debug` events are strict no-ops unless the bundle declares `debug_mode: true`.
-  - `bugreport [desc]`: headless writes `<out_dir>/bug_reports/*.png` + `*.json`; GUI writes `<user_dir>/bug_reports/*.repal` (including `end_screenshot.png` + `state.json`) and submits via `gh` (disabled over TCP sockets).
+  - `bugreport [desc]`: headless writes `<out_dir>/bug_reports/*.png` + `*.json`; GUI writes `<user_dir>/bug_reports/*.repal.gz` (including `end_screenshot.png` + `state.json`) and submits via `gh` (disabled over TCP sockets).
   - Save slots (`UiAction::SaveSlot` / `LoadSlot`): both headless (`<out_dir>/slot_{N}.json`) and desktop (`<saves_dir>/slot_{N}.json`) use 0-based `slot_{N}.json`, with slot `0` falling back to `orig_saves/10.rpg`.
 
 ---
