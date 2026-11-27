@@ -430,7 +430,7 @@ impl TextEngine {
             }
 
             #[cfg(feature = "disk")]
-            Command::Shot { path: opt_path, with_thought } => {
+            Command::Shot { path: opt_path, with_thought, small } => {
                 if let Err(e) = self.check_remote_write_quota(origin, 256 * 1024) {
                     return ExecOutcome::Done(self.err_reply_code(host, trimmed, "quota_exceeded", &e));
                 }
@@ -475,9 +475,17 @@ impl TextEngine {
                     }
                 };
                 host.render_settled_frame();
-                let (w, h, non_black) = if with_thought && host.runtime().has_visible_ai_thought_overlay() {
+                let (w, h, non_black) = if small || (with_thought && host.runtime().has_visible_ai_thought_overlay()) {
                     let mut fb_copy = host.runtime().compositor.fb.clone();
-                    host.runtime_mut().draw_ai_thought_overlay_onto(&mut fb_copy);
+                    if with_thought && host.runtime().has_visible_ai_thought_overlay() {
+                        host.runtime_mut().draw_ai_thought_overlay_onto(&mut fb_copy);
+                    }
+                    if small {
+                        fb_copy = match crate::small_fair_view(&fb_copy) {
+                            Ok(f) => f,
+                            Err(e) => return ExecOutcome::Done(self.err_reply(host, trimmed, &e)),
+                        };
+                    }
                     if let Err(e) = export_fb_to_png(&fb_copy, &out_path) {
                         return ExecOutcome::Done(self.err_reply(host, trimmed, &e));
                     }

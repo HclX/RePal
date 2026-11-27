@@ -78,6 +78,8 @@ pub enum Command {
     Shot {
         path: Option<String>,
         with_thought: bool,
+        /// `--small`: 640x400 of the canonical 320x200 viewport (fair-mode terrain reading, #25).
+        small: bool,
     },
     CaptureStart {
         path: String,
@@ -591,17 +593,20 @@ pub fn parse_command(raw: &str) -> Result<Command, String> {
         }
         "shot" | "screenshot" | "ss" | "take_screenshot" => {
             let mut with_thought = false;
+            let mut small = false;
             let mut path: Option<String> = None;
             for &arg in args {
                 if arg == "--with-thought" {
                     with_thought = true;
+                } else if arg == "--small" {
+                    small = true;
                 } else if path.is_none() {
                     path = Some(arg.to_string());
                 } else {
-                    return Err("usage: shot [--with-thought] [path]".to_string());
+                    return Err("usage: shot [--small] [--with-thought] [path]".to_string());
                 }
             }
-            Ok(Command::Shot { path, with_thought })
+            Ok(Command::Shot { path, with_thought, small })
         }
         "capture" | "rec-video" => {
             let sub = args.first().map(|s| s.to_ascii_lowercase()).unwrap_or_default();
@@ -887,6 +892,7 @@ mod tests {
             Command::Shot {
                 path: Some("my screen shot.png".to_string()),
                 with_thought: false,
+                small: false,
             }
         );
         assert_eq!(
@@ -894,6 +900,7 @@ mod tests {
             Command::Shot {
                 path: Some("my shot.png".to_string()),
                 with_thought: true,
+                small: false,
             }
         );
         assert_eq!(
@@ -901,7 +908,12 @@ mod tests {
             Command::Shot {
                 path: None,
                 with_thought: true,
+                small: false,
             }
+        );
+        assert_eq!(
+            parse_command("shot --small").unwrap(),
+            Command::Shot { path: None, with_thought: false, small: true }
         );
         assert!(parse_command("shot \"unclosed").is_err());
 

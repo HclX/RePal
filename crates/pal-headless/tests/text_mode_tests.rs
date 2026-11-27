@@ -2546,3 +2546,57 @@ fn text_mode_tomb_stairs_visible_in_fair_mode() {
         "General's Tomb 2F stairs ev#1288 must be visible as kind=exit in fair mode: {evs2:?}"
     );
 }
+
+#[test]
+fn text_mode_issue_17_25_pond_reachability_hops_and_small_shot() {
+    use pal_headless::text_mode::ObsMode;
+
+    let assets = assets_root();
+    if !assets.join("data/scenes.yaml").is_file() {
+        eprintln!("skip: assets not found");
+        return;
+    }
+    let out_dir = repo_root().join("target/text_mode_test_issue_17");
+    let _ = std::fs::remove_dir_all(&out_dir);
+    let cfg = TextModeConfig {
+        assets_root: assets,
+        json_mode: true,
+        lang: pal_core::Language::ZhHans,
+        new_game: true,
+        out_dir: out_dir.clone(),
+        ..Default::default()
+    };
+    let mut host = HeadlessTextHost::from_config(&cfg).expect("boot new game");
+    let mut dbg_engine = TextEngine::with_obs(ObsMode::Debug, 0);
+    let mut fair_engine = TextEngine::with_obs(ObsMode::Fair, 0);
+    dbg_engine.settle_sync(&mut host, 120);
+
+    // 仙灵岛·荷花池迷阵 entrance causeway: water on both sides is unblocked but unreachable.
+    let _ = dbg_engine.execute_sync(&mut host, "/tp 17 576 1152", false);
+    let map = fair_engine.execute_sync(&mut host, "map", false);
+    assert_unified_envelope(&map.response);
+    let grid: Vec<String> = map.response["minimap"]["grid"]
+        .as_array()
+        .expect("minimap grid")
+        .iter()
+        .map(|r| r.as_str().unwrap().to_string())
+        .collect();
+    let row = grid.iter().find(|r| r.contains('@')).expect("party row");
+    let at = row.find('@').unwrap();
+    assert!(row[..at].contains('~') && row[at..].contains('~'), "water on both sides must be '~': {row:?}");
+    assert!(grid.iter().any(|r| r.contains('.')), "causeway must stay '.': {grid:?}");
+    assert_eq!(map.response["minimap"]["legend"]["~"], "unreachable_on_foot");
+
+    // goto across the pond: unreachable on foot, and the reply lists the reachable lotus pads.
+    let res = dbg_engine.execute_sync(&mut host, "goto 242", false);
+    assert_eq!(res.response["ok"], false);
+    let hops = res.response["artifacts"]["goto"]["reachable_hops"].as_array().expect("reachable_hops");
+    assert!(!hops.is_empty(), "lotus pads must be listed as reachable hops: {}", res.response);
+    assert!(res.response["error"].as_str().unwrap_or("").contains("touch triggers that move the party"));
+
+    // Fair-mode low-res terrain shot: 640x400 regardless of compositor width.
+    let shot = fair_engine.execute_sync(&mut host, "shot --small", false);
+    assert_eq!(shot.response["ok"], true, "{}", shot.response);
+    assert_eq!(shot.response["artifacts"]["shot"]["width"], 640);
+    assert_eq!(shot.response["artifacts"]["shot"]["height"], 400);
+}

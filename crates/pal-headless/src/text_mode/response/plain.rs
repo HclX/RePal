@@ -255,9 +255,9 @@ pub fn format_plain_response(resp: &serde_json::Value, show_events: bool) -> Str
         if let Some(mm) = resp["minimap"].as_object() {
             if let Some(rows) = mm.get("grid").and_then(|v| v.as_array()) {
                 let hdr = if is_en {
-                    "  [Map 320x200] @=party .=walk #=block ?=occl E=ev >=exit (nw↖ ne↗ sw↙ se↘)\n"
+                    "  [Map 320x200] @=party .=walk ~=unreachable #=block ?=occl E=ev >=exit (nw↖ ne↗ sw↙ se↘)\n"
                 } else {
-                    "  [地图 320x200] @=主角 .=可走 #=障碍 ?=遮挡 E=事件 >=出口 (nw↖ ne↗ sw↙ se↘)\n"
+                    "  [地图 320x200] @=主角 .=可走 ~=走不到 #=障碍 ?=遮挡 E=事件 >=出口 (nw↖ ne↗ sw↙ se↘)\n"
                 };
                 out.push_str(hdr);
                 for r in rows {

@@ -275,6 +275,11 @@ impl TextEngine {
                     } else {
                         Vec::new()
                     };
+                    let reachable_hops = if disconnected {
+                        find_reachable_hops(host.runtime(), fair)
+                    } else {
+                        Vec::new()
+                    };
                     if reached && offset_target && !blocker_hint.is_empty() {
                         log.push(format!("[goto] {blocker_hint}"));
                     }
@@ -287,6 +292,10 @@ impl TextEngine {
                             "blockers": blocker_ids,
                             "disconnected": disconnected,
                             "reachable_exits": reachable_exits
+                                .iter()
+                                .map(|(id, dir)| serde_json::json!({"id": id, "dir": dir}))
+                                .collect::<Vec<_>>(),
+                            "reachable_hops": reachable_hops
                                 .iter()
                                 .map(|(id, dir)| serde_json::json!({"id": id, "dir": dir}))
                                 .collect::<Vec<_>>(),
@@ -304,16 +313,20 @@ impl TextEngine {
                                 "could not reach ({tx},{ty}); stopped at ({},{}) (dist={dist}); target not connected to your area (different floor/region)",
                                 cur_pos.0, cur_pos.1
                             );
-                            if reachable_exits.is_empty() {
-                                base
-                            } else {
-                                let exits_s = reachable_exits
-                                    .iter()
-                                    .map(|(id, dir)| format!("#{id} ({dir})"))
-                                    .collect::<Vec<_>>()
-                                    .join(", ");
-                                format!("{base}; reachable exits/stairs: {exits_s}")
+                            let list = |v: &[(u16, String)]| {
+                                v.iter().map(|(id, dir)| format!("#{id} ({dir})")).collect::<Vec<_>>().join(", ")
+                            };
+                            let mut msg = base;
+                            if !reachable_exits.is_empty() {
+                                msg = format!("{msg}; reachable exits/stairs: {}", list(&reachable_exits));
                             }
+                            if !reachable_hops.is_empty() {
+                                msg = format!(
+                                    "{msg}; reachable touch triggers that move the party (e.g. lotus pads): {} — goto one to ride it",
+                                    list(&reachable_hops)
+                                );
+                            }
+                            msg
                         } else {
                             format!(
                                 "could not reach ({tx},{ty}); stopped at ({},{}) (dist={dist})",

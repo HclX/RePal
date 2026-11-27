@@ -124,6 +124,10 @@ pub fn build_response_json_ex(
     };
 
     let (hx, hy, hh) = world_to_half_tile(lead.x, lead.y);
+    // On-foot reachability (#17): unblocked tiles the party can't walk to (e.g. water between
+    // causeways, only crossable via lotus-pad hops) render as `~` and end walkable_dist rays.
+    let hop_zones = crate::text_mode::reach::hop_zones(g);
+    let reach = crate::text_mode::reach::flood_reachable((lead.x, lead.y), &is_tile_blocked_fair_aware, &hop_zones);
     let mut walkable_map = serde_json::Map::new();
     let mut walkable_dist_map = serde_json::Map::new();
     for dir in 0..4u8 {
@@ -149,7 +153,7 @@ pub fn build_response_json_ex(
             if fair && g.base_grid().is_occluded(tx, ty, th) {
                 break;
             }
-            if is_tile_blocked_fair_aware(tx, ty, th) {
+            if is_tile_blocked_fair_aware(tx, ty, th) || !reach.tiles.contains(&(tx, ty, th)) {
                 break;
             }
             steps += 1;
@@ -197,6 +201,8 @@ pub fn build_response_json_ex(
                     '#'
                 } else if g.base_grid().is_void(tile.0, tile.1, tile.2) {
                     ' '
+                } else if !reach.tiles.contains(&tile) {
+                    '~'
                 } else {
                     '.'
                 };
@@ -213,6 +219,7 @@ pub fn build_response_json_ex(
             "legend": {
                 "@": "party",
                 ".": "walkable",
+                "~": "unreachable_on_foot",
                 "#": "blocked",
                 "?": "occluded",
                 "E": "event",

@@ -251,6 +251,41 @@ pub(super) fn find_reachable_exits_and_stairs(
     found.into_iter().map(|(_, id, dir)| (id, dir)).collect()
 }
 
+/// Visible touch triggers that move the party (lotus pads, boats, same-scene teleports) that the
+/// party can walk onto from `from_pos`, nearest first (#17). In `fair` mode only events visible
+/// in the viewport are listed.
+pub(super) fn find_reachable_hops(rt: &pal_runtime::PalRuntime, fair: bool) -> Vec<(u16, String)> {
+    let Some(g) = rt.game.as_ref() else {
+        return Vec::new();
+    };
+    let lead = g.world.leader();
+    let zones = crate::text_mode::reach::hop_zones(g);
+    let blocked = |x, y, h| g.grid.is_blocked(x, y, h);
+    let reach = crate::text_mode::reach::flood_reachable((lead.x, lead.y), &blocked, &zones);
+    let (cam_x, cam_y) = runtime_camera(rt);
+    reach
+        .hops
+        .into_iter()
+        .filter_map(|id| {
+            let ev = g.world.event(id)?;
+            if ev.sprite_id == 0 {
+                return None; // invisible doorway/teleport: reported as an exit instead
+            }
+            if fair && !crate::text_mode::response::event_visible_in_viewport(rt, ev, cam_x, cam_y) {
+                return None;
+            }
+            let dir = match (ev.x >= lead.x, ev.y >= lead.y) {
+                (true, true) => "se",
+                (true, false) => "ne",
+                (false, true) => "sw",
+                (false, false) => "nw",
+            };
+            Some((id, dir.to_string()))
+        })
+        .take(4)
+        .collect()
+}
+
 pub(super) fn format_goto_blockers_hint(blockers: &[(u16, String, String)]) -> String {
     if blockers.is_empty() {
         return String::new();

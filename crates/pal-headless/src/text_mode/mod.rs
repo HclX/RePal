@@ -10,6 +10,7 @@ pub mod command;
 pub mod engine;
 pub mod help;
 pub mod response;
+pub(crate) mod reach;
 #[cfg(feature = "disk")]
 pub mod transport;
 

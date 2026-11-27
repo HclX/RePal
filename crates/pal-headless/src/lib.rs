@@ -430,6 +430,18 @@ pub fn export_fb_to_png(fb: &pal_render::framebuffer::Framebuffer, path: &Path) 
     img.save(path).map_err(|e| format!("save png: {}", e))
 }
 
+/// Fair low-res observation (#25): crop the frame to its centred 16:10 view (the canonical
+/// 320x200 viewport, even when the compositor is widescreen) and downscale to 640x400.
+pub fn small_fair_view(fb: &pal_render::framebuffer::Framebuffer) -> Result<pal_render::framebuffer::Framebuffer, String> {
+    let img = image::RgbaImage::from_raw(fb.width, fb.height, fb.pixels.clone())
+        .ok_or_else(|| "framebuffer dimensions mismatch".to_string())?;
+    let (w, h) = (fb.width, fb.height);
+    let (cw, ch) = if w * 10 > h * 16 { (h * 16 / 10, h) } else { (w, w * 10 / 16) };
+    let view = image::imageops::crop_imm(&img, (w - cw) / 2, (h - ch) / 2, cw, ch).to_image();
+    let small = image::imageops::resize(&view, 640, 400, image::imageops::FilterType::Triangle);
+    Ok(pal_render::framebuffer::Framebuffer { width: 640, height: 400, pixels: small.into_raw() })
+}
+
 /// Compute percentage of pixels that are non-black (0.0..=1.0).
 pub fn non_black_pixel_ratio_fb(fb: &pal_render::framebuffer::Framebuffer) -> f64 {
     let total = (fb.width as usize) * (fb.height as usize);

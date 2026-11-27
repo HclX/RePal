@@ -393,7 +393,7 @@ impl Game {
 
     /// Does the event's trigger script forcibly relocate the party (scene change, same-scene
     /// teleport, or lotus-leaf/boat ride)?
-    fn is_displacement_portal(&self, id: u16) -> bool {
+    pub fn is_displacement_portal(&self, id: u16) -> bool {
         let Some(ev) = self.world.event(id) else { return false };
         let Some(block) = self.prog.block(ev.trigger.label) else { return true };
         for ins in block.iter().skip(ev.trigger.idx as usize) {
