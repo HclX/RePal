@@ -1,8 +1,11 @@
 //! Dual-mode Font Engine for `pal-render`:
-//! - HD mode: `fontdue` TTF rasterizer with bounded glyph cache (supports primary CJK + fallback Latin TTF).
+//! - HD mode: `ab_glyph` TTF rasterizer with bounded glyph cache (supports primary CJK + fallback Latin TTF).
+//!   Outlines are parsed lazily per glyph, so a 49k-glyph CJK font costs ~its file size in RAM
+//!   (`fontdue` pre-parsed every outline at load: ~130 MB for `pal-cjk.ttf`).
 //! - Retro mode / Fallback: 1995 DOS PAL `WOR16.ASC` (8x16 ASCII) + built-in 8x8 ASCII bitmap fallback.
 
 use crate::framebuffer::{Color, Framebuffer};
+use ab_glyph::{Font, FontVec, ScaleFont};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
@@ -16,8 +19,8 @@ struct CachedGlyph {
 }
 
 pub struct FontEngine {
-    primary_ttf: Option<fontdue::Font>,
-    fallback_ttf: Option<fontdue::Font>,
+    primary_ttf: Option<FontVec>,
+    fallback_ttf: Option<FontVec>,
     prefer_latin: bool,
     asc_bitmap: Option<Vec<u8>>, // 1995 WOR16.ASC (8x16 per ASCII char)
     glyph_cache: HashMap<(char, u16), CachedGlyph>,
@@ -60,11 +63,7 @@ impl FontEngine {
     }
 
     pub fn load_primary_ttf(&mut self, bytes: &[u8]) -> bool {
-        let settings = fontdue::FontSettings {
-            scale: 40.0,
-            ..Default::default()
-        };
-        if let Ok(font) = fontdue::Font::from_bytes(bytes, settings) {
+        if let Ok(font) = FontVec::try_from_vec(bytes.to_vec()) {
             self.primary_ttf = Some(font);
             self.glyph_cache.clear();
             true
@@ -74,11 +73,7 @@ impl FontEngine {
     }
 
     pub fn load_fallback_ttf(&mut self, bytes: &[u8]) -> bool {
-        let settings = fontdue::FontSettings {
-            scale: 40.0,
-            ..Default::default()
-        };
-        if let Ok(font) = fontdue::Font::from_bytes(bytes, settings) {
+        if let Ok(font) = FontVec::try_from_vec(bytes.to_vec()) {
             self.fallback_ttf = Some(font);
             self.glyph_cache.clear();
             true
@@ -103,6 +98,31 @@ impl FontEngine {
         }
     }
 
+    /// Rasterize `ch` at `px_size` pixels per em. Metrics follow the previous `fontdue` convention so
+    /// drawing code is unchanged: `xmin` = left edge from the pen position, `ymin` = bitmap bottom
+    /// relative to the baseline (positive up), bitmap rows top-to-bottom with 0..=255 coverage.
+    fn rasterize_glyph(font: &FontVec, ch: char, px_size: u16) -> CachedGlyph {
+        // `px_size` is pixels per em (fontdue convention); ab_glyph's PxScale is the ascent-descent height.
+        let upem = font.units_per_em().unwrap_or(1000.0);
+        let scale = ab_glyph::PxScale::from(px_size as f32 * font.height_unscaled() / upem);
+        let gid = font.glyph_id(ch);
+        let advance_x = font.as_scaled(scale).h_advance(gid);
+        let glyph = gid.with_scale_and_position(scale, ab_glyph::point(0.0, 0.0));
+        let Some(outlined) = font.outline_glyph(glyph) else {
+            return CachedGlyph { width: 0, height: 0, xmin: 0, ymin: 0, advance_x, bitmap: Vec::new() };
+        };
+        let b = outlined.px_bounds();
+        let (width, height) = ((b.max.x - b.min.x) as usize, (b.max.y - b.min.y) as usize);
+        let mut bitmap = vec![0u8; width * height];
+        outlined.draw(|x, y, c| {
+            let (x, y) = (x as usize, y as usize);
+            if x < width && y < height {
+                bitmap[y * width + x] = (c.clamp(0.0, 1.0) * 255.0).round() as u8;
+            }
+        });
+        CachedGlyph { width, height, xmin: b.min.x as i32, ymin: -(b.max.y as i32), advance_x, bitmap }
+    }
+
     fn rasterize_ttf(&mut self, ch: char, px_size: u16) -> Option<&CachedGlyph> {
         let ch = Self::normalize_glyph_char(ch);
         let key = (ch, px_size);
@@ -110,36 +130,28 @@ impl FontEngine {
             let font = match (&self.primary_ttf, &self.fallback_ttf) {
                 (Some(p), Some(f)) => {
                     if self.prefer_latin {
-                        if f.lookup_glyph_index(ch) != 0 {
+                        if f.glyph_id(ch).0 != 0 {
                             Some(f)
-                        } else if p.lookup_glyph_index(ch) != 0 {
+                        } else if p.glyph_id(ch).0 != 0 {
                             Some(p)
                         } else {
                             None
                         }
-                    } else if p.lookup_glyph_index(ch) != 0 {
+                    } else if p.glyph_id(ch).0 != 0 {
                         Some(p)
-                    } else if f.lookup_glyph_index(ch) != 0 {
+                    } else if f.glyph_id(ch).0 != 0 {
                         Some(f)
                     } else {
                         None
                     }
                 }
-                (Some(p), None) => (p.lookup_glyph_index(ch) != 0).then_some(p),
-                (None, Some(f)) => (f.lookup_glyph_index(ch) != 0).then_some(f),
+                (Some(p), None) => (p.glyph_id(ch).0 != 0).then_some(p),
+                (None, Some(f)) => (f.glyph_id(ch).0 != 0).then_some(f),
                 (None, None) => return None,
             };
 
             let glyph = if let Some(font) = font {
-                let (metrics, bitmap) = font.rasterize(ch, px_size as f32);
-                CachedGlyph {
-                    width: metrics.width,
-                    height: metrics.height,
-                    xmin: metrics.xmin,
-                    ymin: metrics.ymin,
-                    advance_x: metrics.advance_width,
-                    bitmap,
-                }
+                Self::rasterize_glyph(font, ch, px_size)
             } else {
                 // Never draw an ugly `.notdef` tofu box `□` for rare unmapped symbols (#119).
                 CachedGlyph {

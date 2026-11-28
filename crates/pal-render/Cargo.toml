@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 pal-core = { path = "../pal-core" }
-fontdue = "0.9"
+ab_glyph = "0.2"
