@@ -17,10 +17,17 @@ struct SfxVoice {
     step: f64,
 }
 
+/// Decoded HD BGM channel, stored as 16-bit PCM (half the memory of f32; the source MP3s are 16-bit).
+type Pcm16 = Arc<Vec<i16>>;
+
+/// Decoded HD BGM tracks kept in memory: the current one plus one more for back-and-forth scene
+/// changes (a decoded track is ~5-20 MB even as i16; caching 6 f32 tracks cost up to ~200 MB).
+const HD_BGM_CACHE_TRACKS: usize = 2;
+
 #[allow(dead_code)]
 struct HdBgmStream {
-    left: Arc<Vec<f32>>,
-    right: Arc<Vec<f32>>,
+    left: Pcm16,
+    right: Pcm16,
     pos: f64,
     step: f64,
     looped: bool,
@@ -92,8 +99,11 @@ impl AudioMixer {
                                 idx
                             };
                             let frac = (bgm.pos - idx as f64) as f32;
-                            l[i] = (bgm.left[idx] + (bgm.left[next] - bgm.left[idx]) * frac) * vol;
-                            r[i] = (bgm.right[idx] + (bgm.right[next] - bgm.right[idx]) * frac) * vol;
+                            let k = vol * (1.0 / 32768.0);
+                            let (l0, l1) = (bgm.left[idx] as f32, bgm.left[next] as f32);
+                            let (r0, r1) = (bgm.right[idx] as f32, bgm.right[next] as f32);
+                            l[i] = (l0 + (l1 - l0) * frac) * k;
+                            r[i] = (r0 + (r1 - r0) * frac) * k;
                             bgm.pos += bgm.step;
                         }
                     }
@@ -131,7 +141,7 @@ pub struct NativeAudio {
     assets_root: PathBuf,
     mixer: Arc<Mutex<AudioMixer>>,
     midi_cache: HashMap<i32, Vec<u8>>,
-    hd_bgm_cache: HashMap<i32, (u32, Arc<Vec<f32>>, Arc<Vec<f32>>)>,
+    hd_bgm_cache: HashMap<i32, (u32, Pcm16, Pcm16)>,
     hd_bgm_order: Vec<i32>,
     hd_bgm_missing: HashSet<i32>,
     sfx_cache: HashMap<i32, (u32, Arc<Vec<f32>>)>,
@@ -217,7 +227,7 @@ impl NativeAudio {
         &mut self,
         track_id: i32,
         vfs: Option<&mut pal_runtime::pack_vfs::OverlayVfs>,
-    ) -> Option<(u32, Arc<Vec<f32>>, Arc<Vec<f32>>)> {
+    ) -> Option<(u32, Pcm16, Pcm16)> {
         if self.hd_bgm_missing.contains(&track_id) {
             return None;
         }
@@ -235,13 +245,16 @@ impl NativeAudio {
             };
             let Some(bytes) = raw else { continue };
             if let Some((sr, l, r)) = decode_compressed_stereo(&bytes, ext) {
-                let al = Arc::new(l);
-                let ar = Arc::new(r);
-                if self.hd_bgm_cache.len() >= 6 {
-                    if let Some(old_id) = self.hd_bgm_order.first().copied() {
-                        self.hd_bgm_order.remove(0);
-                        self.hd_bgm_cache.remove(&old_id);
-                    }
+                let al = Arc::new(to_pcm16(&l));
+                let ar = Arc::new(to_pcm16(&r));
+                drop((l, r));
+                while self.hd_bgm_cache.len() >= HD_BGM_CACHE_TRACKS {
+                    let Some(old_id) = self.hd_bgm_order.first().copied() else {
+                        self.hd_bgm_cache.clear();
+                        break;
+                    };
+                    self.hd_bgm_order.remove(0);
+                    self.hd_bgm_cache.remove(&old_id);
                 }
                 self.hd_bgm_order.push(track_id);
                 self.hd_bgm_cache
@@ -383,6 +396,11 @@ impl NativeAudio {
 
 /// Decode a pre-rendered compressed HD BGM file (`.mp3` or `.ogg` Vorbis) into stereo `f32` PCM
 /// via pure-Rust `symphonia` (zero native C dependencies).
+/// f32 samples in [-1, 1] -> 16-bit PCM (clamped).
+fn to_pcm16(x: &[f32]) -> Vec<i16> {
+    x.iter().map(|&v| (v.clamp(-1.0, 1.0) * 32767.0).round() as i16).collect()
+}
+
 pub fn decode_compressed_stereo(bytes: &[u8], ext: &str) -> Option<(u32, Vec<f32>, Vec<f32>)> {
     use symphonia::core::audio::SampleBuffer;
     use symphonia::core::codecs::DecoderOptions;
@@ -718,8 +736,8 @@ mod tests {
     fn hd_bgm_stream_loops_and_respects_hd_toggle() {
         let mut mixer = AudioMixer::new(44100, true);
         mixer.hd_bgm = Some(HdBgmStream {
-            left: Arc::new(vec![0.5, 0.5, 0.5, 0.5]),
-            right: Arc::new(vec![-0.5, -0.5, -0.5, -0.5]),
+            left: Arc::new(vec![16384i16; 4]),
+            right: Arc::new(vec![-16384i16; 4]),
             pos: 0.0,
             step: 1.0,
             looped: true,
