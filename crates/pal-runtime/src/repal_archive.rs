@@ -395,9 +395,131 @@ fn read_repal_bytes_with_limit(raw: &[u8], max_bytes: usize) -> Result<ReplayBun
     ReplayBundle::from_json(&doc)
 }
 
-/// Parse a normalized `(timestamp_ms, seq, filename)` sort key for `auto_*.repal` / `auto_*.json`
-/// files so legacy `auto_{unix_secs}_sc{S}.repal` and current `auto_{unix_ms}_{seq:04}_sc{S}.repal`
-/// filenames sort chronologically oldest-first (#232).
+/// Convert days since Unix epoch (1970-01-01) to Gregorian `(year, month, day)` (Howard Hinnant algorithm).
+fn civil_from_days(z: i64) -> (i64, u32, u32) {
+    let z = z + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = y + if m <= 2 { 1 } else { 0 };
+    (year, m as u32, d as u32)
+}
+
+/// Convert Gregorian `(year, month, day)` to days since Unix epoch (1970-01-01).
+fn days_from_civil(year: i64, month: u32, day: u32) -> i64 {
+    let y = year - if month <= 2 { 1 } else { 0 };
+    let era = if y >= 0 { y } else { y - 399 } / 400;
+    let yoe = (y - era * 400) as u64;
+    let m = month as u64;
+    let d = day as u64;
+    let doy = (153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146_097 + doe as i64 - 719_468
+}
+
+/// Format a Unix epoch second as a filesystem-safe human-readable timestamp `YYYY-MM-DD_HH-MM-SS`.
+/// Uses local wall-clock time on Unix (`localtime_r`) and UTC on other platforms.
+pub fn format_human_timestamp_secs(epoch_secs: i64) -> String {
+    #[cfg(unix)]
+    {
+        #[repr(C)]
+        struct Tm {
+            tm_sec: i32,
+            tm_min: i32,
+            tm_hour: i32,
+            tm_mday: i32,
+            tm_mon: i32,
+            tm_year: i32,
+            tm_wday: i32,
+            tm_yday: i32,
+            tm_isdst: i32,
+            tm_gmtoff: isize,
+            tm_zone: *const i8,
+        }
+        extern "C" {
+            fn localtime_r(timep: *const i64, result: *mut Tm) -> *mut Tm;
+        }
+        let mut tm = std::mem::MaybeUninit::<Tm>::zeroed();
+        let res = unsafe { localtime_r(&epoch_secs, tm.as_mut_ptr()) };
+        if !res.is_null() {
+            let tm = unsafe { tm.assume_init() };
+            return format!(
+                "{:04}-{:02}-{:02}_{:02}-{:02}-{:02}",
+                tm.tm_year + 1900,
+                tm.tm_mon + 1,
+                tm.tm_mday,
+                tm.tm_hour,
+                tm.tm_min,
+                tm.tm_sec
+            );
+        }
+    }
+    let days = epoch_secs.div_euclid(86_400);
+    let rem = epoch_secs.rem_euclid(86_400);
+    let (year, month, day) = civil_from_days(days);
+    let hour = rem / 3600;
+    let min = (rem % 3600) / 60;
+    let sec = rem % 60;
+    format!("{year:04}-{month:02}-{day:02}_{hour:02}-{min:02}-{sec:02}")
+}
+
+/// Current wall-clock timestamp formatted as `YYYY-MM-DD_HH-MM-SS` (filesystem-safe).
+pub fn format_human_timestamp_now() -> String {
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    format_human_timestamp_secs(secs)
+}
+
+/// Allocate a unique human-readable replay filename under `replays_dir`:
+/// `<replays_dir>/<prefix>_<YYYY-MM-DD_HH-MM-SS>_<seq:04>_sc<S>.repal.gz`.
+pub fn allocate_repal_path(replays_dir: &Path, prefix: &str, scene_id: u16) -> PathBuf {
+    let ts = format_human_timestamp_now();
+    let seq = ARCHIVE_SEQ.fetch_add(1, Ordering::Relaxed);
+    replays_dir.join(format!("{prefix}_{ts}_{seq:04}_sc{scene_id}.{REPAL_FILE_EXT}"))
+}
+
+fn parse_human_ts_prefix_ms(rest: &str) -> Option<(u128, u32)> {
+    // Expected: `YYYY-MM-DD_HH-MM-SS` (19 ASCII bytes), optionally followed by `_<seq>_...`
+    let b = rest.as_bytes();
+    if b.len() < 19
+        || b[4] != b'-'
+        || b[7] != b'-'
+        || b[10] != b'_'
+        || b[13] != b'-'
+        || b[16] != b'-'
+    {
+        return None;
+    }
+    let year: i64 = rest[0..4].parse().ok()?;
+    let month: u32 = rest[5..7].parse().ok()?;
+    let day: u32 = rest[8..10].parse().ok()?;
+    let hour: i64 = rest[11..13].parse().ok()?;
+    let min: i64 = rest[14..16].parse().ok()?;
+    let sec: i64 = rest[17..19].parse().ok()?;
+    if !(1..=12).contains(&month) || !(1..=31).contains(&day) || hour > 23 || min > 59 || sec > 59 {
+        return None;
+    }
+    let days = days_from_civil(year, month, day);
+    let secs = days * 86_400 + hour * 3600 + min * 60 + sec;
+    let ts_ms = secs.max(0) as u128 * 1000;
+    let seq = rest[19..]
+        .strip_prefix('_')
+        .and_then(|tail| tail.split('_').next())
+        .and_then(|s| s.parse::<u32>().ok())
+        .unwrap_or(0);
+    Some((ts_ms, seq))
+}
+
+/// Parse a normalized `(timestamp_ms, seq, filename)` sort key for `auto_*.repal*` / `auto_*.json`
+/// files so human-readable `auto_{YYYY-MM-DD_HH-MM-SS}_{seq:04}_sc{S}`, legacy `auto_{unix_ms}`,
+/// and legacy `auto_{unix_secs}` filenames all sort chronologically oldest-first (#232, #37).
 fn auto_replay_sort_key(path: &Path) -> (u128, u32, String) {
     let name = path
         .file_name()
@@ -406,11 +528,14 @@ fn auto_replay_sort_key(path: &Path) -> (u128, u32, String) {
         .to_string();
     let stem = strip_replay_ext(&name);
     if let Some(rest) = stem.strip_prefix("auto_") {
+        if let Some((ts_ms, seq)) = parse_human_ts_prefix_ms(rest) {
+            return (ts_ms, seq, name);
+        }
         let mut parts = rest.split('_');
         if let Some(ts_str) = parts.next() {
             if let Ok(raw_ts) = ts_str.parse::<u128>() {
-                // New format uses Unix milliseconds (>= 10^12) + 4-digit seq;
-                // legacy format used Unix seconds (< 10^12) followed directly by `sc{S}`.
+                // Legacy format used Unix milliseconds (>= 10^12) + 4-digit seq,
+                // or older Unix seconds (< 10^12) followed directly by `sc{S}`.
                 let (ts_ms, seq) = if raw_ts >= 1_000_000_000_000 {
                     let seq = parts
                         .next()
@@ -433,8 +558,29 @@ fn auto_replay_sort_key(path: &Path) -> (u128, u32, String) {
     (mtime_ms, 0, name)
 }
 
-/// Write a `.repal` file to `<replays_dir>/<prefix>_<unix_ms>_<seq>_sc<S>.repal`.
-/// When `auto_rotate` is true, keeps only the newest `MAX_AUTO_REPLAY_FILES` `auto_*.repal` files.
+/// Keep only the newest `MAX_AUTO_REPLAY_FILES` `auto_*.repal*` files in `replays_dir`.
+pub fn rotate_auto_replays(replays_dir: &Path) {
+    if let Ok(entries) = fs::read_dir(replays_dir) {
+        let mut autos: Vec<PathBuf> = entries
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| {
+                p.file_name()
+                    .and_then(|s| s.to_str())
+                    .map(|n| n.starts_with("auto_") && (is_repal_file_name(n) || n.ends_with(".json")))
+                    .unwrap_or(false)
+            })
+            .collect();
+        autos.sort_by_key(|p| auto_replay_sort_key(p));
+        while autos.len() > MAX_AUTO_REPLAY_FILES {
+            let oldest = autos.remove(0);
+            let _ = fs::remove_file(oldest);
+        }
+    }
+}
+
+/// Write a `.repal.gz` file to `<replays_dir>/<prefix>_<YYYY-MM-DD_HH-MM-SS>_<seq:04>_sc<S>.repal.gz`.
+/// When `auto_rotate` is true, keeps only the newest `MAX_AUTO_REPLAY_FILES` `auto_*.repal*` files.
 pub fn write_repal_to_dir(
     replays_dir: &Path,
     bundle: &ReplayBundle,
@@ -443,32 +589,11 @@ pub fn write_repal_to_dir(
     auto_rotate: bool,
 ) -> Option<PathBuf> {
     let _ = fs::create_dir_all(replays_dir);
-    let ts_ms = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis())
-        .unwrap_or(0);
-    let seq = ARCHIVE_SEQ.fetch_add(1, Ordering::Relaxed);
-    let path = replays_dir.join(format!("{prefix}_{ts_ms}_{seq:04}_sc{scene_id}.{REPAL_FILE_EXT}"));
+    let path = allocate_repal_path(replays_dir, prefix, scene_id);
     write_repal_archive(&path, bundle).ok()?;
 
     if auto_rotate {
-        if let Ok(entries) = fs::read_dir(replays_dir) {
-            let mut autos: Vec<PathBuf> = entries
-                .flatten()
-                .map(|e| e.path())
-                .filter(|p| {
-                    p.file_name()
-                        .and_then(|s| s.to_str())
-                        .map(|n| n.starts_with("auto_") && (is_repal_file_name(n) || n.ends_with(".json")))
-                        .unwrap_or(false)
-                })
-                .collect();
-            autos.sort_by_key(|p| auto_replay_sort_key(p));
-            while autos.len() > MAX_AUTO_REPLAY_FILES {
-                let oldest = autos.remove(0);
-                let _ = fs::remove_file(oldest);
-            }
-        }
+        rotate_auto_replays(replays_dir);
     }
     Some(path)
 }
@@ -543,6 +668,23 @@ pub fn export_repal_to_srt(bundle: &ReplayBundle) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn human_timestamp_format_and_mixed_auto_replay_sort_order() {
+        let ts = format_human_timestamp_now();
+        assert_eq!(ts.len(), 19, "expected YYYY-MM-DD_HH-MM-SS, got {ts}");
+        assert!(parse_human_ts_prefix_ms(&ts).is_some());
+
+        let legacy_sec = Path::new("auto_1700000000_sc1.repal");
+        let legacy_ms = Path::new("auto_1795764533520_0000_sc52.repal.gz");
+        let human_1 = Path::new("auto_2026-11-28_00-30-00_0000_sc1.repal.gz");
+        let human_2 = Path::new("auto_2026-11-28_00-30-00_0001_sc2.repal.gz");
+        let human_3 = Path::new("auto_2026-11-28_01-00-00_0000_sc3.repal.gz");
+
+        let mut list = vec![human_3, legacy_ms, human_2, legacy_sec, human_1];
+        list.sort_by_key(|p| auto_replay_sort_key(p));
+        assert_eq!(list, vec![legacy_sec, legacy_ms, human_1, human_2, human_3]);
+    }
 
     #[test]
     fn repal_tar_gz_roundtrip_and_standalone_saves() {

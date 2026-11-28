@@ -465,12 +465,13 @@ impl ApplicationHandler for DesktopApp {
         self.poll_file_picker();
         self.poll_updater(event_loop);
         self.poll_channel_lifecycle();
-        if self.should_exit {
+        if self.should_exit || crate::signal_exit_requested() {
             self.archive_active_replay_on_exit();
             event_loop.exit();
             return;
         }
         self.flush_archived_replays();
+        self.maybe_checkpoint_active_replay();
         // True 50 Hz frame pacing: only request a redraw once `next_frame_at` is reached,
         // otherwise let winit sleep in the OS kernel until `next_frame_at` (prevents 100% CPU spin).
         let now = Instant::now();

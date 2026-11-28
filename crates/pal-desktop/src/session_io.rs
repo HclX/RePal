@@ -7,7 +7,10 @@ use crate::os_bridge::{
 use crate::replay_ui::{encode_fb_png, CoreReplayPlayer, ReplayHudHit};
 use crate::saves::UserConfig;
 use crate::DesktopApp;
-use pal_runtime::repal_archive::{read_repal_file, write_repal_archive, write_repal_to_dir};
+use pal_runtime::repal_archive::{
+    allocate_repal_path, read_repal_file, rotate_auto_replays, write_repal_archive,
+    write_repal_to_dir,
+};
 use pal_ui::UiView;
 use std::collections::VecDeque;
 use std::fs;
@@ -266,6 +269,32 @@ impl DesktopApp {
             .unwrap_or(false)
     }
 
+    fn finalize_auto_replay(&mut self, bundle: &pal_core::game::replay_rec::ReplayBundle, sid: u16) -> Option<PathBuf> {
+        let dir = self.replays_dir();
+        let path = if let Some(live_path) = self.live_replay_path.take() {
+            // Wait briefly if a background checkpoint write to the same file is finishing.
+            let wait_start = Instant::now();
+            while self.live_replay_in_flight.load(std::sync::atomic::Ordering::Acquire)
+                && wait_start.elapsed() < Duration::from_secs(2)
+            {
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            let _ = fs::create_dir_all(&dir);
+            if write_repal_archive(&live_path, bundle).is_ok() {
+                rotate_auto_replays(&dir);
+                Some(live_path)
+            } else {
+                write_repal_to_dir(&dir, bundle, "auto", sid, true)
+            }
+        } else {
+            write_repal_to_dir(&dir, bundle, "auto", sid, true)
+        };
+        self.live_replay_flushed_events = 0;
+        self.live_replay_flushed_segments = 0;
+        self.live_replay_last_flush = Instant::now();
+        path
+    }
+
     pub(crate) fn flush_archived_replays(&mut self) {
         // Runs on every `about_to_wait` (dozens of times a second): only PNG-encode the end
         // screenshot when a replay was actually archived. Encoding the 1280x800 HD framebuffer
@@ -279,10 +308,75 @@ impl DesktopApp {
             Some((bundle, sid))
         });
         if let Some((bundle, sid)) = archived {
-            if let Some(p) = write_repal_to_dir(&self.replays_dir(), &bundle, "auto", sid, true) {
+            if let Some(p) = self.finalize_auto_replay(&bundle, sid) {
                 eprintln!("[repal] Auto-archived replay: {}", p.display());
             }
         }
+    }
+
+    /// Periodically checkpoint the active recording to disk on a background thread (#37) so
+    /// external `SIGTERM`/`SIGKILL` or crashes never lose a long gameplay session.
+    /// Reuses one rolling path per session (`auto_<YYYY-MM-DD_HH-MM-SS>_<seq>_sc<S>.repal.gz`)
+    /// via atomic `.tmp` -> `rename`.
+    pub(crate) fn maybe_checkpoint_active_replay(&mut self) {
+        const SEGMENT_CHECKPOINT_INTERVAL: Duration = Duration::from_secs(60);
+        const PERIODIC_CHECKPOINT_INTERVAL: Duration = Duration::from_secs(180);
+
+        if self.core_replay.is_some()
+            || self
+                .live_replay_in_flight
+                .load(std::sync::atomic::Ordering::Acquire)
+        {
+            return;
+        }
+        let snapshot = self.rt.as_ref().and_then(|rt| {
+            let g = rt.game.as_ref()?;
+            if !g.recorder.is_active()
+                || g.recorder.total_events < pal_core::game::replay_rec::MIN_EVENTS_FOR_ARCHIVE
+            {
+                return None;
+            }
+            let events = g.recorder.total_events;
+            let segs = g.recorder.segments.len();
+            if events <= self.live_replay_flushed_events {
+                return None;
+            }
+            let elapsed = self.live_replay_last_flush.elapsed();
+            let first_flush = self.live_replay_path.is_none() && elapsed >= SEGMENT_CHECKPOINT_INTERVAL;
+            let seg_due = segs > self.live_replay_flushed_segments && elapsed >= SEGMENT_CHECKPOINT_INTERVAL;
+            let time_due = elapsed >= PERIODIC_CHECKPOINT_INTERVAL;
+            if !(first_flush || seg_due || time_due) {
+                return None;
+            }
+            Some((g.export_replay_bundle(), g.world.scene_id, events, segs))
+        });
+        let Some((bundle, sid, events, segs)) = snapshot else {
+            return;
+        };
+        let dir = self.replays_dir();
+        let is_new = self.live_replay_path.is_none();
+        let path = self
+            .live_replay_path
+            .get_or_insert_with(|| allocate_repal_path(&dir, "auto", sid))
+            .clone();
+        self.live_replay_last_flush = Instant::now();
+        self.live_replay_flushed_events = events;
+        self.live_replay_flushed_segments = segs;
+        self.live_replay_in_flight
+            .store(true, std::sync::atomic::Ordering::Release);
+        let in_flight = self.live_replay_in_flight.clone();
+        let _ = std::thread::Builder::new()
+            .name("repal-replay-ckpt".into())
+            .spawn(move || {
+                let _ = fs::create_dir_all(&dir);
+                if write_repal_archive(&path, &bundle).is_ok() {
+                    if is_new {
+                        rotate_auto_replays(&dir);
+                        eprintln!("[repal] Live replay checkpoint: {}", path.display());
+                    }
+                }
+                in_flight.store(false, std::sync::atomic::Ordering::Release);
+            });
     }
 
     pub(crate) fn archive_active_replay_on_exit(&mut self) {
@@ -304,7 +398,7 @@ impl DesktopApp {
             }
         });
         if let Some((bundle, sid)) = active {
-            if let Some(p) = write_repal_to_dir(&self.replays_dir(), &bundle, "auto", sid, true) {
+            if let Some(p) = self.finalize_auto_replay(&bundle, sid) {
                 eprintln!("[repal] Auto-archived session replay on exit: {}", p.display());
             }
         }
@@ -322,7 +416,11 @@ impl DesktopApp {
             })
         });
         if let Some((bundle, sid)) = prev {
-            let _ = write_repal_to_dir(&self.replays_dir(), &bundle, "auto", sid, true);
+            let _ = self.finalize_auto_replay(&bundle, sid);
+        } else {
+            self.live_replay_path = None;
+            self.live_replay_flushed_events = 0;
+            self.live_replay_flushed_segments = 0;
         }
         if let Some(rt) = self.rt.as_mut() {
             let msg = match rt.ui.lang {

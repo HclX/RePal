@@ -50,7 +50,33 @@ use std::env;
 use std::fs;
 use std::num::NonZeroU32;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
+
+static SIGNAL_EXIT: AtomicBool = AtomicBool::new(false);
+
+pub(crate) fn signal_exit_requested() -> bool {
+    SIGNAL_EXIT.load(Ordering::Relaxed)
+}
+
+#[cfg(unix)]
+fn install_termination_signal_handlers() {
+    extern "C" {
+        fn signal(sig: i32, handler: extern "C" fn(i32)) -> usize;
+    }
+    extern "C" fn handle_term_signal(_sig: i32) {
+        SIGNAL_EXIT.store(true, Ordering::SeqCst);
+    }
+    const SIGINT: i32 = 2;
+    const SIGTERM: i32 = 15;
+    unsafe {
+        signal(SIGINT, handle_term_signal);
+        signal(SIGTERM, handle_term_signal);
+    }
+}
+
+#[cfg(not(unix))]
+fn install_termination_signal_handlers() {}
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use winit::application::ApplicationHandler;
@@ -174,6 +200,13 @@ pub(crate) struct DesktopApp {
     pub(crate) bug_report_rx: Option<Receiver<Result<String, String>>>,
     update_rx: Option<Receiver<updater::UpdateMsg>>,
     pending_update: Option<updater::AvailableUpdate>,
+    /// Rolling live-session replay checkpoint state (#37): periodically flushes the active
+    /// recording to disk on a background thread so SIGTERM/SIGKILL/crashes never lose a session.
+    pub(crate) live_replay_path: Option<PathBuf>,
+    pub(crate) live_replay_last_flush: Instant,
+    pub(crate) live_replay_flushed_events: usize,
+    pub(crate) live_replay_flushed_segments: usize,
+    pub(crate) live_replay_in_flight: Arc<AtomicBool>,
     should_exit: bool,
     exit_code: i32,
 }
@@ -264,6 +297,11 @@ impl DesktopApp {
             bug_report_rx: None,
             update_rx: Some(updater::spawn_update_check(true, pal_core::Language::default())),
             pending_update: None,
+            live_replay_path: None,
+            live_replay_last_flush: Instant::now(),
+            live_replay_flushed_events: 0,
+            live_replay_flushed_segments: 0,
+            live_replay_in_flight: Arc::new(AtomicBool::new(false)),
             should_exit: false,
             exit_code: 0,
         };
@@ -509,6 +547,10 @@ impl DesktopApp {
                     rt.ui.agent_token = srv.auth_token().map(str::to_string);
                     self.channel_server = Some(srv);
                     rt.ui.agent_mode = if is_loopback { 1 } else { 2 };
+                    eprintln!(
+                        "[repal] Replay auto-archive dir: {}",
+                        self.replays_dir().display()
+                    );
                 }
                 Err(e) => {
                     eprintln!("[repal] Failed to start GUI+Text socket server: {e}");
@@ -874,6 +916,7 @@ impl DesktopApp {
 }
 
 fn main() {
+    install_termination_signal_handlers();
     match parse_cli() {
         LaunchMode::ExportSrt { input, output } => {
             let bundle = match pal_runtime::repal_archive::read_repal_file(&input) {
