@@ -115,7 +115,9 @@ Label connected components (dilated by `8px`) of `visible_1x`:
        * **Canonical 1×-Anchored Joint-Guided CIE Lab Calibration (`calibrate_hd_island_to_canonical_1x`)**: Every stitched HD island is calibrated BEFORE slicing chunks or extracting occluders to one universal `1×`-anchored canonical curve `T(ref_1x)` (`L_t = clip(1.04 * L_ref + 2.2 * shadow_ramp, 0, 96)`, `a_t = 0.98 * a_ref`, `b_t = 0.98 * b_ref`, with smooth shadow roll-off below `L* = 10` so pure `#000000` doorways/cave portals stay pitch black). It applies global luminance contrast standardization (`target_std = 1.08 * ref_std`), exact 100% global mean Lab alignment, and an edge-preserving masked guided filter (`radius = 14`, `eps = 18/24`, blend `0.85`) guided by `1×` reference channels so grass, dark slate river water (`#1E2428`), dirt, stone, and wood never bleed across shorelines or wall edges yet land identically across connected maps.
        * **Adaptive Multi-Scale Texture/Brushstroke Normalization**: Replaces blind per-patch `UnsharpMask` with adaptive `L_4x` detail scaling (`sigma = 1.6`, target Lab gradient `3.2` measured strictly on textured `|∇_1x L_ref| > 3.5` regions, `k_detail ∈ [0.72, 1.55]`, gated down to `0.2` over flat calm water) so soft painterly maps and hyper-crisp maps share one unified brushwork crispness.
        * **Story-Variant HD Tile Inheritance (`find_story_variant_donor` / `apply_story_variant_inheritance_4x`)**: Automatically detects already-baked HD donor maps sharing `>= 85%` identical `1×` pixels (`>= 50%` coverage — e.g., `Map 025 ← Map 006`, `Map 050 ← Map 031`, `Map 051 ← Map 033`, `Map 131 ← Map 042`). During `prepare`, unchanged patch boxes are skipped automatically; during `bake` / `calibrate-all-maps`, unchanged `1×` pixels inherit the donor's exact calibrated `4×` RGB with a smooth `20 HD px` feathered blend into story-changed tiles.
-       * **Neighbor Style Anchor & Exposure-Locked Prompts**: `prepare_map_patches()` exports a connected neighbor's `512×320` style swatch (`style_anchor_map<ID>.png`) and enforces strict exposure, dark-water (`#1E2428`), and anti-hallucination rules in `build_map_patch_prompt()`.
+       * **Exposure-Locked, Even-Texture Prompts**: `build_map_patch_prompt()` enforces strict exposure, dark-water (`#1E2428`), anti-hallucination, tile-artifact (natural edges instead of diamond staircases between ground materials) and even-texture (no per-tile vignettes or detail clusters) rules. The model only ever receives the single patch image, so the prompt never references other images.
+       * **Chained Neighbour-Aware Generation** (`prepare --chain` + `chain-next`): patches of an island are generated one round at a time; each new patch input has every pixel already covered by earlier stitched patches replaced with those final HD pixels, plus a `CHAINED TILE` prompt clause naming the painted edges, so the model continues the existing texture instead of inventing a new one. `chain-next` stitches with the same `_stitch_island_patches_4x()` as `bake`.
+       * **Two-Band Seam Blend** (`_two_band_seam_blend_4x()`): lighting/colour (low band) is blended wide across the seam-cut while brushwork (high band) switches narrowly at the cut line with texture-energy matching, so independently painted textures never cross-fade into a blurry band. Patch grids keep at least `128×112` (`1×`) overlap.
     5. Slice the calibrated `4×` canvas into non-overlapping `<= 512 × 512` logical (`2048 × 2048` HD) WebP chunks (`quality=90, alpha_quality=100, exact=True, method=4`) named deterministically by `(row, col)` grid coordinate (`isl{id}_r{row}_c{col}_4x.webp`).
 
 ---
@@ -234,10 +236,14 @@ To remaster any scene `N` (`1..294`) end-to-end:
 python3 tools/track_b_pipeline.py status
 
 # 2. Prepare 1376x768 reference sheets & manifest_todo.json for Scene N
-python3 tools/track_b_pipeline.py prepare --scene <N> --work-dir /tmp/pal_track_b/scene_<N>
+#    (`--chain` = neighbour-aware generation, recommended for multi-patch maps; `--redo-map` = regenerate a baked map)
+python3 tools/track_b_pipeline.py prepare --scene <N> --work-dir .tmp/pal_track_b/scene_<N> --chain
 
-# 3. Generate 1376x768 remastered images for each entry in manifest_todo.json,
-#    recording {"key": "/abs/path/to/generated.jpg"} into /tmp/pal_track_b/scene_<N>/ai_outputs.json
+# 3. Generate 1376x768 remastered images for each entry in manifest_todo.json (using each item's own `prompt`),
+#    recording {"key": "/abs/path/to/generated.jpg"} into .tmp/pal_track_b/scene_<N>/ai_outputs.json.
+#    With --chain, repeat until it reports all map patches done:
+python3 tools/track_b_pipeline.py chain-next --scene <N> --work-dir .tmp/pal_track_b/scene_<N>
+#    ...then generate the newly listed items, record them, and run chain-next again.
 
 # 4. Bake HD map pack + occluders + MGO sprites + RGM portraits into site/assets/graphics/ (auto-runs verify-map!)
 python3 tools/track_b_pipeline.py bake --scene <N> --work-dir /tmp/pal_track_b/scene_<N>
