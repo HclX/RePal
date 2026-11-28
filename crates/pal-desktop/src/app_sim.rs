@@ -312,13 +312,21 @@ impl DesktopApp {
         let hd = self.rt.as_ref().is_some_and(|rt| rt.compositor.hd_mode);
         let cache = self.rt.as_ref().map(|rt| {
             let c = &rt.compositor.cache;
+            let fams: Vec<String> = c
+                .texture_bytes_by_family()
+                .into_iter()
+                .take(6)
+                .map(|(f, b)| format!("{f}={}", b / (1024 * 1024)))
+                .collect();
             format!(
-                "cache: uploads={} evictions={} re-decodes={} {}/{} MB",
+                "cache: uploads={} evictions={} re-decodes={} {}/{} MB [{}] | rss={} MB",
                 c.stats_uploads,
                 c.stats_evictions,
                 c.stats_reuploads,
                 c.total_texture_bytes() / (1024 * 1024),
-                c.max_texture_bytes / (1024 * 1024)
+                c.max_texture_bytes / (1024 * 1024),
+                fams.join(" "),
+                process_rss_mb().map_or_else(|| "?".to_string(), |m| m.to_string())
             )
         });
         let Some(p) = self.perf.as_mut() else { return };
@@ -553,4 +561,12 @@ impl DesktopApp {
             p.blit_present += blit_t0.elapsed();
         }
     }
+}
+
+
+/// Resident set size of this process in MiB (Linux `/proc/self/statm`); `None` elsewhere.
+fn process_rss_mb() -> Option<u64> {
+    let statm = std::fs::read_to_string("/proc/self/statm").ok()?;
+    let pages: u64 = statm.split_whitespace().nth(1)?.parse().ok()?;
+    Some(pages * 4096 / (1024 * 1024))
 }

@@ -434,6 +434,23 @@ impl AssetCache {
         }
     }
 
+    /// Resident texture bytes grouped by asset family (`maps_hd`, `ui`, `mgo`, `gop`, `fbp`, ...;
+    /// pinned bytes reported separately), largest first. Diagnostics only (`REPAL_PERF`).
+    pub fn texture_bytes_by_family(&self) -> Vec<(String, usize)> {
+        let mut m: HashMap<String, usize> = HashMap::new();
+        for (k, t) in &self.textures {
+            let fam = if t.pinned {
+                "pinned".to_string()
+            } else {
+                k.split('/').rev().nth(1).unwrap_or("other").to_string()
+            };
+            *m.entry(fam).or_default() += t.pixels.len();
+        }
+        let mut v: Vec<_> = m.into_iter().collect();
+        v.sort_by(|a, b| b.1.cmp(&a.1));
+        v
+    }
+
     pub fn total_texture_bytes(&self) -> usize {
         self.total_texture_bytes
     }
@@ -524,19 +541,21 @@ impl AssetCache {
         self.permanent_missing.contains(&(kind, key.to_string()))
     }
 
-    /// The 2x bilinear-upscaled copy of texture `key` (built once from the loaded texture, then kept
-    /// in the LRU like any texture under `"{key}#up2x"`). `None` until the base texture is loaded.
-    pub fn get_or_build_upscaled_2x(&mut self, key: &str) -> Option<&Texture> {
-        let up_key = format!("{key}#up2x");
-        if !self.textures.contains_key(&up_key) {
-            let base = self.textures.get(key)?;
-            let pixels = crate::framebuffer::upscale_2x_bilinear(&base.pixels, base.width, base.height);
-            let (w, h, pinned) = (base.width * 2, base.height * 2, base.pinned);
-            self.upload_texture(up_key.clone(), w, h, pixels, pinned);
-        }
-        let tex = self.textures.get_mut(&up_key)?;
-        tex.last_used_tick = self.tick;
-        self.textures.get(&up_key)
+    /// Replace texture `key` with its 2x bilinear upscale in place (width/height doubled), so a 2x
+    /// Track-B map chunk is upscaled once and then blitted 1:1 without keeping the 2x source around
+    /// (a separate cached copy cost 25% extra and forced a larger LRU budget). Returns the upscaled
+    /// texture; `None` while `key` is not loaded. Re-uploads after eviction simply upscale again.
+    pub fn upscale_texture_in_place_2x(&mut self, key: &str) -> Option<&Texture> {
+        let tick = self.tick;
+        let tex = self.textures.get_mut(key)?;
+        let pixels = crate::framebuffer::upscale_2x_bilinear(&tex.pixels, tex.width, tex.height);
+        self.total_texture_bytes = self.total_texture_bytes - tex.pixels.len() + pixels.len();
+        tex.width *= 2;
+        tex.height *= 2;
+        tex.pixels = pixels;
+        tex.last_used_tick = tick;
+        self.evict_lru_if_needed();
+        self.textures.get(key)
     }
 
     pub fn upload_texture(&mut self, key: String, width: u32, height: u32, pixels: Vec<u8>, pinned: bool) {

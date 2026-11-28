@@ -834,30 +834,13 @@ pub fn render_world(
                 let dy = (*ry - view_y) * scale;
                 let dw = *rw * scale;
                 let dh = *rh * scale;
-                // Track-B 2x chunks: upscale once (cached, byte-identical) and blit 1:1, instead of
-                // bilinear-upscaling ~1M pixels every frame (was ~half of HD frame time).
+                // Track-B 2x chunks: upscale once in place (byte-identical to the per-frame bilinear
+                // path) so every later frame blits the 4x texture 1:1; the 2x source is dropped.
                 let is_2x = cache
                     .get_texture(rkey)
                     .is_some_and(|t| dw == t.width as i32 * 2 && dh == t.height as i32 * 2);
                 if is_2x {
-                    if let Some(up) = cache.get_or_build_upscaled_2x(rkey) {
-                        fb.blit_region_scaled(
-                            &up.pixels,
-                            up.width,
-                            up.height,
-                            0,
-                            0,
-                            up.width as i32,
-                            up.height as i32,
-                            dx,
-                            dy,
-                            dw,
-                            dh,
-                            255,
-                        );
-                        hd_used = true;
-                        continue;
-                    }
+                    let _ = cache.upscale_texture_in_place_2x(rkey);
                 }
                 if let Some(tex) = cache.get_texture(rkey) {
                     fb.blit_region_scaled(

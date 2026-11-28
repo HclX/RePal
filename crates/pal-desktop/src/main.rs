@@ -542,15 +542,15 @@ impl DesktopApp {
             rt.ui.agent_mode = 1;
         }
 
-        // Desktop texture budget: 512 MB (web keeps 256 MB). Cached 4x upscales of HD map chunks
-        // are 4x the size of their 2x sources; at 256 MB a long HD replay re-decoded over half of
-        // its textures after LRU eviction, at 512 MB almost none (profile_render). Override with
-        // REPAL_TEXTURE_CACHE_MB.
+        // Desktop texture budget: 320 MB (web keeps 256 MB). 2x HD map chunks are upscaled to 4x in
+        // place (4x the bytes of their source); on a long HD replay 256 MB re-decoded ~96 textures
+        // after LRU eviction, 320 MB ~54, 512 MB ~1 (profile_render). Pinned UI atlases (portraits,
+        // items) take up to ~155 MB of it. Override with REPAL_TEXTURE_CACHE_MB.
         rt.compositor.cache.max_texture_bytes = std::env::var("REPAL_TEXTURE_CACHE_MB")
             .ok()
             .and_then(|v| v.trim().parse::<usize>().ok())
             .filter(|&mb| mb >= 64)
-            .unwrap_or(512)
+            .unwrap_or(320)
             * 1024
             * 1024;
         self.rt = Some(rt);
