@@ -70,11 +70,13 @@ Read [docs/HD_REMASTER_METHODOLOGY.md](docs/HD_REMASTER_METHODOLOGY.md) for full
 1. **Per-Scene Workflow**:
    ```bash
    python3 tools/track_b_pipeline.py status
-   python3 tools/track_b_pipeline.py prepare --scene <N> --work-dir <SCRATCH_DIR>/sc<NNN>
-   # Generate 1376x768 remasters sequentially -> write <SCRATCH_DIR>/sc<NNN>/ai_outputs.json
+   python3 tools/track_b_pipeline.py prepare --scene <N> --work-dir <SCRATCH_DIR>/sc<NNN> --chain
+   # Generate 1376x768 remasters sequentially (each item's own `prompt`) -> write <SCRATCH_DIR>/sc<NNN>/ai_outputs.json
+   # Chained maps: run `chain-next --scene <N> --work-dir ...` after each round until it reports all patches done
    python3 tools/track_b_pipeline.py bake --scene <N> --work-dir <SCRATCH_DIR>/sc<NNN>
    ```
-   - **Prepare lazily** (right after prior scenes bake) so `find_story_variant_donor` (`≥68%` identical `1×` pixels) skips redundant patches and `style_anchor_map<ID>.png` picks up newly baked neighbor maps.
+   - **Prepare lazily** (right after prior scenes bake) so `find_story_variant_donor` (`≥68%` identical `1×` pixels) skips redundant patches.
+   - **Chained generation** (`--chain`): each later patch's input carries its already-painted neighbour pixels and a `CHAINED TILE` prompt clause; the model must keep those pixels and continue their texture. Use `--redo-map` to regenerate an already-baked map.
    - **Never commit `--work-dir` or scratch files**; put temporary workdirs, git worktrees, `TMPDIR`, and headless PNG exports under the gitignored workspace `.tmp/` directory (avoid `/tmp` which may be a small RAM-backed `tmpfs`).
 2. **Image Generation Discipline**:
    - Run **at most 1 image-to-image call at a time (sequentially)** to avoid `429` burst rate limits.

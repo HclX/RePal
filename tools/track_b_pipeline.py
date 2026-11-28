@@ -3,7 +3,11 @@
 
 Supports all 294 scenes & 221 maps of PalRemake with ZERO runtime AI dependency:
   - `status`: Report HD completion across scenes, maps, MGO sprites, and RGM portraits.
-  - `prepare --scene <N> --work-dir <DIR>`: Compose zero-hole 1376x768 (43:24) reference inputs & `manifest_todo.json`.
+  - `prepare --scene <N> --work-dir <DIR> [--chain] [--redo-map]`: Compose zero-hole 1376x768 (43:24) reference
+    inputs & `manifest_todo.json`. `--chain` emits only each island's first patch; `--redo-map` re-prepares an
+    already-baked map.
+  - `chain-next --scene <N> --work-dir <DIR>`: After each chained generation round, stitch the finished patches like
+    `bake` does and emit the next patch inputs with their already-painted neighbour pixels pasted in.
   - `bake --scene <N> --work-dir <DIR>`: Register, harmonize, seam-cut stitch, de-matte, extract exact PAL `sortY`
     per-depth occluders, hard-gate verify (`verify_map`), write static WebP + JSON into `site/assets/graphics/`,
     and bump `ASSET_VER`.
@@ -882,7 +886,8 @@ def _load_map_hd_alpha_1x(map_id: int) -> np.ndarray | None:
             continue
         im = np.array(Image.open(fp).convert("RGBA"))
         rx, ry, rw, rh = int(r["x"]), int(r["y"]), int(r["w"]), int(r["h"])
-        a_sub = im[:, :, 3].reshape(rh, 4, rw, 4).mean(axis=(1, 3)) > 128
+        sc = max(1, int(meta.get("scale", 4)))  # chunks are stored at `scale` px per 1x px (4 or 2)
+        a_sub = im[: rh * sc, : rw * sc, 3].reshape(rh, sc, rw, sc).mean(axis=(1, 3)) > 128
         a1[ry:ry + rh, rx:rx + rw] |= a_sub
     return a1
 
@@ -892,6 +897,7 @@ def _load_map_hd_crop_4x(map_id: int, bbox_1x: tuple[int, int, int, int]) -> tup
     ix0, iy0, iw, ih = bbox_1x
     mdir = GFX / "maps_hd" / f"map_{map_id:03d}"
     meta = json.loads((mdir / "meta.json").read_text())
+    sc = max(1, int(meta.get("scale", 4)))  # chunks are stored at `scale` px per 1x px (4 or 2)
     canvas = Image.new("RGBA", (iw * 4, ih * 4), (0, 0, 0, 0))
     for r in meta.get("rooms", []):
         rx, ry, rw, rh = int(r["x"]), int(r["y"]), int(r["w"]), int(r["h"])
@@ -900,7 +906,9 @@ def _load_map_hd_crop_4x(map_id: int, bbox_1x: tuple[int, int, int, int]) -> tup
         if ox1 <= ox0 or oy1 <= oy0:
             continue
         im = Image.open(mdir / r["file"]).convert("RGBA")
-        crop = im.crop(((ox0 - rx) * 4, (oy0 - ry) * 4, (ox1 - rx) * 4, (oy1 - ry) * 4))
+        crop = im.crop(((ox0 - rx) * sc, (oy0 - ry) * sc, (ox1 - rx) * sc, (oy1 - ry) * sc))
+        if sc != 4:
+            crop = crop.resize(((ox1 - ox0) * 4, (oy1 - oy0) * 4), Image.Resampling.LANCZOS)
         canvas.alpha_composite(crop, ((ox0 - ix0) * 4, (oy0 - iy0) * 4))
     arr = np.array(canvas)
     return arr[:, :, :3], arr[:, :, 3]
@@ -1081,13 +1089,34 @@ def export_neighbor_style_anchor(
     return out_p
 
 
-def build_map_patch_prompt(scene_name: str, anchor_note: str = "") -> str:
+PATCH_OVERLAP_X_1X, PATCH_OVERLAP_Y_1X = 128, 112  # min overlap between neighbouring 688x384 patches
+TWO_BAND_SEAM_BLEND = True  # frequency-split seam blend in `_stitch_island_patches_4x` (False = legacy linear)
+
+
+def describe_chained_edges(edges: list[str]) -> str:
+    """Prompt clause for a chained patch whose `edges` (subset of top/bottom/left/right) carry final HD pixels."""
+    if not edges:
+        return ""
+    where = ", ".join(edges[:-1]) + (" and " if len(edges) > 1 else "") + edges[-1]
+    return (
+        f" CHAINED TILE: the {where} edge region(s) of this input are ALREADY-PAINTED final HD artwork from the "
+        f"neighbouring tile (smooth painted pixels, NOT blocky pixel art). Keep those already-painted pixels exactly "
+        f"as they are, and continue their brushwork, texture scale, grass/foliage direction, water ripple density, "
+        f"lighting, and color seamlessly into the rest of the image so the two tiles join with NO visible boundary."
+    )
+
+
+def build_map_patch_prompt(scene_name: str, chain_note: str = "") -> str:
     return (
         f"Faithful 2D HD hand-painted Chinese classic RPG background remaster of this exact isometric scene "
         f"({scene_name} from 1995 Chinese Paladin / Xianjian Qixiazhuan). "
         f"CRITICAL GEOMETRY & PROP LOCK: Keep every single wall, doorway, floor boundary, furniture piece, staircase, "
-        f"cliff, path, tree trunk, water shoreline, and black exterior background in the EXACT same pixel position, "
+        f"cliff, path, tree trunk, water shoreline, and black exterior background in the EXACT same position, "
         f"scale, and isometric angle — zero layout changes, zero added characters, zero camera shift. "
+        f"TILE-ARTIFACT RULE: jagged diamond-shaped staircase steps along a boundary between two ground materials "
+        f"(grass/water, grass/dirt, sand/water) are 1995 tile artifacts, not real geometry: paint that boundary as a "
+        f"natural, irregular organic edge that follows the same overall line (never move it more than a few pixels, "
+        f"never add new land or water). "
         f"STRICT ANTI-HALLUCINATION RULE: NEVER invent or add extra props (no added steamers, food baskets, buns, "
         f"jars, bowls, teapots, vases, lanterns, candles, signs, or plants) onto bare counters, bare tables, bare "
         f"floors, grass, or dark doorways! NEVER invent shorelines, cliffs, stairs, piers, or rocks over flat open "
@@ -1098,7 +1127,11 @@ def build_map_patch_prompt(scene_name: str, anchor_note: str = "") -> str:
         f"scene. Keep dark slate-grey river/pond/lake water (#1E2428) calm, dark, and natural (NEVER glowing cyan, "
         f"bright turquoise, or snowy white ripples). Use a consistent medium-fine hand-painted traditional Chinese "
         f"watercolor/gouache brushstroke texture matching all other maps in this remake (neither blurry wash nor "
-        f"over-sharpened grainy noise).{anchor_note} "
+        f"over-sharpened grainy noise). "
+        f"EVEN-TEXTURE RULE: this image is one tile of a larger seamless map, so paint large uniform areas (lawns, "
+        f"open water, plain floors, roofs) with EVEN texture density, scale, and direction across the WHOLE image — "
+        f"no vignettes, no lighting gradients toward the corners, no bright spots, and no clusters of ripples or "
+        f"flowers in one area only.{chain_note} "
         f"Replace blocky pixelated dithering with crisp, ultra-clean high-definition hand-painted traditional "
         f"Chinese game art: fine natural wood grain, crisp carved lattice woodwork, clean stone tiles, lush foliage, "
         f"and realistic woven textiles. "
@@ -1106,7 +1139,9 @@ def build_map_patch_prompt(scene_name: str, anchor_note: str = "") -> str:
     )
 
 
-def prepare_map_patches(map_id: int, scene_name: str, work_dir: Path, scenes, events, all_scripts) -> list[dict]:
+def prepare_map_patches(
+    map_id: int, scene_name: str, work_dir: Path, scenes, events, all_scripts, chain: bool = False
+) -> list[dict]:
     full_1x, sort_y_1x, tile_occ_1x = render_map_1x_and_sort_y(map_id)
     vis_1x = compute_camera_visible_mask_1x(map_id, tile_occ_1x, scenes, events, all_scripts)
 
@@ -1137,15 +1172,6 @@ def prepare_map_patches(map_id: int, scene_name: str, work_dir: Path, scenes, ev
             f"  [Story-Variant Donor] Map {map_id:03d} inherits from Map {donor_id:03d} "
             f"(cov={donor_cov:.3f}, same={donor_same:.3f}, diff_px={int(diff_1x.sum())})"
         )
-
-    # Pillar 3: Export connected neighbor style anchor swatch (if available)
-    anchor_p = export_neighbor_style_anchor(map_id, work_dir, scenes, events, all_scripts)
-    anchor_note = (
-        f" Match the exact lighting, palette warmth, and brushstroke detail scale of connected neighbor map "
-        f"reference {anchor_p.name}."
-        if anchor_p is not None
-        else ""
-    )
 
     # Group visible map geometry into connected islands (dilated by 8px to bridge 1-tile gaps)
     lbl, n_isl = label(binary_dilation(vis_1x, iterations=8))
@@ -1181,7 +1207,7 @@ def prepare_map_patches(map_id: int, scene_name: str, work_dir: Path, scenes, ev
         if not absorbed and cand["area"] >= 80:
             merged_islands.append(cand)
 
-    prompt = build_map_patch_prompt(scene_name, anchor_note=anchor_note)
+    prompt = build_map_patch_prompt(scene_name)
     for isl_idx, isl_entry in enumerate(merged_islands, start=1):
         cids = isl_entry["cids"]
         ix0, iy0, ix1, cy1 = isl_entry["bbox"]
@@ -1194,14 +1220,14 @@ def prepare_map_patches(map_id: int, scene_name: str, work_dir: Path, scenes, ev
             cx = (ix0 + ix1) // 2
             xs_starts = [max(0, min(W - BOX_W, ((cx - BOX_W // 2) // 4) * 4))]
         else:
-            nx = max(2, math.ceil((iw - 96) / (BOX_W - 96)))
+            nx = max(2, math.ceil((iw - PATCH_OVERLAP_X_1X) / (BOX_W - PATCH_OVERLAP_X_1X)))
             xs_starts = sorted({max(0, min(W - BOX_W, (round(ix0 + k * (iw - BOX_W) / (nx - 1)) // 4) * 4)) for k in range(nx)})
 
         if ih <= BOX_H:
             cy = (iy0 + iy1) // 2
             ys_starts = [max(0, min(H - BOX_H, ((cy - BOX_H // 2) // 4) * 4))]
         else:
-            ny = max(2, math.ceil((ih - 80) / (BOX_H - 80)))
+            ny = max(2, math.ceil((ih - PATCH_OVERLAP_Y_1X) / (BOX_H - PATCH_OVERLAP_Y_1X)))
             ys_starts = sorted({max(0, min(H - BOX_H, (round(iy0 + k * (ih - BOX_H) / (ny - 1)) // 4) * 4)) for k in range(ny)})
 
         patches = []
@@ -1235,8 +1261,6 @@ def prepare_map_patches(map_id: int, scene_name: str, work_dir: Path, scenes, ev
                     "input_path": str(in_path),
                     "prompt": prompt,
                 }
-                if anchor_p is not None:
-                    item["style_anchor_path"] = str(anchor_p)
                 todo_items.append(item)
 
         islands_meta.append({
@@ -1249,7 +1273,82 @@ def prepare_map_patches(map_id: int, scene_name: str, work_dir: Path, scenes, ev
         print(f"  [Map {map_id:03d}] Island {isl_idx}: bbox=({ix0},{iy0},{iw}x{ih}) -> {len(patches)} patch(es)")
 
     (work_dir / f"map_{map_id:03d}_islands.json").write_text(json.dumps(islands_meta, indent=2))
+    chain_p = work_dir / f"map_{map_id:03d}_chain.json"
+    if chain:
+        # Chained generation: only patches with no earlier overlapping patch are ready now; `chain-next` builds the
+        # rest one at a time with their already-painted neighbour pixels pasted into the input image.
+        ready = {p["key"] for isl in islands_meta for p in _chain_ready_patches(isl["patches"], set())}
+        todo_items = [it for it in todo_items if it["key"] in ready]
+        chain_p.write_text(json.dumps({"map_id": map_id, "scene_name": scene_name}, indent=2, ensure_ascii=False))
+        print(f"  [Chain] {len(todo_items)} first patch(es) ready; run `chain-next` after each generation round")
+    elif chain_p.exists():
+        chain_p.unlink()
     return todo_items
+
+
+def _boxes_overlap(a: list[int], b: list[int]) -> bool:
+    ax, ay, aw, ah = a
+    bx, by, bw, bh = b
+    return ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah
+
+
+def _chain_ready_patches(patches: list[dict], done: set[str]) -> list[dict]:
+    """Patches not yet generated whose every EARLIER (bake-order) overlapping patch already has an output."""
+    ready = []
+    for k, p in enumerate(patches):
+        if p["key"] in done:
+            continue
+        deps = [q for q in patches[:k] if _boxes_overlap(q["box_1x"], p["box_1x"])]
+        if all(q["key"] in done for q in deps):
+            ready.append(p)
+    return ready
+
+
+def build_chained_patch_input(
+    pinfo: dict,
+    island_bbox_1x: tuple[int, int, int, int],
+    full_1x: np.ndarray,
+    isl_ctx_full: np.ndarray,
+    acc_rgb_4x: np.ndarray,
+    has_pix_1x: np.ndarray,
+) -> tuple[np.ndarray, list[str]]:
+    """1376x768 input for `pinfo`: the usual nearest-2x 1x reference, with every pixel already covered by earlier
+    stitched patches replaced by those final HD pixels (box-downsampled 4x -> 2x). Returns `(rgb, edges)`."""
+    ix0, iy0, iw, ih = island_bbox_1x
+    bx0, by0, bw, bh = pinfo["box_1x"]
+    crop = full_1x[by0:by0 + bh, bx0:bx0 + bw, :3].copy()
+    crop[~isl_ctx_full[by0:by0 + bh, bx0:bx0 + bw]] = 0
+    out = np.array(Image.fromarray(crop).resize((bw * 2, bh * 2), Image.Resampling.NEAREST))
+    painted_1x = np.zeros((bh, bw), dtype=bool)
+    ox0, oy0 = max(ix0, bx0), max(iy0, by0)
+    ox1, oy1 = min(ix0 + iw, bx0 + bw), min(iy0 + ih, by0 + bh)
+    if ox1 > ox0 and oy1 > oy0:
+        painted_1x[oy0 - by0:oy1 - by0, ox0 - bx0:ox1 - bx0] = has_pix_1x[oy0 - iy0:oy1 - iy0, ox0 - ix0:ox1 - ix0]
+        hd = acc_rgb_4x[(oy0 - iy0) * 4:(oy1 - iy0) * 4, (ox0 - ix0) * 4:(ox1 - ix0) * 4]
+        hd_2x = np.array(
+            Image.fromarray(np.clip(np.round(hd), 0, 255).astype(np.uint8)).resize(
+                ((ox1 - ox0) * 2, (oy1 - oy0) * 2), Image.Resampling.BOX
+            )
+        )
+        canvas_2x = np.zeros_like(out)
+        canvas_2x[(oy0 - by0) * 2:(oy1 - by0) * 2, (ox0 - bx0) * 2:(ox1 - bx0) * 2] = hd_2x
+        m2 = np.repeat(np.repeat(painted_1x, 2, axis=0), 2, axis=1)
+        out[m2] = canvas_2x[m2]
+    if out.shape[:2] != (768, 1376):
+        out = np.array(Image.fromarray(out).resize((1376, 768), Image.Resampling.NEAREST))
+    # An edge counts as pre-painted only when at least half of a thin band along it is painted, so a left
+    # neighbour's overlap (which also touches the top/bottom rows near the corner) is reported as "left" only.
+    edges = []
+    band_x, band_y = max(4, bw // 12), max(4, bh // 12)
+    for name, strip in (
+        ("top", painted_1x[:band_y]),
+        ("bottom", painted_1x[-band_y:]),
+        ("left", painted_1x[:, :band_x]),
+        ("right", painted_1x[:, -band_x:]),
+    ):
+        if strip.size and float(strip.mean()) >= 0.5:
+            edges.append(name)
+    return out, edges
 
 
 def _dp_vertical_seam(cost_2d: np.ndarray) -> np.ndarray:
@@ -1810,6 +1909,214 @@ def _snap_occluder_alpha_edges_4x(
     return np.minimum(out_a, isl_alpha_crop_4x)
 
 
+def _island_masks(
+    isl: dict,
+    n_islands: int,
+    lbl_all: np.ndarray,
+    vis_1x: np.ndarray,
+    tile_occ_1x: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Zero-hole island masks shared by `bake_map_hd` and chained preparation.
+
+    Returns `(isl_valid_1x (ih, iw), isl_alpha_4x (ih*4, iw*4) uint8, isl_ctx_full (2048, 2048))`.
+    """
+    ix0, iy0, iw, ih = isl["bbox_1x"]
+    iw4, ih4 = iw * 4, ih * 4
+    # Match `lbl_all` components enclosed in `[ix0..ix0+iw, iy0..iy0+ih]` (robust to `rebake-map` relabeling!)
+    sub_lbl = lbl_all[iy0:iy0 + ih, ix0:ix0 + iw]
+    present_cids = [int(c) for c in np.unique(sub_lbl) if c > 0]
+    matched_cids = []
+    for c in present_cids:
+        tot_c = int(((lbl_all == c) & vis_1x).sum())
+        in_c = int(((sub_lbl == c) & vis_1x[iy0:iy0 + ih, ix0:ix0 + iw]).sum())
+        if tot_c > 0 and (in_c / tot_c >= 0.5 or n_islands == 1):
+            matched_cids.append(c)
+    if not matched_cids:
+        matched_cids = present_cids or (isl.get("cids") or [isl.get("cid", 1)])
+
+    # Zero-Hole Island Masking: intersect `vis_1x` (no 6px dilated black AI collar!) then `binary_fill_holes`!
+    isl_valid_1x = (
+        np.isin(sub_lbl, matched_cids)
+        & vis_1x[iy0:iy0 + ih, ix0:ix0 + iw]
+        & tile_occ_1x[iy0:iy0 + ih, ix0:ix0 + iw]
+    )
+    isl_valid_1x = binary_fill_holes(isl_valid_1x)
+
+    valid_4x_f = np.array(
+        Image.fromarray((isl_valid_1x.astype(np.uint8) * 255)).resize((iw4, ih4), Image.Resampling.BILINEAR)
+    )
+    isl_alpha_4x = np.clip((valid_4x_f.astype(np.int32) - 96) * 3, 0, 255).astype(np.uint8)
+    holes_4x = binary_fill_holes(isl_alpha_4x > 200) & (isl_alpha_4x <= 200)
+    if holes_4x.any():
+        isl_alpha_4x[holes_4x] = 255
+
+    # Full-map context mask for 1x reference registration
+    isl_full_mask = np.zeros((2048, 2048), dtype=bool)
+    isl_full_mask[iy0:iy0 + ih, ix0:ix0 + iw] = isl_valid_1x
+    isl_ctx_full = isl_full_mask | (binary_dilation(isl_full_mask, iterations=2) & tile_occ_1x)
+
+    return isl_valid_1x, isl_alpha_4x, isl_ctx_full
+
+
+def _two_band_seam_blend_4x(
+    prev_4x: np.ndarray,
+    cur_4x: np.ndarray,
+    w_seam_4x: np.ndarray,
+    both_4x: np.ndarray,
+    sigma_lo: float = 10.0,
+    sigma_w_lo: float = 24.0,
+    sigma_w_hi: float = 2.5,
+) -> np.ndarray:
+    """Frequency-split seam blend for independently generated patches.
+
+    - Low band (lighting/colour, `sigma_lo`): blended WIDE (`sigma_w_lo`) so brightness steps vanish.
+    - High band (brushwork/texture): blended NARROW around the seam-cut line (`sigma_w_hi`), so two different
+      grass/ripple textures never cross-fade into a blurry double-exposed band.
+    - The incoming patch's high band is rescaled to the previous canvas's texture energy measured where both
+      sides overlap (clipped to [0.8, 1.25]), so fine-detail density matches across the seam.
+    """
+    lo = lambda im: np.stack([gaussian_filter(im[:, :, c], sigma_lo, mode="nearest") for c in range(3)], axis=2)
+    lo_p, lo_c = lo(prev_4x), lo(cur_4x)
+    hi_p, hi_c = prev_4x - lo_p, cur_4x - lo_c
+    if int(both_4x.sum()) >= 256:
+        e_p = float(np.sqrt((hi_p[both_4x] ** 2).mean()))
+        e_c = float(np.sqrt((hi_c[both_4x] ** 2).mean()))
+        if e_c > 1e-3:
+            hi_c = hi_c * float(np.clip(e_p / e_c, 0.8, 1.25))
+    w_lo = np.clip(gaussian_filter(w_seam_4x, sigma_w_lo, mode="nearest"), 0.0, 1.0)[:, :, None]
+    w_hi = np.clip(gaussian_filter((w_seam_4x > 0.5).astype(np.float32), sigma_w_hi, mode="nearest"), 0.0, 1.0)[:, :, None]
+    return lo_p * (1.0 - w_lo) + lo_c * w_lo + hi_p * (1.0 - w_hi) + hi_c * w_hi
+
+
+def _stitch_island_patches_4x(
+    patches: list[dict],
+    ai_map: dict[str, Path],
+    work_dir: Path,
+    full_1x: np.ndarray,
+    isl_ctx_full: np.ndarray,
+    isl_valid_1x: np.ndarray,
+    isl_alpha_4x: np.ndarray,
+    island_bbox_1x: tuple[int, int, int, int],
+) -> tuple[np.ndarray, np.ndarray]:
+    """Register, harmonize and seam-cut stitch `patches` (in order) into one island canvas.
+
+    Shared by `bake_map_hd` and chained preparation (`chain-next`), so a partial island built from the
+    patches generated so far is pixel-identical to what the final bake will produce for that region.
+    Returns `(acc_rgb_4x float32 (ih*4, iw*4, 3), has_pix_1x bool (ih, iw))`.
+    """
+    ix0, iy0, iw, ih = island_bbox_1x
+    acc_rgb = np.zeros((ih * 4, iw * 4, 3), dtype=np.float32)
+    has_pix_1x = np.zeros((ih, iw), dtype=bool)
+    for pinfo in patches:
+        pkey = pinfo["key"]
+        ai_p = ai_map.get(pkey)
+        if ai_p is not None:
+            ai_p = resolve_work_or_asset_path(ai_p, work_dir)
+        if not ai_p or not ai_p.exists():
+            raise FileNotFoundError(f"Missing AI patch output for {pkey}: {ai_p}")
+        bx0, by0, bw, bh = pinfo["box_1x"]
+
+        ref_crop_1x = full_1x[by0:by0 + bh, bx0:bx0 + bw, :3].copy()
+        ref_crop_1x[~isl_ctx_full[by0:by0 + bh, bx0:bx0 + bw]] = 0
+        ref_2x = np.array(Image.fromarray(ref_crop_1x).resize((1376, 768), Image.Resampling.NEAREST))
+
+        ai_im = Image.open(ai_p).convert("RGB")
+        if ai_im.size != (1376, 768):
+            ai_im = ai_im.resize((1376, 768), Image.Resampling.LANCZOS)
+        ai_2x = np.array(ai_im)
+
+        dx2, dy2 = register_translation_2d(ref_2x, ai_2x, max_shift=10)
+        ai_2x_reg = shift_image_rgb(ai_2x, dx2, dy2, fill=(0, 0, 0))
+        im_4x = Image.fromarray(ai_2x_reg).resize((bw * 4, bh * 4), Image.Resampling.LANCZOS)
+        patch_rgb = np.array(im_4x).astype(np.float32)
+
+        # Intersection of this patch `[bx0..bx0+bw, by0..by0+bh]` with island `[ix0..ix0+iw, iy0..iy0+ih]`
+        ox0 = max(ix0, bx0)
+        oy0 = max(iy0, by0)
+        ox1 = min(ix0 + iw, bx0 + bw)
+        oy1 = min(iy0 + ih, by0 + bh)
+        if ox1 <= ox0 or oy1 <= oy0:
+            continue
+
+        y0_i, y1_i = oy0 - iy0, oy1 - iy0
+        x0_i, x1_i = ox0 - ix0, ox1 - ix0
+        py0_i, py1_i = y0_i * 4, y1_i * 4
+        px0_i, px1_i = x0_i * 4, x1_i * 4
+        py0_p, py1_p = (oy0 - by0) * 4, (oy1 - by0) * 4
+        px0_p, px1_p = (ox0 - bx0) * 4, (ox1 - bx0) * 4
+
+        raw_sub_4x = patch_rgb[py0_p:py1_p, px0_p:px1_p].copy()
+        sub_patch = raw_sub_4x.copy()
+        ref_sub_1x = full_1x[oy0:oy1, ox0:ox1, :3]
+        valid_sub_1x = isl_valid_1x[y0_i:y1_i, x0_i:x1_i]
+        # Do not mark `has_pix_1x = True` on un-regenerated `#000000` black void cutouts where `ref_sub_1x >= 12`!
+        raw_cur_max_1x = raw_sub_4x.reshape(y1_i - y0_i, 4, x1_i - x0_i, 4, 3).mean(axis=(1, 3)).max(axis=2)
+        non_black_cur_1x = (raw_cur_max_1x >= 16.0) | (ref_sub_1x.max(axis=2) < 12)
+        prev_has_sub = has_pix_1x[y0_i:y1_i, x0_i:x1_i]
+
+        if not prev_has_sub.any():
+            acc_rgb[py0_i:py1_i, px0_i:px1_i] = sub_patch
+            has_pix_1x[y0_i:y1_i, x0_i:x1_i] |= valid_sub_1x & non_black_cur_1x
+            print(f"  [Patch] {pkey}: shift_2x=({dx2:+d},{dy2:+d}) [anchor]")
+            continue
+
+        prev_4x = acc_rgb[py0_i:py1_i, px0_i:px1_i]
+        sub_patch = harmonize_patch_overlap_4x(
+            prev_4x=prev_4x,
+            sub_patch=sub_patch,
+            prev_has_1x=prev_has_sub,
+            valid_sub_1x=valid_sub_1x,
+            isl_alpha_sub_4x=isl_alpha_4x[py0_i:py1_i, px0_i:px1_i],
+            ref_1x=ref_sub_1x,
+        )
+
+        must_prev_left = has_pix_1x[y0_i:y1_i, x0_i - 1] if x0_i > 0 else np.zeros(y1_i - y0_i, dtype=bool)
+        must_prev_top = has_pix_1x[y0_i - 1, x0_i:x1_i] if y0_i > 0 else np.zeros(x1_i - x0_i, dtype=bool)
+        must_prev_right = has_pix_1x[y0_i:y1_i, x1_i] if x1_i < iw else np.zeros(y1_i - y0_i, dtype=bool)
+        must_prev_bot = has_pix_1x[y1_i, x0_i:x1_i] if y1_i < ih else np.zeros(x1_i - x0_i, dtype=bool)
+
+        w_seam_4x = compute_seam_cut_blend_weight_4x(
+            prev_4x=prev_4x,
+            cur_4x=sub_patch,
+            ref_1x=ref_sub_1x,
+            prev_has_1x=prev_has_sub,
+            valid_sub_1x=valid_sub_1x,
+            must_prev_left=must_prev_left,
+            must_prev_top=must_prev_top,
+            must_prev_right=must_prev_right,
+            must_prev_bot=must_prev_bot,
+        )
+
+        # Black-Void Guard: never let `raw_sub_4x` near-black void (`< 16`) overwrite valid `prev_4x` (`> 24`),
+        # including dark 1x PAL lake/river water (`ref_max >= 12`), while keeping true `#000000` PAL doorways!
+        prev_has_4x = np.repeat(np.repeat(prev_has_sub, 4, axis=0), 4, axis=1)
+        ref_max_4x = np.repeat(np.repeat(ref_sub_1x.max(axis=2), 4, axis=0), 4, axis=1)
+        cur_blk_void = prev_has_4x & (raw_sub_4x.max(axis=2) < 16.0) & (prev_4x.max(axis=2) > 24.0) & (ref_max_4x >= 12)
+        if cur_blk_void.any():
+            blk_guard = gaussian_filter(binary_dilation(cur_blk_void, iterations=6).astype(np.float32), sigma=2.2)
+            w_seam_4x = w_seam_4x * np.clip(1.0 - blk_guard * 1.5, 0.0, 1.0)
+            w_seam_4x[cur_blk_void] = 0.0
+
+        prev_blk_void = prev_has_4x & (prev_4x.max(axis=2) < 16.0) & (raw_sub_4x.max(axis=2) > 24.0) & (ref_max_4x >= 12)
+        if prev_blk_void.any():
+            pblk_guard = gaussian_filter(binary_dilation(prev_blk_void, iterations=6).astype(np.float32), sigma=2.2)
+            w_seam_4x = np.maximum(w_seam_4x, np.clip(pblk_guard * 1.5, 0.0, 1.0))
+            w_seam_4x[prev_blk_void] = 1.0
+
+        linear = prev_4x * (1.0 - w_seam_4x[:, :, None]) + sub_patch * w_seam_4x[:, :, None]
+        # Two-band seam blend only where BOTH sides hold real (non-void) pixels; void guards stay linear/hard.
+        both_4x = prev_has_4x & (raw_sub_4x.max(axis=2) >= 16.0) & (prev_4x.max(axis=2) >= 16.0)
+        both_4x &= ~cur_blk_void & ~prev_blk_void
+        if TWO_BAND_SEAM_BLEND and both_4x.any():
+            mb = _two_band_seam_blend_4x(prev_4x, sub_patch, w_seam_4x, both_4x)
+            linear = np.where(both_4x[:, :, None], mb, linear)
+        acc_rgb[py0_i:py1_i, px0_i:px1_i] = linear
+        has_pix_1x[y0_i:y1_i, x0_i:x1_i] |= valid_sub_1x & non_black_cur_1x
+        print(f"  [Patch] {pkey}: shift_2x=({dx2:+d},{dy2:+d}) [seam-cut]")
+
+    return acc_rgb, has_pix_1x
+
+
 def bake_map_hd(
     map_id: int,
     work_dir: Path,
@@ -1859,44 +2166,9 @@ def bake_map_hd(
     for isl in islands_meta:
         isl_id = isl["island_id"]
         ix0, iy0, iw, ih = isl["bbox_1x"]
-        iw4, ih4 = iw * 4, ih * 4
 
-        # Match `lbl_all` components enclosed in `[ix0..ix0+iw, iy0..iy0+ih]` (robust to `rebake-map` relabeling!)
-        sub_lbl = lbl_all[iy0:iy0 + ih, ix0:ix0 + iw]
-        present_cids = [int(c) for c in np.unique(sub_lbl) if c > 0]
-        matched_cids = []
-        for c in present_cids:
-            tot_c = int(((lbl_all == c) & vis_1x).sum())
-            in_c = int(((sub_lbl == c) & vis_1x[iy0:iy0 + ih, ix0:ix0 + iw]).sum())
-            if tot_c > 0 and (in_c / tot_c >= 0.5 or len(islands_meta) == 1):
-                matched_cids.append(c)
-        if not matched_cids:
-            matched_cids = present_cids or (isl.get("cids") or [isl.get("cid", 1)])
-
-        # Zero-Hole Island Masking: intersect `vis_1x` (no 6px dilated black AI collar!) then `binary_fill_holes`!
-        isl_valid_1x = (
-            np.isin(sub_lbl, matched_cids)
-            & vis_1x[iy0:iy0 + ih, ix0:ix0 + iw]
-            & tile_occ_1x[iy0:iy0 + ih, ix0:ix0 + iw]
-        )
-        isl_valid_1x = binary_fill_holes(isl_valid_1x)
+        isl_valid_1x, isl_alpha_4x, isl_ctx_full = _island_masks(isl, len(islands_meta), lbl_all, vis_1x, tile_occ_1x)
         covered_valid_1x[iy0:iy0 + ih, ix0:ix0 + iw] |= isl_valid_1x
-
-        valid_4x_f = np.array(
-            Image.fromarray((isl_valid_1x.astype(np.uint8) * 255)).resize((iw4, ih4), Image.Resampling.BILINEAR)
-        )
-        isl_alpha_4x = np.clip((valid_4x_f.astype(np.int32) - 96) * 3, 0, 255).astype(np.uint8)
-        holes_4x = binary_fill_holes(isl_alpha_4x > 200) & (isl_alpha_4x <= 200)
-        if holes_4x.any():
-            isl_alpha_4x[holes_4x] = 255
-
-        # Full-map context mask for 1x reference registration
-        isl_full_mask = np.zeros((2048, 2048), dtype=bool)
-        isl_full_mask[iy0:iy0 + ih, ix0:ix0 + iw] = isl_valid_1x
-        isl_ctx_full = isl_full_mask | (binary_dilation(isl_full_mask, iterations=2) & tile_occ_1x)
-
-        acc_rgb = np.zeros((ih4, iw4, 3), dtype=np.float32)
-        has_pix_1x = np.zeros((ih, iw), dtype=bool)
 
         # Auto-prune redundant `uniq_vis_1x == 0` border patches that hallucinated into exterior `#000000` void!
         active_patches = list(isl["patches"])
@@ -1949,107 +2221,9 @@ def bake_map_hd(
             if drop_indices:
                 active_patches = [p for i, p in enumerate(active_patches) if i not in drop_indices]
 
-        for pinfo in active_patches:
-            pkey = pinfo["key"]
-            ai_p = ai_map.get(pkey)
-            if ai_p is not None:
-                ai_p = resolve_work_or_asset_path(ai_p, work_dir)
-            if not ai_p or not ai_p.exists():
-                raise FileNotFoundError(f"Missing AI patch output for {pkey}: {ai_p}")
-            bx0, by0, bw, bh = pinfo["box_1x"]
-
-            ref_crop_1x = full_1x[by0:by0 + bh, bx0:bx0 + bw, :3].copy()
-            ref_crop_1x[~isl_ctx_full[by0:by0 + bh, bx0:bx0 + bw]] = 0
-            ref_2x = np.array(Image.fromarray(ref_crop_1x).resize((1376, 768), Image.Resampling.NEAREST))
-
-            ai_im = Image.open(ai_p).convert("RGB")
-            if ai_im.size != (1376, 768):
-                ai_im = ai_im.resize((1376, 768), Image.Resampling.LANCZOS)
-            ai_2x = np.array(ai_im)
-
-            dx2, dy2 = register_translation_2d(ref_2x, ai_2x, max_shift=10)
-            ai_2x_reg = shift_image_rgb(ai_2x, dx2, dy2, fill=(0, 0, 0))
-            im_4x = Image.fromarray(ai_2x_reg).resize((bw * 4, bh * 4), Image.Resampling.LANCZOS)
-            patch_rgb = np.array(im_4x).astype(np.float32)
-
-            # Intersection of this patch `[bx0..bx0+bw, by0..by0+bh]` with island `[ix0..ix0+iw, iy0..iy0+ih]`
-            ox0 = max(ix0, bx0)
-            oy0 = max(iy0, by0)
-            ox1 = min(ix0 + iw, bx0 + bw)
-            oy1 = min(iy0 + ih, by0 + bh)
-            if ox1 <= ox0 or oy1 <= oy0:
-                continue
-
-            y0_i, y1_i = oy0 - iy0, oy1 - iy0
-            x0_i, x1_i = ox0 - ix0, ox1 - ix0
-            py0_i, py1_i = y0_i * 4, y1_i * 4
-            px0_i, px1_i = x0_i * 4, x1_i * 4
-            py0_p, py1_p = (oy0 - by0) * 4, (oy1 - by0) * 4
-            px0_p, px1_p = (ox0 - bx0) * 4, (ox1 - bx0) * 4
-
-            raw_sub_4x = patch_rgb[py0_p:py1_p, px0_p:px1_p].copy()
-            sub_patch = raw_sub_4x.copy()
-            ref_sub_1x = full_1x[oy0:oy1, ox0:ox1, :3]
-            valid_sub_1x = isl_valid_1x[y0_i:y1_i, x0_i:x1_i]
-            # Do not mark `has_pix_1x = True` on un-regenerated `#000000` black void cutouts where `ref_sub_1x >= 12`!
-            raw_cur_max_1x = raw_sub_4x.reshape(y1_i - y0_i, 4, x1_i - x0_i, 4, 3).mean(axis=(1, 3)).max(axis=2)
-            non_black_cur_1x = (raw_cur_max_1x >= 16.0) | (ref_sub_1x.max(axis=2) < 12)
-            prev_has_sub = has_pix_1x[y0_i:y1_i, x0_i:x1_i]
-
-            if not prev_has_sub.any():
-                acc_rgb[py0_i:py1_i, px0_i:px1_i] = sub_patch
-                has_pix_1x[y0_i:y1_i, x0_i:x1_i] |= valid_sub_1x & non_black_cur_1x
-                print(f"  [Patch] {pkey}: shift_2x=({dx2:+d},{dy2:+d}) [anchor]")
-                continue
-
-            prev_4x = acc_rgb[py0_i:py1_i, px0_i:px1_i]
-            sub_patch = harmonize_patch_overlap_4x(
-                prev_4x=prev_4x,
-                sub_patch=sub_patch,
-                prev_has_1x=prev_has_sub,
-                valid_sub_1x=valid_sub_1x,
-                isl_alpha_sub_4x=isl_alpha_4x[py0_i:py1_i, px0_i:px1_i],
-                ref_1x=ref_sub_1x,
-            )
-
-            must_prev_left = has_pix_1x[y0_i:y1_i, x0_i - 1] if x0_i > 0 else np.zeros(y1_i - y0_i, dtype=bool)
-            must_prev_top = has_pix_1x[y0_i - 1, x0_i:x1_i] if y0_i > 0 else np.zeros(x1_i - x0_i, dtype=bool)
-            must_prev_right = has_pix_1x[y0_i:y1_i, x1_i] if x1_i < iw else np.zeros(y1_i - y0_i, dtype=bool)
-            must_prev_bot = has_pix_1x[y1_i, x0_i:x1_i] if y1_i < ih else np.zeros(x1_i - x0_i, dtype=bool)
-
-            w_seam_4x = compute_seam_cut_blend_weight_4x(
-                prev_4x=prev_4x,
-                cur_4x=sub_patch,
-                ref_1x=ref_sub_1x,
-                prev_has_1x=prev_has_sub,
-                valid_sub_1x=valid_sub_1x,
-                must_prev_left=must_prev_left,
-                must_prev_top=must_prev_top,
-                must_prev_right=must_prev_right,
-                must_prev_bot=must_prev_bot,
-            )
-
-            # Black-Void Guard: never let `raw_sub_4x` near-black void (`< 16`) overwrite valid `prev_4x` (`> 24`),
-            # including dark 1x PAL lake/river water (`ref_max >= 12`), while keeping true `#000000` PAL doorways!
-            prev_has_4x = np.repeat(np.repeat(prev_has_sub, 4, axis=0), 4, axis=1)
-            ref_max_4x = np.repeat(np.repeat(ref_sub_1x.max(axis=2), 4, axis=0), 4, axis=1)
-            cur_blk_void = prev_has_4x & (raw_sub_4x.max(axis=2) < 16.0) & (prev_4x.max(axis=2) > 24.0) & (ref_max_4x >= 12)
-            if cur_blk_void.any():
-                blk_guard = gaussian_filter(binary_dilation(cur_blk_void, iterations=6).astype(np.float32), sigma=2.2)
-                w_seam_4x = w_seam_4x * np.clip(1.0 - blk_guard * 1.5, 0.0, 1.0)
-                w_seam_4x[cur_blk_void] = 0.0
-
-            prev_blk_void = prev_has_4x & (prev_4x.max(axis=2) < 16.0) & (raw_sub_4x.max(axis=2) > 24.0) & (ref_max_4x >= 12)
-            if prev_blk_void.any():
-                pblk_guard = gaussian_filter(binary_dilation(prev_blk_void, iterations=6).astype(np.float32), sigma=2.2)
-                w_seam_4x = np.maximum(w_seam_4x, np.clip(pblk_guard * 1.5, 0.0, 1.0))
-                w_seam_4x[prev_blk_void] = 1.0
-
-            acc_rgb[py0_i:py1_i, px0_i:px1_i] = (
-                prev_4x * (1.0 - w_seam_4x[:, :, None]) + sub_patch * w_seam_4x[:, :, None]
-            )
-            has_pix_1x[y0_i:y1_i, x0_i:x1_i] |= valid_sub_1x & non_black_cur_1x
-            print(f"  [Patch] {pkey}: shift_2x=({dx2:+d},{dy2:+d}) [seam-cut]")
+        acc_rgb, has_pix_1x = _stitch_island_patches_4x(
+            active_patches, ai_map, work_dir, full_1x, isl_ctx_full, isl_valid_1x, isl_alpha_4x, (ix0, iy0, iw, ih)
+        )
 
         isl_rgb_4x = np.clip(np.round(acc_rgb), 0, 255).astype(np.uint8)
         ref_isl_1x = full_1x[iy0:iy0 + ih, ix0:ix0 + iw, :3]
@@ -3269,7 +3443,7 @@ def cmd_status():
         print(f"  Scene {sid:3d} (Map {mid:3d}) {name:24s} -> map_todo={tm}, mgo_todo={n_mgo}, rgm_todo={n_rgm}")
 
 
-def cmd_prepare(scene_id: int, work_dir: Path):
+def cmd_prepare(scene_id: int, work_dir: Path, chain: bool = False, redo_map: bool = False):
     work_dir.mkdir(parents=True, exist_ok=True)
     for stale in ("sprite_sheets_list.json", "portrait_sheets_list.json"):
         sp = work_dir / stale
@@ -3277,12 +3451,16 @@ def cmd_prepare(scene_id: int, work_dir: Path):
             sp.unlink()
     scenes, events, all_scripts = load_game_tables()
     sc, todo_map, todo_mgos, mgo_char_hint, todo_rgms = collect_scene_requirements(scene_id, scenes, events, all_scripts)
+    if redo_map:
+        todo_map = True  # re-generate an already-baked map (bake overwrites its HD pack)
     print(f"=== Preparing Scene {scene_id}: {sc['name']} (Map {sc['map_id']}) ===")
     print(f"  todo_map={todo_map}, todo_mgos={todo_mgos}, todo_rgms={todo_rgms}")
 
     todo_all = []
     if todo_map:
-        todo_all.extend(prepare_map_patches(sc["map_id"], sc["name"], work_dir, scenes, events, all_scripts))
+        todo_all.extend(
+            prepare_map_patches(sc["map_id"], sc["name"], work_dir, scenes, events, all_scripts, chain=chain)
+        )
     if todo_mgos:
         todo_all.extend(prepare_sprite_sheets(scene_id, todo_mgos, mgo_char_hint, work_dir))
     if todo_rgms:
@@ -3298,6 +3476,71 @@ def cmd_prepare(scene_id: int, work_dir: Path):
     }
     (work_dir / "manifest_todo.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False))
     print(f"=== Prepared {len(todo_all)} AI generation task(s) -> {work_dir / 'manifest_todo.json'} ===")
+
+
+def cmd_chain_next(scene_id: int, work_dir: Path):
+    """Chained map-patch generation step: after the current round of AI outputs is recorded in `ai_outputs.json`,
+    stitch the finished patches exactly like `bake` would, then write the next ready patch inputs (with their
+    already-painted neighbour pixels pasted in) and a matching prompt into `manifest_todo.json`."""
+    work_dir = resolve_work_or_asset_path(work_dir)
+    manifest = json.loads((work_dir / "manifest_todo.json").read_text())
+    map_id = manifest["map_id"]
+    chain_p = work_dir / f"map_{map_id:03d}_chain.json"
+    if not chain_p.exists():
+        raise SystemExit(f"{work_dir} was not prepared with `prepare --chain`")
+    scene_name = json.loads(chain_p.read_text())["scene_name"]
+    ai_map = load_ai_outputs_map(work_dir)
+    done = {k for k, v in ai_map.items() if v.exists()}
+
+    islands_meta = json.loads((work_dir / f"map_{map_id:03d}_islands.json").read_text())
+    vis_1x = np.load(work_dir / f"map_{map_id:03d}_vis_1x.npy")
+    full_1x = np.array(Image.open(work_dir / f"map_{map_id:03d}_full_1x.png").convert("RGBA"))
+    occ_path = work_dir / f"map_{map_id:03d}_occ_1x.npy"
+    tile_occ_1x = np.load(occ_path) if occ_path.exists() else (full_1x[:, :, :3].sum(axis=2) > 0)
+    lbl_all, _ = label(binary_dilation(vis_1x, iterations=8))
+
+    map_items = []
+    remaining = 0
+    for isl in islands_meta:
+        patches = isl["patches"]
+        remaining += sum(1 for p in patches if p["key"] not in done)
+        ready = _chain_ready_patches(patches, done)
+        if not ready:
+            continue
+        bbox = tuple(isl["bbox_1x"])
+        isl_valid_1x, isl_alpha_4x, isl_ctx_full = _island_masks(isl, len(islands_meta), lbl_all, vis_1x, tile_occ_1x)
+        for p in ready:
+            # Only finished patches within one patch-width of this box can influence the pixels pasted into it,
+            # so stitch just those (bake still stitches the whole island); keeps every round O(neighbours).
+            bx0, by0, bw, bh = p["box_1x"]
+            near = [bx0 - BOX_W, by0 - BOX_H, bw + 2 * BOX_W, bh + 2 * BOX_H]
+            finished = [q for q in patches if q["key"] in done and _boxes_overlap(q["box_1x"], near)]
+            if finished:
+                acc_rgb, has_pix_1x = _stitch_island_patches_4x(
+                    finished, ai_map, work_dir, full_1x, isl_ctx_full, isl_valid_1x, isl_alpha_4x, bbox
+                )
+            else:
+                acc_rgb = np.zeros((bbox[3] * 4, bbox[2] * 4, 3), dtype=np.float32)
+                has_pix_1x = np.zeros((bbox[3], bbox[2]), dtype=bool)
+            rgb, edges = build_chained_patch_input(p, bbox, full_1x, isl_ctx_full, acc_rgb, has_pix_1x)
+            Image.fromarray(rgb).save(p["input_path"])
+            map_items.append({
+                "key": p["key"],
+                "kind": "map_patch",
+                "input_path": p["input_path"],
+                "prompt": build_map_patch_prompt(scene_name, chain_note=describe_chained_edges(edges)),
+                "chained_edges": edges,
+            })
+            print(f"  [Chain] {p['key']}: painted edges={edges or ['none']}")
+
+    other = [it for it in manifest["items"] if it.get("kind") != "map_patch" and it["key"] not in done]
+    manifest["items"] = map_items + other
+    manifest["todo_count"] = len(manifest["items"])
+    (work_dir / "manifest_todo.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False))
+    if remaining == 0:
+        print(f"=== All map patches for Map {map_id:03d} have outputs — run `bake --scene {scene_id}` ===")
+    else:
+        print(f"=== {len(map_items)} map patch(es) ready, {remaining} map patch(es) still to generate ===")
 
 
 def load_ai_outputs_map(work_dir: Path) -> dict[str, Path]:
@@ -3347,6 +3590,8 @@ def calibrate_existing_map_in_place(
     if not meta_path.exists():
         raise FileNotFoundError(f"Missing meta.json for map_{map_id:03d}: {meta_path}")
     meta = json.loads(meta_path.read_text())
+    if int(meta.get("scale", 4)) != 4:
+        raise ValueError(f"calibrate-map supports only scale-4 HD packs; map_{map_id:03d} is stored at scale {meta.get('scale')}")
     rooms = meta.get("rooms", [])
     if not rooms:
         return {"map_id": map_id, "skipped": True}
@@ -4005,6 +4250,12 @@ def main():
     p_prep = sub.add_parser("prepare")
     p_prep.add_argument("--scene", type=int, required=True)
     p_prep.add_argument("--work-dir", type=Path, required=True)
+    p_prep.add_argument("--chain", action="store_true", help="chained neighbour-aware map patch generation")
+    p_prep.add_argument("--redo-map", action="store_true", help="re-prepare the scene map even if already baked")
+
+    p_chain = sub.add_parser("chain-next")
+    p_chain.add_argument("--scene", type=int, required=True)
+    p_chain.add_argument("--work-dir", type=Path, required=True)
 
     p_bake = sub.add_parser("bake")
     p_bake.add_argument("--scene", type=int, required=True)
@@ -4042,7 +4293,9 @@ def main():
     if args.cmd == "status":
         cmd_status()
     elif args.cmd == "prepare":
-        cmd_prepare(args.scene, resolve_work_or_asset_path(args.work_dir))
+        cmd_prepare(args.scene, resolve_work_or_asset_path(args.work_dir), chain=args.chain, redo_map=args.redo_map)
+    elif args.cmd == "chain-next":
+        cmd_chain_next(args.scene, args.work_dir)
     elif args.cmd == "bake":
         cmd_bake(args.scene, args.work_dir)
     elif args.cmd == "verify-map":
